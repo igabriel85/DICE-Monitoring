@@ -27,6 +27,21 @@ service cloudera-scm-server start
 SCRIPT
 
 $hosts_script = <<SCRIPT
+apt-get install wget -y
+mkdir /opt/oryx && cd /opt/oryx
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-alpha-2/compute-classpath.sh
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-alpha-2/oryx-run.sh
+chmod +x compute-classpath.sh 
+chmod +x oryx-run.sh
+#Currently set to alpha build 2
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-alpha-2/oryx-batch-2.0.0-alpha-2.jar
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-alpha-2/oryx-serving-2.0.0-alpha-2.jar
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-alpha-2/oryx-speed-2.0.0-alpha-2.jar
+
+#Copy example conf
+wget https://github.com/OryxProject/oryx/blob/master/app/conf/als-example.conf
+mv als-example.conf oryx.conf
+
 cat > /etc/hosts <<EOF
 127.0.0.1       localhost
 # The following lines are desirable for IPv6 capable hosts
