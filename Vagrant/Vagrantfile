@@ -1,6 +1,8 @@
 $master_script = <<SCRIPT
 #!/bin/bash
 apt-get install curl -y
+apt-get install screen -y
+apt-get install wget -y
 REPOCM=${REPOCM:-cm5}
 CM_REPO_HOST=${CM_REPO_HOST:-archive.cloudera.com}
 CM_MAJOR_VERSION=$(echo $REPOCM | sed -e 's/cm\\([0-9]\\).*/\\1/')
@@ -48,6 +50,18 @@ Vagrant.configure("2") do |config|
   config.hostmanager.include_offline = true
   config.hostmanager.ignore_private_ip = false
 
+  #Set same Username and Password
+  #config.ssh.username = "dice"
+  #config.ssh.password = "diceh2020"
+  
+  #Path to Private SSH key location
+  #config.ssh.private_key_path = "<path/to/key>"
+  
+  #SSH default host and port settings
+  #config.ssh.host ="<host>"
+  #config.ssh.port = "<port>"
+  
+  
   config.vm.define :master do |master|
     master.vm.provider :virtualbox do |v|
       v.name = "vm-cluster-oryx1"
