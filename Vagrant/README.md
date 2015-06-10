@@ -1,6 +1,6 @@
 # Cloudera Vagrant Installation
 
-##NOTE: Because of the computationally heavy nature of CDH 5.4.0 the virtual cluster consumes approximately 10 GB of RAM. You would need at least 16 GB of RAM on the host in order to effectively use this cluster.*
+###NOTE: Because of the computationally heavy nature of CDH 5.4.0 the virtual cluster consumes approximately 10 GB of RAM. You would need at least 16 GB of RAM on the host in order to effectively use this cluster.*
 
 
 First VirtualBox or VMWare Player/Fusion has to be installed:
@@ -11,15 +11,15 @@ The Vagrant has to be installed:
 * [Windows Vagrant Installation](https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.msi) 
 * [Linux vagrant Installation](https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.msi)
 
-Install Vagrant host manager plugin:
+Install Vagrant host manager plugin (terminal or cmd):
 ```
-$ vagrant plugin install vagrant-hostmanager
+ vagrant plugin install vagrant-hostmanager
 ```
 
 ##NOTE: I would also recommend installing vagrant snapshot tool
 
 ```
-$ vagrant plugin install vagrant-vbox-snapshot
+ vagrant plugin install vagrant-vbox-snapshot
 ```
 
 Once this is done download the vagrant configuration file into the directory in which you want the virtual cluster to be set up.
@@ -44,7 +44,7 @@ It is important to mention that the IPs and hostnames are set automatically usin
 In the directory containing the Vagrantfile run the command:
 
 ```
-$ vagrant up
+ vagrant up
 ```
 
 The startup usually takes some time, depending on the host machine.
@@ -63,9 +63,9 @@ Once the VMs are up and cloudera manager has started it will be posible to acces
 In order to stop the virtual cluster run:
 
 ```
-$ vagrant suspend
+ vagrant suspend
 ```
 Reactivate the virtual cluster
 ```
-$ vagrant resume
+ vagrant resume
 ```
