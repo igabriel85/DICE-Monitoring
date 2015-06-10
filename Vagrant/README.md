@@ -1,26 +1,28 @@
-h1. Cloudera Vagrant Installation
+# Cloudera Vagrant Installation
 
-*NOTE: Because of the computationally heavy nature of CDH 5.4.0 the virtual cluster consumes approximately 10 GB of RAM. You would need at least 16 GB of RAM on the host in order to effectively use this cluster.*
+##NOTE: Because of the computationally heavy nature of CDH 5.4.0 the virtual cluster consumes approximately 10 GB of RAM. You would need at least 16 GB of RAM on the host in order to effectively use this cluster.*
 
 
 First VirtualBox or VMWare Player/Fusion has to be installed:
-* "VirtualBox Windows Installation":http://download.virtualbox.org/virtualbox/4.3.28/VirtualBox-4.3.28-100309-Win.exe
-* "VirtualBox Linux Installation":https://www.virtualbox.org/wiki/Linux_Downloads
+* [VirtualBox Windows Installation](http://download.virtualbox.org/virtualbox/4.3.28/VirtualBox-4.3.28-100309-Win.exe)
+* [VirtualBox Linux Installation](https://www.virtualbox.org/wiki/Linux_Downloads)
 
 The Vagrant has to be installed:
-* "Windows Vagrant Installation":https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.msi 
-* "Linux vagrant Installation":https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.msi
+* [Windows Vagrant Installation](https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.msi) 
+* [Linux vagrant Installation](https://dl.bintray.com/mitchellh/vagrant/vagrant_1.7.2.msi)
 
 Install Vagrant host manager plugin:
+```
+$ vagrant plugin install vagrant-hostmanager
+```
 
-_$ vagrant plugin install vagrant-hostmanager_
+##NOTE: I would also recommend installing vagrant snapshot tool
 
-NOTE: I would also recommend installing vagrant snapshot tool
-
-_$vagrant plugin install vagrant-vbox-snapshot_
+```
+$ vagrant plugin install vagrant-vbox-snapshot
+```
 
 Once this is done download the vagrant configuration file into the directory in which you want the virtual cluster to be set up.
-* "Vagrantfile":https://www.dropbox.com/s/207isaewtprqjmp/Vagrantfile?dl=0 
 * You can clone the up to date file from https://github.com/igabriel85/DICE-Project.git
 ** The first part of this file contains an initialization script for CDH 5.4.0 which can be used outside of this configuration
 
@@ -40,7 +42,10 @@ It is important to mention that the IPs and hostnames are set automatically usin
 * slave3: 10.211.55.103
 
 In the directory containing the Vagrantfile run the command:
-* _$ vagrant up_
+
+```
+$ vagrant up
+```
 
 The startup usually takes some time, depending on the host machine.
 To access the running machines use:
@@ -56,7 +61,11 @@ Once the VMs are up and cloudera manager has started it will be posible to acces
 * http://vm-cluster-oryx1:7180
 
 In order to stop the virtual cluster run:
-* _$ vagrant suspend_
 
+```
+$ vagrant suspend
+```
 Reactivate the virtual cluster
-* _$ vagrant resume_
+```
+$ vagrant resume
+```
