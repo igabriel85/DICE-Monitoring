@@ -14,10 +14,10 @@ echo 'deb http://packages.elasticsearch.org/logstash/1.5/debian stable main' | s
 
 apt-get update
 #apt-get -q -y --force-yes install oracle-java8-installer
-#apt-get install collectd -y
-#apt-get install collectd-utils -y
-#apt-get -y install elasticsearch=1.4.4
-#apt-get -y install logstash
+apt-get install collectd -y
+apt-get install collectd-utils -y
+apt-get -y --force-yes install elasticsearch=1.4.4
+apt-get -y --force-yes install logstash
 
 cd
 
