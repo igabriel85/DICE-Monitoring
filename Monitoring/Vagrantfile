@@ -16,6 +16,7 @@ echo 'deb http://packages.elasticsearch.org/logstash/1.5/debian stable main' | s
 #install all requirements for ELK
 apt-get update
 #apt-get -q -y --force-yes install oracle-java8-installer
+apt-get install openjdk-7-jdk
 apt-get install collectd -y
 apt-get install collectd-utils -y
 apt-get -y --force-yes install elasticsearch=1.4.4
@@ -24,6 +25,7 @@ apt-get -y --force-yes install logstash
 cd
 # install kibana
 wget https://download.elasticsearch.org/kibana/kibana/kibana-4.0.1-linux-x64.tar.gz
+wget https://download.elastic.co/kibana/kibana/kibana-3.1.0.tar.gz
 tar xvf kibana-4.0.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
 cp -R ~/kibana-4.0.1-linux-x64/* /opt/kibana/
@@ -34,24 +36,24 @@ update-rc.d kibana4 defaults 96 9
 cd
 
 #saving old configurations
-mv /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/elasticsearch.old
-mv /etc/collectd/collectd.conf /etc/collectd/collectd.old
+#mv /etc/elasticsearch/elasticsearch.yml /etc/elasticsearch/elasticsearch.old
+#mv /etc/collectd/collectd.conf /etc/collectd/collectd.old
 
 #get default configuration
-wget ftp://hal720m.info.uvt.ro/collectd.conf
-wget ftp://hal720m.info.uvt.ro/logstash.conf
-wget ftp://hal720m.info.uvt.ro/elasticsearch.yml
+#wget ftp://hal720m.info.uvt.ro/collectd.conf
+#wget ftp://hal720m.info.uvt.ro/logstash.conf
+#wget ftp://hal720m.info.uvt.ro/elasticsearch.yml
 
 #move default configuration
-mv collectd.conf /etc/collectd/collectd.conf
-mv logstash.conf /etc/logstash/conf.d/logstash.conf
-mv elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
+#mv collectd.conf /etc/collectd/collectd.conf
+#mv logstash.conf /etc/logstash/conf.d/logstash.conf
+#mv elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
 
 #start all services
-service kibana4 start
-service elasticsearch start
-service logstash start
-service collectd start
+#service kibana4 start
+#service elasticsearch start
+#service logstash start
+#service collectd start
 
 SCRIPT
 
@@ -83,7 +85,6 @@ config.vm.define :monit do |monit|
       v.name = "vm-cluster-monit"
       v.customize ["modifyvm", :id, "--memory", "4096"]
     end
-    monit.vm.network :private_network, ip: "10.211.55.100"
     monit.vm.hostname = "monit"
     monit.vm.provision :shell, :inline => $hosts_script
     monit.vm.provision :hostmanager
