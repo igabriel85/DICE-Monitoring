@@ -1,0 +1,62 @@
+
+# Syslog
+input {
+  tcp {
+    port => 5000
+    type => syslog
+  }
+  udp {
+    port => 5000
+    type => syslog
+  }
+}
+
+# Collectd
+#input {
+#  collectd {}
+#}
+
+input {
+  udp {
+    port => 25826         # 25826 matches port specified in collectd.conf
+    buffer_size => 1452   # 1452 is the default buffer size for Collectd
+    codec => collectd { } # specific Collectd codec to invoke
+    type => collectd
+  }
+}
+output {
+  elasticsearch {
+    cluster  => DICE-MonitoringPlatform # this matches out elasticsearch cluster.name
+    protocol => http
+  }
+}
+
+
+# Syslog filtering
+filter {
+  if [type] == "syslog" {
+    grok {
+      match => { "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_hostname} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+      add_field => [ "received_from", "%{host}" ]
+    }
+    syslog_pri { }
+    date {
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+    }
+    if !("_grokparsefailure" in [tags]) {
+      mutate {
+        replace => [ "@source_host", "%{syslog_hostname}" ]
+        replace => [ "@message", "%{syslog_message}" ]
+      }
+    }
+    mutate {
+      remove_field => [ "syslog_hostname", "syslog_message", "syslog_timestamp" ]
+    }
+  }
+}
+
+# Store in ES
+output {
+  elasticsearch { }
+}

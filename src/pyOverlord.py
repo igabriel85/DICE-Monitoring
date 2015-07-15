@@ -51,7 +51,7 @@ import random
 from werkzeug import secure_filename
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-template_loc = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+templatedir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 host = '0.0.0.0'
 
 app = Flask('DICE-Monitoring')
@@ -100,7 +100,7 @@ def getCurrentSettings():
     
 
 
-    
+
 
 """
 Custom errot Handling
