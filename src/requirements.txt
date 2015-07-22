@@ -13,3 +13,4 @@ Werkzeug==0.9.6
 alembic==0.6.5
 itsdangerous==0.24
 wsgiref==0.1.2
+cm-api
