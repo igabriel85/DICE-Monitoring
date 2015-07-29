@@ -1,0 +1,44 @@
+1438170537054 metricssystem.MetricsSystem: Context=metricssystem, Hostname=vm-cluster-oryx2, NumActiveSources=8, NumAllSources=8, NumActiveSinks=1, NumAllSinks=0, Sink_diceNumOps=1069, Sink_diceAvgTime=5.0, Sink_diceDropped=0, Sink_diceQsize=0, SnapshotNumOps=9629, SnapshotAvgTime=0.0, PublishNumOps=1069, PublishAvgTime=0.0, DroppedPubAll=0
+
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, NumActiveSources=%{NUMBER:NumActiveSources}, NumAllSources=%{NUMBER:NumAllSources}, NumActiveSinks=%{NUMBER:NumActiveSinks}, NumAllSinks=%{NUMBER:NumAllSinks}, Sink_diceNumOps=%{NUMBER:Sink_diceNumOps}, Sink_diceAvgTime=%{NUMBER:Sink_diceAvgTime}, Sink_diceDropped=%{NUMBER:Sink_diceDropped}, Sink_diceQsize=%{NUMBER:Sink_diceQsize}, SnapshotNumOps=%{NUMBER:SnapshotNumOps}, SnapshotAvgTime=%{NUMBER:SnapshotAvgTime}, PublishNumOps=%{NUMBER:PublishNumOps}, PublishAvgTime=%{NUMBER:PublishAvgTime}
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1438170547062 ugi.UgiMetrics: Context=ugi, Hostname=vm-cluster-oryx2, LoginSuccessNumOps=0, LoginSuccessAvgTime=0.0, LoginFailureNumOps=0, LoginFailureAvgTime=0.0, GetGroupsNumOps=0, GetGroupsAvgTime=0.0
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, LoginSuccessNumOps=%{NUMBER:LoginSuccessNumOps}, LoginSuccessAvgTime=%{NUMBER:LoginSuccessAvgTime}, LoginFailureNumOps=%{NUMBER:LoginFailureNumOps}, LoginFailureAvgTime=%{NUMBER:LoginFailureAvgTime}, GetGroupsNumOps=%{NUMBER:GetGroupsNumOps}, GetGroupsAvgTime=%{NUMBER:GetGroupsAvgTime}
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1438170547062 jvm.JvmMetrics: Context=jvm, ProcessName=NodeManager, SessionId=null, Hostname=vm-cluster-oryx2, MemNonHeapUsedM=38.832497, MemNonHeapCommittedM=38.9375, MemNonHeapMaxM=130.0, MemHeapUsedM=76.97405, MemHeapCommittedM=263.9375, MemHeapMaxM=264.9375, MemMaxM=264.9375, GcCountParNew=9, GcTimeMillisParNew=175, GcCountConcurrentMarkSweep=0, GcTimeMillisConcurrentMarkSweep=0, GcCount=9, GcTimeMillis=175, ThreadsNew=0, ThreadsRunnable=17, ThreadsBlocked=0, ThreadsWaiting=9, ThreadsTimedWaiting=36, ThreadsTerminated=0, LogFatal=0, LogError=0, LogWarn=0, LogInfo=0
+
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, ProcessName=%{WORD:ProcessName}, SessionId=%{WORD:SessionId}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, MemNonHeapUsedM=%{NUMBER:MemNonHeapUsedM}, MemNonHeapCommittedM=%{NUMBER:MemNonHeapCommittedM}, MemNonHeapMaxM=%{NUMBER:MemNonHeapMaxM}, MemHeapUsedM=%{NUMBER:MemHeapUsedM}, MemHeapCommittedM=%{NUMBER:MemHeapCommittedM}, MemHeapMaxM=%{NUMBER:MemHeapMaxM}, MemMaxM=%{NUMBER:MemMaxM}, GcCountParNew=%{NUMBER:GcCountParNew}, GcTimeMillisParNew=%{NUMBER:GcTimeMillisParNew}, GcCountConcurrentMarkSweep=%{NUMBER:GcCountConcurrentMarkSweep}, GcTimeMillisConcurrentMarkSweep=%{NUMBER:GcTimeMillisConcurrentMarkSweep}, GcCount=%{NUMBER:GcCount}, GcTimeMillis=%{NUMBER:GcTimeMillis}, ThreadsNew=%{NUMBER:ThreadsNew}, ThreadsRunnable=%{NUMBER:ThreadsRunnable}, ThreadsBlocked=%{NUMBER:ThreadsBlocked}, ThreadsWaiting=%{NUMBER:ThreadsWaiting}, ThreadsTimedWaiting=%{NUMBER:ThreadsTimedWaiting}, ThreadsTerminated=%{NUMBER:ThreadsTerminated}, LogFatal=%{NUMBER:LogFatal}, LogError=%{NUMBER:LogError}, LogWarn=%{NUMBER:LogWarn}, LogInfo=%{NUMBER:LogInfo}
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1438170547063 yarn.NodeManagerMetrics: Context=yarn, Hostname=vm-cluster-oryx2, ContainersLaunched=0, ContainersCompleted=0, ContainersFailed=0, ContainersKilled=0, ContainersIniting=0, ContainersRunning=0, AllocatedGB=0, AllocatedContainers=0, AvailableGB=1, AllocatedVCores=0, AvailableVCores=2, ContainerLaunchDurationNumOps=0, ContainerLaunchDurationAvgTime=0.0
+
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, ContainersLaunched=%{NUMBER:ContainersLaunched}, ContainersCompleted=%{NUMBER:ContainersCompleted}, ContainersFailed=%{NUMBER:ContainersFailed}, ContainersKilled=%{NUMBER:ContainersKilled}, ContainersIniting=%{NUMBER:ContainersIniting}, ContainersRunning=%{NUMBER:ContainersRunning}, AllocatedGB=%{NUMBER:AllocatedGB}, AllocatedContainers=%{NUMBER:AllocatedContainers}, AvailableGB=%{NUMBER:AvailableGB}, AllocatedVCores=%{NUMBER:AllocatedVCores}, AvailableVCores=%{NUMBER:AvailableVCores}, ContainerLaunchDurationNumOps=%{NUMBER:ContainerLaunchDurationNumOps}, ContainerLaunchDurationAvgTime=%{NUMBER:ContainerLaunchDurationAvgTime}
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1438170547063 mapred.ShuffleMetrics: Context=mapred, Hostname=vm-cluster-oryx2, ShuffleOutputBytes=0, ShuffleOutputsFailed=0, ShuffleOutputsOK=0, ShuffleConnections=0
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, ShuffleOutputBytes=%{NUMBER:ShuffleOutputBytes}, ShuffleOutputsFailed=%{NUMBER:ShuffleOutputsFailed}, ShuffleOutputsOK=%{NUMBER:ShuffleOutputsOK}, ShuffleConnections=%{NUMBER:ShuffleConnections}
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1438170547063 rpc.rpc: port=8041, Context=rpc, Hostname=vm-cluster-oryx2, ReceivedBytes=0, SentBytes=0, RpcQueueTimeNumOps=0, RpcQueueTimeAvgTime=0.0, RpcProcessingTimeNumOps=0, RpcProcessingTimeAvgTime=0.0, RpcAuthenticationFailures=0, RpcAuthenticationSuccesses=0, RpcAuthorizationFailures=0, RpcAuthorizationSuccesses=0, NumOpenConnections=0, CallQueueLength=0
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: port=%{NUMBER:port}, Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, ReceivedBytes=%{NUMBER:ReceivedBytes}, SentBytes=%{NUMBER:SentBytes}, RpcQueueTimeNumOps=%{NUMBER:RpcQueueTimeNumOps}, RpcQueueTimeAvgTime=%{NUMBER:RpcQueueTimeAvgTime}, RpcProcessingTimeNumOps=%{NUMBER:RpcProcessingTimeNumOps}, RpcProcessingTimeAvgTime=%{NUMBER:RpcProcessingTimeAvgTime}, RpcAuthenticationFailures=%{NUMBER:RpcAuthenticationFailures}, RpcAuthenticationSuccesses=%{NUMBER:RpcAuthenticationSuccesses}, RpcAuthorizationFailures=%{NUMBER:RpcAuthorizationFailures}, RpcAuthorizationSuccesses=%{NUMBER:RpcAuthorizationSuccesses}, NumOpenConnections=%{NUMBER:NumOpenConnections}, CallQueueLength=%{NUMBER:CallQueueLength}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+1438170547063 rpcdetailed.rpcdetailed: port=8041, Context=rpcdetailed, Hostname=vm-cluster-oryx2
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: port=%{NUMBER:port}, Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}
+
+
+
+
+

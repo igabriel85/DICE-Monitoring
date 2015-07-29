@@ -1,0 +1,14 @@
+*.sink.ganglia.class=org.apache.hadoop.metrics2.sink.ganglia.GangliaSink31
+*.sink.ganglia.period=10
+
+*.sink.ganglia.supportsparse=true
+.sink.ganglia.slope=jvm.metrics.gcCount=zero,jvm.metrics.memHeapUsedM=both
+.sink.ganglia.dmax=jvm.metrics.threadsBlocked=70,jvm.metrics.memHeapUsedM=40
+
+#Logstash Server hookup
+namenode.sink.ganglia.servers=10.211.55.185:8660
+datanode.sink.ganglia.servers=10.211.55.185:8660
+jobtracker.sink.ganglia.servers=10.211.55.185:8660
+tasktracker.sink.ganglia.servers=10.211.55.185:8660
+maptask.sink.ganglia.servers=10.211.55.185:8660
+reducetask.sink.ganglia.servers=10.211.55.185:8660
