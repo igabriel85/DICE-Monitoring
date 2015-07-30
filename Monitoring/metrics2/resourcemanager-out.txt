@@ -9,7 +9,7 @@
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 1438268929091 rpcdetailed.rpcdetailed: port=8031, Context=rpcdetailed, Hostname=vm-cluster-oryx1, RegisterNodeManagerNumOps=3, RegisterNodeManagerAvgTime=289.0, NodeHeartbeatNumOps=28113, NodeHeartbeatAvgTime=0.33333333333333326
 
-\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: port=%{NUMBER:port}, Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: port=%{NUMBER:port}, Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, RegisterNodeManagerNumOps=%{NUMBER:RegisterNodeManagerNumOps}, RegisterNodeManagerAvgTime=%{NUMBER:RegisterNodeManagerAvgTime}, NodeHeartbeatNumOps=%{NUMBER:NodeHeartbeatNumOps}, NodeHeartbeatAvgTime=%{NUMBER:NodeHeartbeatAvgTime}
 
 
 
@@ -33,9 +33,12 @@
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 1438268939089 yarn.ClusterMetrics: ClusterMetrics=ResourceManager, Context=yarn, Hostname=vm-cluster-oryx1, NumActiveNMs=3, NumDecommissionedNMs=0, NumLostNMs=0, NumUnhealthyNMs=0, NumRebootedNMs=0, AMLaunchDelayNumOps=0, AMLaunchDelayAvgTime=0.0, AMRegisterDelayNumOps=0, AMRegisterDelayAvgTime=0.0
 
-
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: ClusterMetrics=%{WORD:ClusterMetrics}, Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, NumActiveNMs=%{NUMBER:NumActiveNMs}, NumDecommissionedNMs=%{NUMBER:NumDecommissionedNMs}, NumLostNMs=%{NUMBER:NumLostNMs}, NumUnhealthyNMs=%{NUMBER:NumUnhealthyNMs}, NumRebootedNMs=%{NUMBER:NumRebootedNMs}, AMLaunchDelayNumOps=%{NUMBER:AMLaunchDelayNumOps}, AMLaunchDelayAvgTime=%{NUMBER:AMLaunchDelayAvgTime}, AMRegisterDelayNumOps=%{NUMBER:AMRegisterDelayNumOps}, AMRegisterDelayAvgTime=%{NUMBER:AMRegisterDelayAvgTime}
 
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 1438268939089 fairscheduler-op-durations.FSOpDurations: FSOpDurations=FSOpDurations, Context=fairscheduler-op-durations, Hostname=vm-cluster-oryx1, ContinuousSchedulingRunNumOps=1656333, ContinuousSchedulingRunAvgTime=0.049311926605504514, ContinuousSchedulingRunStdevTime=0.24632604404004704, ContinuousSchedulingRunIMinTime=0.0, ContinuousSchedulingRunIMaxTime=4.0, ContinuousSchedulingRunMinTime=0.0, ContinuousSchedulingRunMaxTime=42.0, NodeUpdateCallNumOps=28126, NodeUpdateCallAvgTime=0.0, NodeUpdateCallStdevTime=0.0, NodeUpdateCallIMinTime=0.0, NodeUpdateCallIMaxTime=1.401298464324817E-45, NodeUpdateCallMinTime=0.0, NodeUpdateCallMaxTime=4.0, UpdateThreadRunNumOps=18860, UpdateThreadRunAvgTime=0.15000000000000002, UpdateThreadRunStdevTime=0.48936048492959283, UpdateThreadRunIMinTime=0.0, UpdateThreadRunIMaxTime=2.0, UpdateThreadRunMinTime=0.0, UpdateThreadRunMaxTime=25.0, UpdateCallNumOps=18860, UpdateCallAvgTime=0.15000000000000002, UpdateCallStdevTime=0.48936048492959283, UpdateCallIMinTime=0.0, UpdateCallIMaxTime=2.0, UpdateCallMinTime=0.0, UpdateCallMaxTime=25.0, PreemptCallNumOps=0, PreemptCallAvgTime=0.0, PreemptCallStdevTime=0.0, PreemptCallIMinTime=3.4028234663852886E38, PreemptCallIMaxTime=1.401298464324817E-45, PreemptCallMinTime=3.4028234663852886E38, PreemptCallMaxTime=1.401298464324817E-45
+
+
+\b\w+\b-\b\w+\b-\b\w+\b. OR %{MONGO_WORDDASH} OR \b[\w-]+\b for word-word-word
 
 
