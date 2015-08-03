@@ -41,6 +41,16 @@ wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/ory
 wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/oryx-serving-2.0.0-beta-1.jar
 wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/oryx-speed-2.0.0-beta-1.jar
 
+#install logstash-forwarder
+echo 'deb http://packages.elasticsearch.org/logstashforwarder/debian stable main' | sudo tee /etc/apt/sources.list.d/logstashforwarder.list
+
+wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo apt-key add -
+
+apt-get update
+apt-get install logstash-forwarder
+
+mkdir /opt/certs
+mkdir /opt/private
 
 #Copy example conf
 wget https://github.com/OryxProject/oryx/blob/master/app/conf/als-example.conf
@@ -100,6 +110,7 @@ Vagrant.configure("2") do |config|
     end
     master.vm.network :private_network, ip: "10.211.55.100"
     master.vm.hostname = "vm-cluster-oryx1"
+    master.vm.network :forwarded_port, host:7180, guest: 7180
     master.vm.provision :shell, :inline => $hosts_script
     master.vm.provision :hostmanager
     master.vm.provision :shell, :inline => $master_script
