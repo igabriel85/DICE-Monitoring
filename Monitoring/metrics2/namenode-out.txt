@@ -77,6 +77,7 @@
 
 
 \A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, LoginSuccessNumOps=%{NUMBER:LoginSuccessNumOps}, LoginSuccessAvgTime=%{NUMBER:LoginSuccessAvgTime}, LoginFailureNumOps=%{NUMBER:LoginFailureNumOps}, LoginFailureAvgTime=%{NUMBER:LoginFailureAvgTime}, GetGroupsNumOps=%{NUMBER:GetGroupsNumOps}, GetGroupsAvgTime=%{NUMBER:GetGroupsAvgTime}
+
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 1438269168172 jvm.JvmMetrics: Context=jvm, ProcessName=NameNode, SessionId=null, Hostname=vm-cluster-oryx1, MemNonHeapUsedM=45.81095, MemNonHeapCommittedM=46.0625, MemNonHeapMaxM=130.0, MemHeapUsedM=31.22242, MemHeapCommittedM=58.0, MemHeapMaxM=58.0, MemMaxM=58.0, GcCountParNew=72, GcTimeMillisParNew=735, GcCountConcurrentMarkSweep=0, GcTimeMillisConcurrentMarkSweep=0, GcCount=72, GcTimeMillis=735, GcNumWarnThresholdExceeded=0, GcNumInfoThresholdExceeded=0, GcTotalExtraSleepTime=5561, ThreadsNew=0, ThreadsRunnable=11, ThreadsBlocked=0, ThreadsWaiting=6, ThreadsTimedWaiting=78, ThreadsTerminated=0, LogFatal=0, LogError=0, LogWarn=27, LogInfo=10397
 
@@ -84,4 +85,9 @@
 \A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, ProcessName=%{WORD:ProcessName}, SessionId=%{WORD:SessionId}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, MemNonHeapUsedM=%{NUMBER:MemNonHeapUsedM}, MemNonHeapCommittedM=%{NUMBER:MemNonHeapCommittedM}, MemNonHeapMaxM=%{NUMBER:MemNonHeapMaxM}, MemHeapUsedM=%{NUMBER:MemHeapUsedM}, MemHeapCommittedM=%{NUMBER:MemHeapCommittedM}, MemHeapMaxM=%{NUMBER:MemHeapMaxM}, MemMaxM=%{NUMBER:MemMaxM}, GcCountParNew=%{NUMBER:GcCountParNew}, GcTimeMillisParNew=%{NUMBER:GcTimeMillisParNew}, GcCountConcurrentMarkSweep=%{NUMBER:GcCountConcurrentMarkSweep}, GcTimeMillisConcurrentMarkSweep=%{NUMBER:GcTimeMillisConcurrentMarkSweep}, GcCount=%{NUMBER:GcCount}, GcTimeMillis=%{NUMBER:GcTimeMillis}, GcNumWarnThresholdExceeded=%{NUMBER:GcNumWarnThresholdExceeded}, GcNumInfoThresholdExceeded=%{NUMBER:GcNumInfoThresholdExceeded}, GcTotalExtraSleepTime=%{NUMBER:GcTotalExtraSleepTime}, ThreadsNew=%{NUMBER:ThreadsNew}, ThreadsRunnable=%{NUMBER:ThreadsRunnable}, ThreadsBlocked=%{NUMBER:ThreadsBlocked}, ThreadsWaiting=%{NUMBER:ThreadsWaiting}, ThreadsTimedWaiting=%{NUMBER:ThreadsTimedWaiting}, ThreadsTerminated=%{NUMBER:ThreadsTerminated}, LogFatal=%{NUMBER:LogFatal}, LogError=%{NUMBER:LogError}, LogWarn=%{NUMBER:LogWarn}, LogInfo=%{NUMBER:LogInfo}
 
 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+1438684360970 rpcdetailed.rpcdetailed: port=8033, Context=rpcdetailed, Hostname=vm-cluster-oryx1
+
+\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: port=%{NUMBER:port}, Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}
 
