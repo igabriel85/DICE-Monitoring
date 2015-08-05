@@ -19,6 +19,7 @@ limitations under the License.
 from pssh import *
 import os.path
 import nmap
+import sys, getopt
 
 
 #folder locations
@@ -31,9 +32,9 @@ confDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 
 
 #initialize hostlist
-hostlist = [ ]
-userName = ''
-uPassword = ''
+#hostlist = [ ]
+#userName = ''
+#uPassword = ''
 
 def listOutput(out):
 	'''
@@ -239,37 +240,131 @@ def nmapScan(hostlist, port=22):
 def checkSetup():
 	print "Check the logging remote setup"
 
-def tests():
-	client = ParallelSSHClient(['109.231.126.221','109.231.126.222'], user='ubuntu',password='rexmundi220')
+def tests(hostlist):
+	client = ParallelSSHClient(hostlist, user='ubuntu',password='rexmundi220')
 	#create path to file
-	localCopy = os.path.join(confDir,'test.conf')
+	localCopyConf = os.path.join(confDir,'logstash-forwarder.conf')
 	#copy to home dire after connection
 	try:
-		output = client.copy_file(localCopy,"test2.conf")
+		output = client.copy_file(localCopyConf,"logstash-forwarder.conf")
+		client.run_command('rm -rf /etc/logstash-forwarder.conf', sudo=True)
+		client.run_command('mv logstash-forwarder.conf /etc/logstash-forwarder.conf')
+		output = client.run_command('service logstash-forwarder restart', sudo=True)
+		listOutput(output)
 		#used to block and wait for all parallel commands to finish
-		client.pool.join()
+		#client.pool.join()
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Stff"
 
+def main(argv):
+	'''
+		This is the main function that handles command line arguments.
 
-
+		TODO: ....
+	'''
+	hostlist = []
+	userName = ''
+	uPassword = ''
+	uKey = ' ' #location of secret key
+	try:
+		opts, args=getopt.getopt(argv,"hi:u:p:k:tdc",["hostFile","username","password","key","test","deploy","check"])
+	except getopt.GetoptError:
+		print "%-------------------------------------------------------------------------------------------%"
+		print "Invalid argument! Arguments must take the form:"
+		print ""
+		print "pysshCore.py -i <hostfile> -u <username> -p <password> -k <key>"
+		print ""
+		print "%-------------------------------------------------------------------------------------------%"
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt == '-h':
+			print "%-------------------------------------------------------------------------------------------%"
+			print ""
+			print "pysshCore is desigend to facilitate the deployment of the DICE Monitoring Collectors."
+			print "You must specify a valid hostfile, username, password and/or secret key location."
+			print "Usage Example:"
+			print "pysshCore -i <hostfile> -u <username> -p <password> -k <key>"
+			print"                                                                                              "
+ 			print "NOTE: Secret key not yet suported only user and password auth!"
+			print "%-------------------------------------------------------------------------------------------%"
+			sys.exit()
+		elif opt in ("-i","--hostFile"):
+			#hostfile=arg
+			if os.path.isfile(arg) is not True:
+				print "ERROR: No such file", arg
+				sys.exit(2)
+			try:
+				with open(arg,'r') as f:
+					hostlist = [line.strip() for line in f] #strip new line char from end of file
+					#print "These are the submitted hosts:"
+					#print hostlist
+					#print ""
+					#print "&--------------------&"
+			except:
+				print "Caught Exception while opening file", arg
+		elif opt in ("-u","--username"):
+			userName=arg
+			#print userName
+		elif opt in ("-p","--password"):
+			uPassword = arg
+			#print uPassword
+		elif opt in ("-t","--test"):
+			if len(userName)==0 or len(uPassword)==0:
+				print "Must specify valid User Name and Password!"
+			else:
+				#Scan listed hosts
+				print "%-------------------------------------------------------------------------------------------%"
+				print "Starting host scan first pass:"
+				print ""
+				good, bad = hostsScan(hostlist)
+				print "&--------------------&"
+				print "Results"
+				print 'These are the good hosts', str(good)
+				print 'These are the bad hosts', str(bad)
+				print ""
+				print "Starting host scan second pass:"
+				#passing only active nodes to nmap
+				nmapScan(good)
+				print "%-------------------------------------------------------------------------------------------%"
+		elif opt in ("-d","--deploy"):
+			if len(userName)==0 or len(uPassword)==0:
+				print "Must specify valid User Name and Password!"
+			else:
+				print "%-------------------------------------------------------------------------------------------%"
+				print "Starting Collectd deployment on hosts."
+				installCollectd(hostlist,userName,uPassword)
+				print ""
+				print "Starting Logstash-Forwarder deployment on hosts."
+				installLogstashForwarder(hostlist,userName,uPassword)
+				print ""
+				print "Deployment DONE!"
+				print "%-------------------------------------------------------------------------------------------%"
+		elif opt in ("-c","--check"):
+			print "TODO Check deployment"
 
 if __name__=='__main__':
-	hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221',
-	'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146']
-	#,host,'109.231.126.222','109.231.126.221','109.231.126.94',
-	#'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.145'
-	userName = 'ubuntu'
-	uPassword = 'rexmundi220'
-	#installCollectd(hostlist,userName,uPassword)
-	#installLogstashForwarder(hostlist,userName,uPassword)
-	serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
+	if len(sys.argv) == 1:
+		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221',
+		'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.157']
+		#,host,'109.231.126.222','109.231.126.221','109.231.126.94',
+		#'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.145'
+		userName = 'ubuntu'
+		uPassword = 'rexmundi220'
+		#installCollectd(hostlist,userName,uPassword)
+		#installLogstashForwarder(hostlist,userName,uPassword)
+		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
 
-	#nmapScan(hostlist)
+		nmapScan(hostlist)
+		
+		# #----------------------------------------------------
+		# good, bad = hostsScan(hostlist)
+		# print 'These are the good hosts '+str(good)
+		# print 'These are the bad hosts ', str(bad)
+		# #----------------------------------------------------
+		#tests(hostlist)
+	else:
+		main(sys.argv[1:])
 
-	# #----------------------------------------------------
-	# good, bad = hostsScan(hostlist)
-	# print 'These are the good hosts '+str(good)
-	# print 'These are the bad hosts ', str(bad)
-	# #----------------------------------------------------
-	#tests()
+		
+
+
