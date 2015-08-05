@@ -144,27 +144,33 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 		Checks the status of aservice on remote servers.
 		Only supported commands are start, stop, status
 
-		TODO: Some bugs in starting services
+		TODO: 
+		- Some bugs in starting services
+		- return hosts on which services are not running
+
 	'''
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
 	cmdStr = 'service ' + serviceName +' ' + command
-	if command not in ['status','stop','start']:
+	if command not in ['status','stop','start','force-start']:
 		print "Command "+ command +" unsupported!"
 		exit()
 	try:
 		output = client.run_command(cmdStr, sudo=True)
 		for host in output:
 			for line in output[host]['stdout']:
-				print line
+				#print line
 				if 'not' in line:
-					print "Service " + serviceName+" is not Runnning."
+					print "Service " + serviceName+" is not Runnning on host " + host
 				elif 'unrecognized' in line:
-					print "Service " + serviceName + " is unrecognized."
+					print "Service " + serviceName + " is unrecognized on host " + host
 				elif 'running' in line:
 					sline = line.split()
-					print "Service " + serviceName + " is running as process " +str(sline[3])
+					slineLength = len(sline)
+					print "Service " + serviceName + " is running as process " +str(sline[slineLength-1]) + " on host " + host
 				elif 'started' in line:
-					print "Service " + serviceName+" has started Runnning."
+					print "Service " + serviceName+" has started Runnning on host " + host
+				else:
+					print "Unknown output!"
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
 
@@ -192,11 +198,13 @@ def hostsScan(hostlist):
 			
 def nmapScan(hostlist, port=22):
 	'''
-	Takes a list of hosts and checks port 22 ssh status.
+	Takes a list of hosts and checks port 22 (default) ssh status.
 	If Host does not exist it returns an exception.
 	Use hostsScan() before to generate clean hosts list.
 
-	TODO: lots
+	TODO:
+	- identify OS 
+	- lots
 	'''
 	for host in hostlist:
 		nm = nmap.PortScanner() #instantiate nmap.Scanner object
@@ -228,6 +236,9 @@ def nmapScan(hostlist, port=22):
 				for port in lport:
 					print('port : %s\tstate : %s' % (port, nm[host][proto][port]['state']))
 
+def checkSetup():
+	print "Check the logging remote setup"
+
 def tests():
 	client = ParallelSSHClient(['109.231.126.221','109.231.126.222'], user='ubuntu',password='rexmundi220')
 	#create path to file
@@ -245,16 +256,16 @@ def tests():
 
 if __name__=='__main__':
 	hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221',
-	'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','10.10.10.10']
+	'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146']
 	#,host,'109.231.126.222','109.231.126.221','109.231.126.94',
 	#'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.145'
 	userName = 'ubuntu'
 	uPassword = 'rexmundi220'
 	#installCollectd(hostlist,userName,uPassword)
 	#installLogstashForwarder(hostlist,userName,uPassword)
-	#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','start')
+	serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
 
-	nmapScan(hostlist)
+	#nmapScan(hostlist)
 
 	# #----------------------------------------------------
 	# good, bad = hostsScan(hostlist)
