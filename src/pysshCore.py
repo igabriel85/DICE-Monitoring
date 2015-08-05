@@ -18,6 +18,7 @@ limitations under the License.
 '''
 from pssh import *
 import os.path
+import nmap
 
 
 #folder locations
@@ -137,6 +138,96 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 # except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 # 	print "Stff"
 
+
+def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
+	'''
+		Checks the status of aservice on remote servers.
+		Only supported commands are start, stop, status
+
+		TODO: Some bugs in starting services
+	'''
+	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	cmdStr = 'service ' + serviceName +' ' + command
+	if command not in ['status','stop','start']:
+		print "Command "+ command +" unsupported!"
+		exit()
+	try:
+		output = client.run_command(cmdStr, sudo=True)
+		for host in output:
+			for line in output[host]['stdout']:
+				print line
+				if 'not' in line:
+					print "Service " + serviceName+" is not Runnning."
+				elif 'unrecognized' in line:
+					print "Service " + serviceName + " is unrecognized."
+				elif 'running' in line:
+					sline = line.split()
+					print "Service " + serviceName + " is running as process " +str(sline[3])
+				elif 'started' in line:
+					print "Service " + serviceName+" has started Runnning."
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured!"
+
+
+def hostsScan(hostlist):
+	'''
+		Gets the list of hosts an checks which ones are up.
+		It then removes the ones that are down. 
+		It returns hostlist, badHosts
+	'''
+	badHosts = []
+	for host in hostlist:
+		response = os.system( "ping -c 1 " + host)
+		if response == 0:
+			print host, 'is up!'
+		else:
+			print host, 'is down!'
+			# add to badHost list
+			badHosts.append(host)
+			print badHosts
+	#remove from host list
+	hostlist.remove(host)
+	print hostlist
+	return hostlist, badHosts
+			
+def nmapScan(hostlist, port=22):
+	'''
+	Takes a list of hosts and checks port 22 ssh status.
+	If Host does not exist it returns an exception.
+	Use hostsScan() before to generate clean hosts list.
+
+	TODO: lots
+	'''
+	for host in hostlist:
+		nm = nmap.PortScanner() #instantiate nmap.Scanner object
+		nm.scan(host,str(port))
+		nm.command_line()
+		nm.scaninfo()
+		nm.all_hosts()
+		nm[host].hostname()          # get hostname for host 127.0.0.1
+		nm[host].state()             # get state of host 127.0.0.1 (up|down|unknown|skipped)
+		nm[host].all_protocols()     # get all scanned protocols ['tcp', 'udp'] in (ip|tcp|udp|sctp
+		nm[host]['tcp'].keys()       # get all ports for tcp protocol
+		nm[host].all_tcp()           # get all ports for tcp protocol (sorted version)
+		nm[host].all_udp()           # get all ports for udp protocol (sorted version)
+		nm[host].all_ip()            # get all ports for ip protocol (sorted version)
+		nm[host].all_sctp()          # get all ports for sctp protocol (sorted version)
+		nm[host].has_tcp(port)         # is there any information for port 22/tcp on host 127.0.0.1
+		nm[host]['tcp'][port]          # get infos about port 22 in tcp on host 127.0.0.1
+		nm[host].tcp(port)             # get infos about port 22 in tcp on host 127.0.0.1
+		nm[host]['tcp'][port]['state'] 
+		for host in nm.all_hosts():
+			print('----------------------------------------------------')
+			print('Host : %s (%s)' % (host, nm[host].hostname()))
+			print('State : %s' % nm[host].state())
+			for proto in nm[host].all_protocols():
+				print('----------')
+				print('Protocol : %s' % proto)
+				lport = nm[host][proto].keys()
+				lport.sort()
+				for port in lport:
+					print('port : %s\tstate : %s' % (port, nm[host][proto][port]['state']))
+
 def tests():
 	client = ParallelSSHClient(['109.231.126.221','109.231.126.222'], user='ubuntu',password='rexmundi220')
 	#create path to file
@@ -153,12 +244,21 @@ def tests():
 
 
 if __name__=='__main__':
-	hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.94',
-	'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146']
-	#,'109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.94',
+	hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221',
+	'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','10.10.10.10']
+	#,host,'109.231.126.222','109.231.126.221','109.231.126.94',
 	#'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.145'
 	userName = 'ubuntu'
 	uPassword = 'rexmundi220'
 	#installCollectd(hostlist,userName,uPassword)
-	installLogstashForwarder(hostlist,userName,uPassword)
+	#installLogstashForwarder(hostlist,userName,uPassword)
+	#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','start')
+
+	nmapScan(hostlist)
+
+	# #----------------------------------------------------
+	# good, bad = hostsScan(hostlist)
+	# print 'These are the good hosts '+str(good)
+	# print 'These are the bad hosts ', str(bad)
+	# #----------------------------------------------------
 	#tests()
