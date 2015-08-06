@@ -192,8 +192,8 @@ def hostsScan(hostlist):
 			# add to badHost list
 			badHosts.append(host)
 			print badHosts
-	#remove from host list
-	hostlist.remove(host)
+			#remove from host list
+			hostlist.remove(host)
 	print hostlist
 	return hostlist, badHosts
 			
