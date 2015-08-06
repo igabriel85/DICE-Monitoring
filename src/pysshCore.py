@@ -183,6 +183,7 @@ def hostsScan(hostlist):
 		It returns hostlist, badHosts
 	'''
 	badHosts = []
+	
 	for host in hostlist:
 		response = os.system( "ping -c 1 " + host)
 		if response == 0:
@@ -191,11 +192,9 @@ def hostsScan(hostlist):
 			print host, 'is down!'
 			# add to badHost list
 			badHosts.append(host)
-			print badHosts
-			#remove from host list
-			hostlist.remove(host)
-	print hostlist
-	return hostlist, badHosts
+	#crate goodHosts list
+	goodHosts = [x for x in hostlist if x not in badHosts] 
+	return goodHosts, badHosts
 			
 def nmapScan(hostlist, port=22):
 	'''
@@ -344,23 +343,23 @@ def main(argv):
 
 if __name__=='__main__':
 	if len(sys.argv) == 1:
-		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221',
-		'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.157']
-		#,host,'109.231.126.222','109.231.126.221','109.231.126.94',
-		#'109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136','109.231.126.146','109.231.126.145'
-		userName = 'ubuntu'
-		uPassword = 'rexmundi220'
+		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
+		'109.231.126.146','109.231.126.157','10.10.10.10','10.10.10.13']
+		
+		
+		userName = 'na'
+		uPassword = 'na'
 		#installCollectd(hostlist,userName,uPassword)
 		#installLogstashForwarder(hostlist,userName,uPassword)
 		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
 
-		nmapScan(hostlist)
+		#nmapScan(hostlist)
 		
 		# #----------------------------------------------------
-		# good, bad = hostsScan(hostlist)
-		# print 'These are the good hosts '+str(good)
-		# print 'These are the bad hosts ', str(bad)
-		# #----------------------------------------------------
+		good, bad = hostsScan(hostlist)
+		print 'These are the good hosts '+str(good)
+		print 'These are the bad hosts ', str(bad)
+		#----------------------------------------------------
 		#tests(hostlist)
 	else:
 		main(sys.argv[1:])
