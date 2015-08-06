@@ -16,12 +16,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-
+import getopt
+import inspect
+import logging
+import sys
+import textwrap
 from cm_api.api_client import ApiResource
 
-cmHost = "109.231.126.94"
 
-def getcdhMStatus(cmHost,port=7180 ,cmuser='admin',cmpass='admin'):
+
+def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin'):
 	'''
 		This function returns the current hosts managed by a particular Cloudera Manager Instance.
 		It also lists the available Clusters and the services running on each cluster.
@@ -31,7 +35,7 @@ def getcdhMStatus(cmHost,port=7180 ,cmuser='admin',cmpass='admin'):
 	cmHosts = []
 	cmClusters = []
 	dictCluster = {}
-	api=ApiResource(cmHost,7180,cmuser,cmpass)
+	api=ApiResource(cmdHost,7180,cmuser,cmpass)
 	#print all hosts
 	for h in api.get_all_hosts():
 		cmHosts.append(h.hostname)
@@ -49,9 +53,31 @@ def getcdhMStatus(cmHost,port=7180 ,cmuser='admin',cmpass='admin'):
 
 
 
-#test for 
-a,b,c = getcdhMStatus(cmHost)
+def getHostRoles(api, hosts):
+	for role_ref in hosts.roleRefs:
+		if role_ref.get('clusterName') is None:
+			continue
 
-print a
-print b
-print c 
+		role = api.get_cluster(role_ref['clusterName']).get_service(role_ref['serviceName']).get_role(role_ref['roleName'])
+		LOG.debug("Eval %s (%s)" % (role.name, host.hostname))
+
+
+
+
+
+#test for 
+
+
+if __name__=='__main__':
+	cmdHost = "hal720m.info.uvt.ro"
+
+	api = ApiResource(cmdHost, "admin", "admin")
+	#%--------------------------%
+	a,b,c = getcdhMStatus(cmdHost)
+	print a
+	print b
+	print c 
+
+	getHostRoles(api,a)
+
+	#%--------------------------%
