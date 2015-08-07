@@ -1,7 +1,7 @@
 from datetime import datetime
 from elasticsearch import Elasticsearch
 
-es = Elasticsearch('<IP-Here>')
+es = Elasticsearch('<ES-Endpoint>')
 
 
 #body got from request tab in kibana
@@ -72,7 +72,62 @@ body = {
   ]
 }
 
-res = es.search(index="logstash-*",body=body)
+
+testServiceType = {
+  "size": 500,
+  "sort": {
+    "@timestamp": "desc"
+  },
+  "query": {
+    "filtered": {
+      "query": {
+        "query_string": {
+          "query": "hostname:\"dice.cdh5.s2.internal\" AND serviceType:\"yarn\" ",
+          "analyze_wildcard": True
+        }
+      },
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "@timestamp": {
+                  "gte": 1438939155342,
+                  "lte": 1438940055342
+                }
+              }
+            }
+          ],
+          "must_not": []
+        }
+      }
+    }
+  },
+  "fields": [
+    "*",
+    "_source"
+  ],
+  "script_fields": {},
+  "fielddata_fields": [
+    "@timestamp"
+  ]
+}
+
+
+#these are the metrics listed in the response JSON under "_source"
+metrics = ['message','type','@timestamp','host','job_id','hostname','AvailableVCores']
+
+res = es.search(index="logstash-*",body=testServiceType)
 print("%d documents found" % res['hits']['total'])
 for doc in res['hits']['hits']:
-	print("%s) %s" % (doc['_id'], doc['_source']['type']))
+  for met in metrics:
+    #prints the values of the metrics defined in the metrics list
+    print("%s) %s" % (doc['_id'], doc['_source'][met]))
+
+
+# def queryESCore(es,body,index="logstash-*"):
+#   res = es.search(index,body)
+#   print("%d documents found" % res['hits']['total'])
+#   for doc in res['hits']['hits']:
+#     print("%s) %s" % (doc['_id'], doc['_source']['AvailableVCores']))
+

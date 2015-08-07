@@ -19,6 +19,7 @@ limitations under the License.
 from pssh import *
 import os.path
 import nmap
+import datetime
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 confDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
@@ -92,6 +93,31 @@ for host in hosts:
 		print host, 'is up!'
 	else:
 		print host, 'is down!'
+
+
+
+
+									#1438946162
+									#1438900439450
+									#1438889639000
+#last three digits can be sliced of of timestamp (represents millis)
+# from 1438900439450 to 1438900439
+
+#%-------------------------------------------------------------------------------%
+timeStp = 1438900439450
+value = datetime.datetime.utcfromtimestamp(float(str(timeStp)[0:-3]))
+print value.strftime('%Y-%m-%d %H:%M:%S')
+
+#or /1000. to force floating point division
+value2 = datetime.datetime.utcfromtimestamp(timeStp/1000.)
+#use  strftime/strptime macro %f for microseconds
+print value2.strftime('%Y-%m-%d %H:%M:%S.%f')
+print value2.microsecond
+
+#get current time NOT milis
+dt = datetime.datetime.now()
+print dt.strftime("%s")
+#%-------------------------------------------------------------------------------%
 
 
 

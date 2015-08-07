@@ -21,6 +21,7 @@ import inspect
 import logging
 import sys
 import textwrap
+import copy
 from cm_api.api_client import ApiResource
 
 
@@ -34,7 +35,7 @@ def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin'):
 	'''
 	cmHosts = []
 	cmClusters = []
-	dictCluster = {}
+	dictClusterServices = {}
 	api=ApiResource(cmdHost,7180,cmuser,cmpass)
 	#print all hosts
 	for h in api.get_all_hosts():
@@ -48,8 +49,38 @@ def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin'):
 		serviceList = []
 		for s in api.get_cluster('cluster').get_all_services():
 			serviceList.append(s.name)
-		dictCluster[cluster] = serviceList
-	return cmHosts, cmClusters, dictCluster
+			print s.name, s.serviceState, s.healthSummary, s.serviceUrl
+		dictClusterServices[cluster] = serviceList
+	return cmHosts, cmClusters, dictClusterServices
+
+
+def getClusterList(api):
+	'''
+	 Function returns the object list of current clusters managed by the cm
+
+	 Takes as input an api client of the form:
+
+	 api = ApiResource(cm_host, username='admin',password='password')
+	'''
+	clusterList =[]
+	for cluster in api.get_all_clusters():
+		#appends only cluster name use cluster.name
+		clusterList.append(cluster)
+	return clusterList
+
+
+def getServiceList(api):
+	'''
+		Returns a dictionary of objects that contains the current cluster and the associated 
+		services.
+	'''
+	dictCluster = {}
+	for c in getClusterList(api):
+		serviceList = []
+		for s in c.get_all_services():
+			serviceList.append(s)
+		dictCluster[c]=serviceList
+	return dictCluster
 
 
 
@@ -69,15 +100,23 @@ def getHostRoles(api, hosts):
 
 
 if __name__=='__main__':
-	cmdHost = "hal720m.info.uvt.ro"
+	cmdHost = "109.231.126.94"
 
-	api = ApiResource(cmdHost, "admin", "admin")
+	api = ApiResource(cmdHost,7180, "admin", "admin")
+
+
+	cluster =  getClusterList(api)
+	print cluster[0]
+	test = getServiceList(api)
+
+	print test[cluster[0]]	
+	
 	#%--------------------------%
-	a,b,c = getcdhMStatus(cmdHost)
-	print a
-	print b
-	print c 
+	# a,b,c = getcdhMStatus(cmdHost,7180, "admin","rexmundi220")
+	# print a
+	# print b
+	# print c 
 
-	getHostRoles(api,a)
+	#getHostRoles(api,a)
 
 	#%--------------------------%
