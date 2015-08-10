@@ -3,7 +3,7 @@ from elasticsearch import Elasticsearch
 import csv
 import unicodedata
 import os
-import sys
+import sys, getopt
 
 
 #ouptu dir location
@@ -154,15 +154,42 @@ def dict2CSV(ListValues,fileName="output"):
 
 
 
-
-
-      
+def main(argv):
+  try:
+    opts, args=getopt.getopt(argv,"hd")
+  except getopt.GetoptError:
+    print "%-------------------------------------------------------------------------------------------%"
+    print "Invalid argument! Arguments must take the form:"
+    print ""
+    print "pyESController.py {-h| -d}"
+    print ""
+    print "%-------------------------------------------------------------------------------------------%"
+    sys.exit(2)
+  for opt, arg in opts:
+      if opt == '-h':
+        print "%-------------------------------------------------------------------------------------------%"
+        print ""
+        print "pyESController is desigend to facilitate the querying of ElasticSearch Monitoring Core."
+        print "Only two arguments are currently supported: -h for help or -d for debug mode"
+        print "Usage Example:"
+        print "pyESController.py {-h|-d}"
+        print "                                                                                              "
+        print "%-------------------------------------------------------------------------------------------%"
+        sys.exit()
+      elif opt in ("-d"):
+        testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
+        metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
+        test = queryESCore(testQuery, debug=True)
+        dict2CSV(test)
 
 if __name__=='__main__':
-  if len(sys.argv) == 1:#Elastic search endpoint
-    es = Elasticsearch('109.231.126.38')
+  #ElasticSearch object that defines the endpoint
+  es = Elasticsearch('109.231.126.38')
+  if len(sys.argv) == 1: # only for development
     testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
     metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
-    test = queryESCore(testQuery, debug=True)
+    test = queryESCore(testQuery, debug=False)
     dict2CSV(test)
     #queryESCoreCSV(test, True)
+  else:
+    main(sys.argv[1:])

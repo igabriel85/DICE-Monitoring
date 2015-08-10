@@ -26,12 +26,13 @@ from cm_api.api_client import ApiResource
 
 
 
-def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin'):
+def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin',list=True):
 	'''
 		This function returns the current hosts managed by a particular Cloudera Manager Instance.
 		It also lists the available Clusters and the services running on each cluster.
 
-		TODO: ...
+		TODO:
+		- return object instead of values(string, int ... etc)
 	'''
 	cmHosts = []
 	cmClusters = []
@@ -39,11 +40,20 @@ def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin'):
 	api=ApiResource(cmdHost,7180,cmuser,cmpass)
 	#print all hosts
 	for h in api.get_all_hosts():
-		cmHosts.append(h.hostname)
-	
+		if list == True:
+			#append only h.hostname string not object
+			cmHosts.append(h.hostname)
+		else:
+			#append host object h
+			cmHosts.append(h)
 	#get all  cluster names
 	for c in api.get_all_clusters():
-		cmClusters.append(c.name)
+		if list == True:
+			#same as host name
+			cmClusters.append(c.name)
+		else:
+			#same as host name
+			cmClusters.append(c)
 		
 	for cluster in cmClusters:
 		serviceList = []
@@ -85,13 +95,20 @@ def getServiceList(api):
 
 
 def getHostRoles(api, hosts):
-	for role_ref in hosts.roleRefs:
-		if role_ref.get('clusterName') is None:
-			continue
+	for host in hosts:
+		for role_ref in host.roleRefs:
+			if role_ref.get('clusterName') is None:
+				continue
 
-		role = api.get_cluster(role_ref['clusterName']).get_service(role_ref['serviceName']).get_role(role_ref['roleName'])
-		LOG.debug("Eval %s (%s)" % (role.name, host.hostname))
+			role = api.get_cluster(role_ref['clusterName']).get_service(role_ref['serviceName']).get_role(role_ref['roleName'])
+			LOG.debug("Eval %s (%s)" % (role.name, host.hostname))
 
+			if role.type == "DATANODE":
+				print "Found DATANODE"
+			elif role.type == 'KAFKA':
+				print "Found KAFKA"
+			else:
+				continue
 
 
 
@@ -105,18 +122,18 @@ if __name__=='__main__':
 	api = ApiResource(cmdHost,7180, "admin", "admin")
 
 
-	cluster =  getClusterList(api)
-	print cluster[0]
-	test = getServiceList(api)
+	# cluster =  getClusterList(api)
+	# print cluster[0]
+	# test = getServiceList(api)
 
-	print test[cluster[0]]	
+	# print test[cluster[0]]	
 	
 	#%--------------------------%
-	# a,b,c = getcdhMStatus(cmdHost,7180, "admin","rexmundi220")
-	# print a
-	# print b
-	# print c 
+	a,b,c = getcdhMStatus(cmdHost,7180, "admin","rexmundi220",False)
+	print a
+	#print b
+	#print c 
 
-	#getHostRoles(api,a)
+	getHostRoles(api,a)
 
 	#%--------------------------%
