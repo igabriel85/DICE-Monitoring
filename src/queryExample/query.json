@@ -1,0 +1,42 @@
+
+#body got from request tab in kibana
+
+testServiceType = {
+  "size": 500,  #this is the number of rows to return from the query... to get all queries, run script, see total number of hits, then set euqual to number >= total hits
+  "sort": {
+    "@timestamp": "desc"
+  },
+  "query": {
+    "filtered": {
+      "query": {
+        "query_string": {
+          "query": "hostname:\"dice.cdh5.s2.internal\" AND serviceType:\"yarn\"",
+          "analyze_wildcard": True
+        }
+      },
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "@timestamp": {
+                  "gte": 1438939155342,
+                  "lte": 1438940055342
+                }
+              }
+            }
+          ],
+          "must_not": []
+        }
+      }
+    }
+  },
+  "fields": [
+    "*",
+    "_source"
+  ],
+  "script_fields": {},
+  "fielddata_fields": [
+    "@timestamp"
+  ]
+}
