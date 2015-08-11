@@ -26,18 +26,23 @@ from cm_api.api_client import ApiResource
 
 
 
-def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin',list=True):
+def getcdhMStatus(api,list=True):
 	'''
-		This function returns the current hosts managed by a particular Cloudera Manager Instance.
-		It also lists the available Clusters and the services running on each cluster.
+		This function returns a host list, cluster list and a dictionary containing
+		each service running per cluster.
 
+		The function arguments are:
+		api  -> ApiResource object
+		list -> if set to False it returns host, cluster and service objects.
+			 -> if set to True it return only host, cluster and service names
+		
 		TODO:
-		- return object instead of values(string, int ... etc)
+		- probably should remove dictClusterService from return, 
+		  as cluster object is not iterable
 	'''
 	cmHosts = []
 	cmClusters = []
 	dictClusterServices = {}
-	api=ApiResource(cmdHost,7180,cmuser,cmpass)
 	#print all hosts
 	for h in api.get_all_hosts():
 		if list == True:
@@ -59,7 +64,7 @@ def getcdhMStatus(cmdHost,port=7180 ,cmuser='admin',cmpass='admin',list=True):
 		serviceList = []
 		for s in api.get_cluster('cluster').get_all_services():
 			serviceList.append(s.name)
-			print s.name, s.serviceState, s.healthSummary, s.serviceUrl
+			#print s.name, s.serviceState, s.healthSummary, s.serviceUrl
 		dictClusterServices[cluster] = serviceList
 	return cmHosts, cmClusters, dictClusterServices
 
@@ -74,66 +79,170 @@ def getClusterList(api):
 	'''
 	clusterList =[]
 	for cluster in api.get_all_clusters():
-		#appends only cluster name use cluster.name
+		#appends only cluster object
 		clusterList.append(cluster)
 	return clusterList
 
 
-def getServiceList(api):
+def getServiceList(api, clusterObj):
 	'''
-		Returns a dictionary of objects that contains the current cluster and the associated 
-		services.
+		Function that returns a list of service object of a given cluster object.
+		It also returns a dictionary that contains information aboutthe services such as:
+		service state, health, and URL.
+
+		It has the following arguments:
+		api 	   -> ApiResource object 
+		clusterObj -> a cluster object
+
 	'''
-	dictCluster = {}
-	for c in getClusterList(api):
-		serviceList = []
-		for s in c.get_all_services():
-			serviceList.append(s)
-		dictCluster[c]=serviceList
-	return dictCluster
+	serviceList = []
+	serviceListInfo={}
+	for s in clusterObj.get_all_services():
+		serviceInfo={}
+		serviceList.append(s)
+		serviceInfo.update({"ServiceStatus":s.serviceState})
+		serviceInfo.update({"ServiceHealth":s.healthSummary})
+		serviceInfo.update({"ServiceUrl":s.serviceUrl})
+		serviceListInfo[s.name] = serviceInfo
+	return serviceList, serviceListInfo
 
 
+def getServiceStatus(serviceList):
+	'''
+		Function receives a list of service objects as argument and prints
+		the service name, state, health and URL as well as performing a health
+		check on all services printing the current summary.
 
-def getHostRoles(api, hosts):
-	for host in hosts:
-		for role_ref in host.roleRefs:
-			if role_ref.get('clusterName') is None:
-				continue
-
-			role = api.get_cluster(role_ref['clusterName']).get_service(role_ref['serviceName']).get_role(role_ref['roleName'])
-			LOG.debug("Eval %s (%s)" % (role.name, host.hostname))
-
-			if role.type == "DATANODE":
-				print "Found DATANODE"
-			elif role.type == 'KAFKA':
-				print "Found KAFKA"
-			else:
-				continue
+		The function argumetns are:
+		serviceList  -> list of service objects
+	'''
+	for s in serviceList:
+		print s.name, s.serviceState, s.healthSummary, s.serviceUrl
+		for chk in s.healthChecks:
+			print "%s --- %s" % (chk['name'], chk['summary'])
 
 
+def getRoles(serviceList, stdOut=False):
+	'''
+		Function returns a dictionary containing service role information such as:
+		role type, state, health, reference  and reference id.
+
+		The function arguments are:
+		serviceList   ->  list of service objects
+		stdOut		  ->  if True enables debug messages
+					  ->  default is False
+	'''
+	dictRoles = {}
+	for s in serviceList:
+		print s
+		for r in s.get_all_roles():
+			roleList = {}
+			roleList["type"]={r.type}
+			roleList["RoleState"]={r.roleState}
+			roleList["RoleHealth"]={r.healthSummary}
+			roleList["HostRef"]={r.hostRef}
+			roleList["HostRefID"]={r.hostRef.hostId}
+			dictRoles[s]=roleList
+			if stdOut == True:
+				print "%---------------------------------------------------------%"
+				print "Role name: %s\nState: %s\nHealth: %s\nHostRef %s\nHost: %s" % (r.name, r.roleState, r.healthSummary, r.hostRef, r.hostRef.hostId)
+				print "%---------------------------------------------------------%"
+	return dictRoles
+			
+
+def getHostRoles(api, hostsObjList):
+	print hosts
+	#for h in hosts:
+		#print h.hostname
+		#print h.roleRefs
+
+	#print hosts[0].get_all_roles()
+	# for host in hosts:
+	# 	print host.roleRefs
+	# 	for role_ref in host.roleRefs:
+	# 		if role_ref.get('clusterName') is None:
+	# 			continue
+
+	# 		role = api.get_cluster(role_ref['clusterName']).get_service(role_ref['serviceName']).get_role(role_ref['roleName'])
+	# 		LOG.debug("Eval %s (%s)" % (role.name, host.hostname))
+
+		# 	if role.type == "DATANODE":
+		# 		print "Found DATANODE"
+		# 	elif role.type == 'KAFKA':
+		# 		print "Found KAFKA"
+		# 	else:
+		# 		continue
 
 
-#test for 
-
+def main(argv):
+  try:
+    opts, args=getopt.getopt(argv,"hdi:p:u:s:",["hostEndpoint","port","user","password"])
+  except getopt.GetoptError:
+    print "%-------------------------------------------------------------------------------------------%"
+    print "Invalid argument! Arguments must take the form:"
+    print ""
+    print "pycmaController.py { -h|-d|-i <CM_IP> -p <PORT> -u <USERNAME> -s <PASSWORD>}"
+    print ""
+    print "%-------------------------------------------------------------------------------------------%"
+    sys.exit(2)
+  for opt, arg in opts:
+      if opt == '-h':
+        print "%-------------------------------------------------------------------------------------------%"
+        print ""
+        print "pycmaController is desigend to facilitate the querying Cloudera Manager Current deployment Status."
+        print "It currently supports 6 arguments: -h for help or -d for debug mode"
+        print "-h -> help"
+        print "-d -> debug mode"
+        print "-i -> is used to specify Cloudera Management endpoint IP address"
+        print "	  -> -i <CM-IP>"
+        print "-p -> is used to specify the Cloudera Manager port"
+        print "   -> by default it is set to 7180"
+        print "-u -> is used to specify the Cloudera Manager username"
+        print "	  -> -u <USERNAME>"
+        print "-s -> is used to specify the Cloudera Manager password"
+        print "	  -> -s <PASSWORD>"
+        print "Usage Example:"
+        print "pycmaController.py {-h|-d}"
+        print "                                                                                              "
+        print "%-------------------------------------------------------------------------------------------%"
+        sys.exit()
+      elif opt in ("-d"):
+      	print "Entering DebugMode"
 
 if __name__=='__main__':
-	cmdHost = "109.231.126.94"
+	if len(sys.argv) == 1:
+		cmdHost = "109.231.126.94"
+		api = ApiResource(cmdHost,7180, "admin", "admin")
 
-	api = ApiResource(cmdHost,7180, "admin", "admin")
+		#%--------------------------%
+		#getClusterList() usecase
+		# clist = getClusterList(api)
+		# for c in clist:
+		# 	print c.name
+		#%--------------------------%
 
+		#%--------------------------%
+		#getCDHMStatus usecase
+		hosts,clusters,clusterServices = getcdhMStatus(api,False)
+		#print hosts
+		#print clusters
+		#print clusterServices
+		#%--------------------------%
+		#getServiceList usecase
+		for c in clusters:
+			cluster_services, cluster_service_vb= getServiceList(api, c)
+			#print cluster_services
+			#print cluster_service_vb
+			getServiceStatus(cluster_services)
+			for s in cluster_services:
+				#print s.name, s.serviceState
+				print s.get_all_roles()
+				
 
-	# cluster =  getClusterList(api)
-	# print cluster[0]
-	# test = getServiceList(api)
+		#%--------------------------%
+		#print getRoles(cluster_services, stdOut = True)
+		#getHostRoles(api,hosts)
 
-	# print test[cluster[0]]	
-	
-	#%--------------------------%
-	a,b,c = getcdhMStatus(cmdHost,7180, "admin","rexmundi220",False)
-	print a
-	#print b
-	#print c 
-
-	getHostRoles(api,a)
-
-	#%--------------------------%
+		#%--------------------------%
+	else:
+		main(sys.argv[1:])
