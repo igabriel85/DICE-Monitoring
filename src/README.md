@@ -145,3 +145,21 @@ Returns information on the services running on a given node.
 }
 ```
 
+`POST` `/v1/observer/query/{CSV/JSON/Plain}`
+
+Returns the required metrics in csv, json or plain format.
+
+Input:
+```json
+{
+  "DMON":{
+    "query":{
+      "size":"<SIZEinINT>",
+      "ordering":"<asc|desc>",
+      "queryString":"<query>",
+      "tstart":"<startDate>",
+      "tstop":"<stopDate>"
+    }
+  }
+}
+```
