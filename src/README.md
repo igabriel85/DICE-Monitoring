@@ -9,3 +9,25 @@ It is designed for:
 
 
 ##Structure
+
+
+something
+
+```
+something
+```
+
+
+`GET` `/resource/someting`
+ 
+```json
+{
+  "Gateways": [
+    "gatewayHTTP", 
+    "gatewayTCP", 
+    "gatewayHTTPS" 
+  ]
+}
+```
+
+
