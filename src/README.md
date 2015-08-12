@@ -1,14 +1,25 @@
-# pyDMON is a web service that is used for the DICE Monitoring Platform.
+# pyDMON - DICE Monitoring Platform
+
+It is designed as a web service that serves as the main interface (REST API) and controlling agent for the other monitoring components.
+These components include:
+* ElasticsSearch
+* Logstash Server
+* kibana
+* collectd
+* logstash-forwarder
+*etc
 
 It is designed for:
 * **first design choice** - something
 
+**TODO**
 
 ##Change Log
 * TODO
 
 
-##Structure
+##REST API Structure
+
 
 
 something
