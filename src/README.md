@@ -35,18 +35,113 @@ something
 ```
 something
 ```
+### Overlord
+`GET` `/v1/overlord/core/status`
 
-
-`GET` `/resource/someting`
- 
+Returns the current status of the Monitoring platform status.
 ```json
 {
-  "Gateways": [
-    "gatewayHTTP", 
-    "gatewayTCP", 
-    "gatewayHTTPS" 
-  ]
+  "DMON":{
+    "ElasticSearch":{
+      "Status":"<HTTP_CODE>",
+      "Name":"<NAME>",
+      "ClusterName":"<CLUSTER_NAME>",
+      "version":{
+        "number":"<ES_VERSION>",
+        "BuildHash":"<HASH>",
+        "BuildTimestamp":"<TIMESTAMP>",
+        "BuildSnapshot":"<BOOL>",
+        "LuceneVersion":"<LC_VERSION>"
+      },
+      "Logstash":{
+        "Status":"<HTTP_CODE>",
+        "Version":"<VNUMBER>"
+      },
+      "Kibana":{
+        "Status":"<HTTP_CODE>",
+        "Version":"<VNUMBER>"
+      }
+    }
+  }
 }
 ```
 
+`GET` `/v1/overlord/core/es/config`
+
+Returns the current configuration of ElasticSearch.
+
+**TODO** json structure.
+
+`GET` `/v1/overlord/ls/config`
+
+Returns the current configuration of LogstashServer
+
+**TODO** json structure.
+
+`GET` `/v1/overlord/core/kb/config`
+
+Returns the current configuration for Kibana
+
+**TODO** json structure.
+
+
+
+
+### Observer
+`GET` `/v1/observer/nodes`
+ 
+ Returns the current monitored nodes list.
+ 
+```json
+{
+  "DMON":{
+    "Nodes":[
+      {"<NodeFQDN1>":"NodeIP1"},
+      {"<NodeFQDN2>":"NodeIP2"},
+       .......................,
+      {"<NodeFQDNn>":"NodeIPn"}
+      ]
+  }
+}
+```
+
+`GET` `/v1/observer/nodes/{NodeFQDN}`
+
+Returns information of a particular monitored node.
+
+```json
+{
+  "DMON":{
+    "<NodeFQDN>":{
+      "Status":"<online|offline|unstable>",
+      "IP":"<NodeIP>",
+      "OS":"Operating_Systen",
+      "CDH":"<active|inactive|unknown>",
+      "CDHVersion":"<version>"
+    }
+  }
+}
+```
+
+`GET` `/v1/observer/nodes/{NodeFQDN}/services`
+
+Returns information on the services running on a given node.
+
+```json
+{
+  "DMON":{
+    "<NodeFQDN>":[
+      {
+        "ServiceName":"<ServiceName>",
+        "ServiceStatus":"<ServiceStatus>"
+      },
+          ..........................,
+      {
+        "ServiceName":"<ServiceName>",
+        "ServiceStatus":"<ServiceStatus>"
+      }
+      ]
+  }
+}
+```
 
