@@ -17,6 +17,8 @@ It is designed for:
 ##Change Log
 * TODO
 
+##Installation
+* TODO
 
 ##REST API Structure
 **NOTE:** This is a preliminary structure of the REST API. It may be subject to changes!
@@ -28,14 +30,13 @@ There are two main componets from this API:
 * Second, we have the interface used by other applications to query the DataWarehouse represented by ElasticSearch. This component is called **Observer**.
  * It is responsible for the returning of monitoring metrics in the form of: CSV, JSON, simple ouput. 
 
-
-
-something
-
-```
-something
-```
 ### Overlord
+
+The Overlord is structured into two components:
+* **Monitoring Core** represented by: ElasticSearch, LogstashServer and Kibana
+* **Monitoring Auxiliary** represented by: Collectd, logstash-forwarder
+
+#### Monitoring Core
 `GET` `/v1/overlord/core/status`
 
 Returns the current status of the Monitoring platform status.
@@ -85,7 +86,29 @@ Returns the current configuration for Kibana
 **TODO** json structure.
 
 
+`PUT` `/v1/overlord/core/es/config`
 
+Changes the current configuration of ElasticSearch.
+
+Input:
+**TODO** json structure.
+
+`PUT` `/v1/overlord/ls/config`
+
+Input:
+Changes the current configuration of LogstashServer
+
+**TODO** json structure.
+
+`PUT` `/v1/overlord/core/kb/config`
+
+Input:
+Changes the current configuration for Kibana
+
+**TODO** json structure.
+
+
+#### Monitoring auxiliary
 
 ### Observer
 `GET` `/v1/observer/nodes`
@@ -163,3 +186,28 @@ Input:
   }
 }
 ```
+
+Output depends on the option selected by the user: csv, json or Plain. 
+
+`POST` `/v1/observer/query/{NodeFQDN}/{CSV|JSON|Plain}`
+
+Returns the required metrics of a given node in csv, json or plain format.
+
+```json
+{
+  "DMON":{
+    "query":{
+      "size":"<SIZEinINT>",
+      "ordering":"<asc|desc>",
+      "serivceMetrics":[
+        "<m1>","<m2>",....,<mn>
+        ],
+      "tstart":"<startDate>",
+      "tstop":"<stopDate>"
+    }
+  }
+}
+```
+NOTE: The metrics must be in the form of a list.
+
+
