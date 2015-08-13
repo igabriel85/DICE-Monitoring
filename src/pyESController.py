@@ -1,3 +1,22 @@
+'''
+
+Copyright 2015, Institute e-Austria, Timisoara, Romania
+    http://www.ieat.ro/
+Developers:
+ * Gabriel Iuhasz, iuhasz.gabriel@info.uvt.ro
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+'''
+
 from datetime import datetime
 from elasticsearch import Elasticsearch
 import csv
@@ -126,7 +145,7 @@ def queryESCore(queryBody, all=True, dMetrics=[ ], debug=False, myIndex="logstas
         termValues.append(doc['_source'][terms])
         dictValues=dict(zip(termsList,termValues))
     ListMetrics.append(dictValues)
-  return ListMetrics
+  return ListMetrics, res
   
 
 def dict2CSV(ListValues,fileName="output"):
@@ -179,7 +198,7 @@ def main(argv):
       elif opt in ("-d"):
         testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
         metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
-        test = queryESCore(testQuery, debug=True)
+        test, test2 = queryESCore(testQuery, debug=True)
         dict2CSV(test)
 
 if __name__=='__main__':
@@ -188,8 +207,9 @@ if __name__=='__main__':
   if len(sys.argv) == 1: # only for development
     testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
     metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
-    test = queryESCore(testQuery, debug=False)
+    test, test2 = queryESCore(testQuery, debug=False)
     dict2CSV(test)
+    print test2
     #queryESCoreCSV(test, True)
   else:
     main(sys.argv[1:])
