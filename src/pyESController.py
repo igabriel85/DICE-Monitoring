@@ -28,6 +28,16 @@ import sys, getopt
 #ouptu dir location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 
+#Global es
+es = Elasticsearch('109.231.126.38')
+
+# class ESCoreInit:
+#   def __init__(self, IP):
+#     self.IP = IP
+#   def initialize(self,IP):
+#     self.
+
+
 def queryConstructor(tstart, tstop, queryString, size=500,ordering="desc"):
   '''
       Function generates a query string reprezented by a dictionary/json.
@@ -88,7 +98,7 @@ def queryConstructor(tstart, tstop, queryString, size=500,ordering="desc"):
   return queryBody
 
 
-def queryESCore(queryBody, all=True, dMetrics=[ ], debug=False, myIndex="logstash-*"):
+def queryESCore(queryBody, allm=True, dMetrics=[ ], debug=False, myIndex="logstash-*"):
   '''
       Function to query the Elasticsearch monitoring (ESM) core.
       It has the following arguments:
@@ -120,10 +130,10 @@ def queryESCore(queryBody, all=True, dMetrics=[ ], debug=False, myIndex="logstas
   termValues = []
   ListMetrics = []
   for doc in res['hits']['hits']:
-    if all == False:
+    if allm == False:
       if not dMetrics:
         sys.exit("dMetrics argument not set. Please supply valid list of metrics!")
-      for met in metrics:
+      for met in dMetrics:
       #prints the values of the metrics defined in the metrics list
         if debug == True:
           print "%---------------------------------------------------------%"
@@ -200,14 +210,16 @@ def main(argv):
         metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
         test, test2 = queryESCore(testQuery, debug=True)
         dict2CSV(test)
-
+def defineESCore(IP):
+  es = Elasticsearch(IP)
+  return es
 if __name__=='__main__':
   #ElasticSearch object that defines the endpoint
   es = Elasticsearch('109.231.126.38')
   if len(sys.argv) == 1: # only for development
     testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
-    metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
-    test, test2 = queryESCore(testQuery, debug=False)
+    metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
+    test, test2 = queryESCore(testQuery,allm=False,dMetrics= metrics,debug=False)
     dict2CSV(test)
     print test2
     #queryESCoreCSV(test, True)
