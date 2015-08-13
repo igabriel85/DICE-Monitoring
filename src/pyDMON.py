@@ -30,11 +30,16 @@ from flask import send_file
 from flask import send_from_directory
 import os
 import sys
+#DICE Imports
+from pyESController import *
+
 
 app = Flask("D-MON")
 api = Api(app, version='0.1', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
+
+
 
 #changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
 dmon = api.namespace('dmon', description='D-MON operations')
@@ -62,11 +67,14 @@ pQueryES = api.parser()
 
 #descripes universal json @api.marshal_with for return or @api.expect for payload model
 queryES = api.model('query details Model', {
-    'size': fields.Integer(required=False,default=500, description='Number of record'),
-    'ordering': fields.String(required=False,default='desc', description='Ordering of records'),
-    'queryString': fields.String(required=True,description='ElasticSearc Query'),
-    'tstart': fields.Integer(required=True,description='Start Date'),
-    'tstop': fields.Integer(required=True,description='Stop Date')
+	'fname': fields.String(required=False,default="output", description='Name of output file.'),
+    'size': fields.Integer(required=True,default=500, description='Number of record'),
+    'ordering': fields.String(required=True,default='desc', description='Ordering of records'),
+    'queryString': fields.String(required=True,default = "hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\""
+    	,description='ElasticSearc Query'),
+    'tstart': fields.Integer(required=True,default=1438939155342,description='Start Date'),
+    'tstop': fields.Integer(required=True,default=1438940055342,description='Stop Date'),
+    'metrics': fields.List(fields.String(required=False, default = ' ', description = 'Desired Metrics'))
 
 })
 #Nested JSON input 
@@ -75,7 +83,9 @@ dMONQuery = api.model('queryES Model',{
 	})
 
 
-
+# def abort_if_todo_doesnt_exist(todo_id):
+#     if todo_id not in TODOS:
+#         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
 
 @dmon.route('/v1/observer/query/<ftype>', endpoint='my-resource')
@@ -86,12 +96,51 @@ class queryEsCore(Resource):
 	@api.expect(dMONQuery)# this is for payload
 	def post(self, ftype):
 		#args = pQueryES.parse_args()#parsing query arguments in URI
-			
+		supportType = ["csv","json","plain"]
+		if ftype not in supportType:
+			response = jsonify({'Supported types':supportType, "Submitted Type":ftype })
+			response.status_code = 415
+			return response
 		if ftype == 'csv':
-			return request.json['DMON']['tstart']
-			#return "Hello"
-		else:
-			return {"Status":"What"}
+			query = queryConstructor(request.json['DMON']['tstart'],request.json['DMON']['tstop'],
+				request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
+			#return query
+			if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
+				ListMetrics, resJson = queryESCore(query, debug=False)
+				if not 'fname' in request.json['DMON']:
+					fileName = 'output'+'.csv'
+					dict2CSV(ListMetrics)
+				else:
+					fileName = request.json['DMON']['fname']+'.csv'
+					dict2CSV(ListMetrics,request.json['DMON']['fname'])
+
+				csvOut = os.path.join(outDir,fileName)
+				try:
+					csvfile=open(csvOut,'r')
+				except EnvironmentError:
+					response = jsonify({'EnvError':'file not found'})
+					response.status_code = 500
+					return response
+				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
+			else:
+				metrics = request.json['DMON']['metrics']
+				ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
+				#repeated from before create function
+				if not 'fname' in request.json['DMON']:
+					fileName = 'output'+'.csv'
+					dict2CSV(ListMetrics)
+				else:
+					fileName = request.json['DMON']['fname']+'.csv'
+					dict2CSV(ListMetrics,request.json['DMON']['fname'])
+
+				csvOut = os.path.join(outDir,fileName)
+				try:
+					csvfile=open(csvOut,'r')
+				except EnvironmentError:
+					response = jsonify({'EnvError':'file not found'})
+					response.status_code = 500
+					return response
+				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
 
 
 
@@ -101,11 +150,61 @@ class queryEsCore(Resource):
 
 
 
+"""
+Custom errot Handling
+
+"""	
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    response = jsonify({'error': 'forbidden'})
+    response.status_code = 403
+    return respons
+
+
+@app.errorhandler(404)
+def page_not_found(e):
+    response = jsonify({'error': 'not found'})
+    response.status_code = 404
+    return response
+   
+
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    response = jsonify({'error': 'internal server error'})
+    response.status_code = 500
+    return response
+   
+
+@app.errorhandler(405)
+def meth_not_allowed(e):
+	response=jsonify({'error':'method not allowed'})
+	response.status_code=405
+	return response
+
+@api.errorhandler(400)
+def bad_request(e):
+	response=jsonify({'error':'bad request'})
+	response.status_code=400
+	return response
+
+@app.errorhandler(415)
+def bad_mediatype(e):
+	response=jsonify({'error':'unsupported media type'})
+	response.status_code = 415
+	return response
 
 
 
-
+#109.231.126.38
 
 if __name__ == '__main__':
+	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 	#print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
+	# testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
+	# metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
+	# test, test2 = queryESCore(testQuery, debug=False)
+	# print >>sys.stderr, test2
 	app.run(debug=True)
