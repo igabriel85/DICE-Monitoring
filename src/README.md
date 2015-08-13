@@ -36,11 +36,20 @@ There are two main componets from this API:
 ### Overlord
 
 The Overlord is structured into two components:
+
 * **Monitoring Core** represented by: ElasticSearch, LogstashServer and Kibana
 * **Monitoring Auxiliary** represented by: Collectd, logstash-forwarder
 
 -
 #### Monitoring Core
+
+`GET` `/v1/overlord`
+
+Returns information regarding the current version of the Monitoring Platform.
+
+
+
+
 `GET` `/v1/overlord/core/status`
 
 Returns the current status of the Monitoring platform status.

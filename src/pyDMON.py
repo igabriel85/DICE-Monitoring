@@ -16,6 +16,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+#!flask/bin/python
+
 
 from flask.ext.restplus import Api, Resource, fields
 from flask import Flask, jsonify
@@ -46,23 +48,7 @@ dmon = api.namespace('dmon', description='D-MON operations')
 
 #argument parser
 pQueryES = api.parser() 
-
-
-
-#/v1/observer/query/ POST
-# {
-#   "DMON":{
-#     "query":{
-#       "size":"<SIZEinINT>",
-#       "ordering":"<asc|desc>",
-#       "queryString":"<query>",
-#       "tstart":"<startDate>",
-#       "tstop":"<stopDate>"
-#     }
-#   }
-# }
-
-
+#pQueryES.add_argument('task',type=str, required=True, help='The task details', location='form')
 
 
 #descripes universal json @api.marshal_with for return or @api.expect for payload model
@@ -87,10 +73,28 @@ dMONQuery = api.model('queryES Model',{
 #     if todo_id not in TODOS:
 #         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
+@dmon.route('/v1/observer/nodes')
+class NodesMonitored(Resource):
+	def get(self):
+		return "Nodes Monitored"
+
+
+@dmon.route('/v1/observer/nodes/<nodeFQDN>')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+class NodeStatus(Resource):
+	def get(self, nodeFQDN):
+		return "Node " + nodeFQDN +" status!"
+
+
+@dmon.route('/v1/observer/nodes/<nodeFQDN>/services')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+class NodeStatusServices(Resource):
+	def get(self,nodeFQDN):
+		return "Node " + nodeFQDN +" status of services!"		
 
 @dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
-class queryEsCore(Resource):
+class QueryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
 	#@api.marshal_with(dMONQuery) # this is for response
 	@api.expect(dMONQuery)# this is for payload
@@ -156,13 +160,116 @@ class queryEsCore(Resource):
 				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
 
 
+@dmon.route('/v1/overlord')
+class OverlordInfo(Resource):
+	def get(self):
+		return "Overlord Information"
+
+@dmon.route('/v1/overlord/core')
+class OverlordBootstrap(Resource):
+	def post(self):
+		return "Deploys all monitoring core components with default configuration"
+
+@dmon.route('/v1/overlord/core/status')
+class OverlordCoreStatus(Resource):
+	def get(self):
+		return "Monit Core Status!"
+
+@dmon.route('/v1/overlord/chef')
+class ChefClientStatus(Resource):
+	def get(self):
+		return "Monitoring Core Chef Client status"
+
+@dmon.route('/v1/overlord/nodes/chef')
+class ChefClientNodes(Resource):
+	def get(self):
+		return "Chef client status of monitored Nodes"
+
+
+@dmon.route('/v1/overlord/nodes')
+class MonitoredNodes(Resource):
+	def get(self):
+		return "Current monitored Nodes"
+
+	def post(self):
+		return "Submit Nodes for monitoring"
+
+
+@dmon.route('/v1/overlord/nodes/<nodeFQDN>')
+class MonitoredNodeInfo(Resource):
+	def get(self, nodeFQDN):
+		return "Return info of specific monitored node."
+
+	def put(self, nodeFQDN):
+		return "Change info of specific monitored node."
+
+@dmon.route('/v1/overlord/core/es/config')
+class ESCoreConfiguration(Resource):
+	def get(self):
+		return "Returns current configuration of ElasticSearch"
+
+	def put(self):
+		return "Changes configuration of ElasticSearch"
+
+@dmon.route('/v1/overlord/core/es')
+class ESCoreController(Resource):
+	def post(self):
+		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
+
+@dmon.route('/v1/overlord/core/kb/config')
+class KBCoreConfiguration(Resource):
+	def get(self):
+		return "Retruns Kibana current configuration"
+
+	def put(self):
+		return "Changes configuration of Kibana"
+
+@dmon.route('/v1/overlord/core/kb')
+class KKCoreController(Resource):
+	def post(self):
+		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Kibana"
+
+@dmon.route('/v1/overlord/core/ls/config')
+class LSCoreConfiguration(Resource):
+	def get(self):
+		return "Returns current logstash server configuration"
+
+	def put(self):
+		return "Changes configuration fo logstash server"
+
+@dmon.route('/v1/overlord/core/ls')
+class LSCoreController(Resource):
+	def post(self):
+		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Logstash Server"
 
 
 
+@dmon.route('/v1/overlord/aux')
+class AuxInfo(Resource):
+	def get(self):
+		return "Returns Information about AUX components"
 
 
+@dmon.route('/v1/overlord/aux/deploy')
+class AuxDeploy(Resource):
+	def get(self):
+		return "List of deployed aux monitoring components"
 
+	def post(self):
+		return "Deploy currently configured aux monitoring components"
 
+@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
+class AuxDeploySelective(Resource):
+	def post(self, auxComp, nodeFQDN):
+		return "Deploys auxiliary monitoring components on a node by node basis."
+
+@dmon.route('/v1/ocerlord/aux/<auxComp>/config')
+class AuxConfigSelective(Resource):
+	def get(self, auxComp):
+		return "Returns current configuration of aux components"
+
+	def put(self,auxComp):
+		return "Sets configuration of aux components use parameters (args) -unsafe"
 
 """
 Custom errot Handling
@@ -217,6 +324,12 @@ def bad_mediatype(e):
 if __name__ == '__main__':
 	#directory Location
 	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
+	tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+	cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
+	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
+	#app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'dmon.db')
+	#db.create_all()
+
 	#print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
 	# testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
 	# metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']

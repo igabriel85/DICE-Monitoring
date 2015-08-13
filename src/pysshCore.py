@@ -239,6 +239,19 @@ def nmapScan(hostlist, port=22):
 def checkSetup():
 	print "Check the logging remote setup"
 
+def deployOryx2():
+	'''
+	    Deploy Oryx2 on CDH
+	'''
+	print "Oryx2 Deploy"
+
+def startOryx2():
+	'''
+		Start Oryx2 Installation
+	'''
+	oryx2Deployment = {speedLayer:"",batchLayer:"",servingLayer:""}
+	print "Oryx2 Start"
+
 def tests(hostlist):
 	client = ParallelSSHClient(hostlist, user='ubuntu',password='rexmundi220')
 	#create path to file
