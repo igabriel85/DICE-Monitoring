@@ -16,6 +16,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+#!flask/bin/python
+
 
 from flask.ext.restplus import Api, Resource, fields
 from flask import Flask, jsonify
@@ -30,8 +32,11 @@ from flask import send_file
 from flask import send_from_directory
 import os
 import sys
+from flask.ext.sqlalchemy import SQLAlchemy
+from datetime import datetime
 #DICE Imports
 from pyESController import *
+#from dbModel import *
 
 
 app = Flask("D-MON")
@@ -39,30 +44,89 @@ api = Api(app, version='0.1', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
+db = SQLAlchemy(app)
+#%--------------------------------------------------------------------%
+class dbNodes(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nodeFQDN = db.Column(db.String(64), index=True, unique=True)
+    nodeIP = db.Column(db.String(64), index=True, unique=True)
+    nodeOS = db.Column(db.String(120), index=True, unique=False)
+    nUser = db.Column(db.String(64), index=True, unique=False)
+    nPass = db.Column(db.String(64), index=True, unique=False)
+    nkey = db.Column(db.String(120), index=True, unique=False)
+    nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
+    nMonitored = db.Column(db.Boolean, unique=False)
+    nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
+    def __repr__(self):
+        return '<dbNodes %r>' % (self.nickname)
+
+
+class dbESCore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    hostFQDN = db.Column(db.String(64), index=True, unique=True)
+    hostIP = db.Column(db.String(64), index=True, unique=True)
+    hostOS = db.Column(db.String(120), index=True, unique=False)
+    nodeName = db.Column(db.String(64), index=True, unique=True)
+    nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
+    clusterName = db.Column(db.String(64), index=True, unique=False)
+    conf = db.Column(db.String(140), index=True, unique=False)
+    ESCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<dbESCore %r>' % (self.body)
+
+class dbSCore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    hostFQDN = db.Column(db.String(64), index=True, unique=True)
+    hostIP = db.Column(db.String(64), index=True, unique=True)
+    hostOS = db.Column(db.String(120), index=True, unique=False)
+    inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
+    sslCert = db.Column(db.String(120), index=True, unique=False)
+    sslKey = db.Column(db.String(120), index=True, unique=False)
+    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
+    outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
+    outKafka = db.Column(db.String(64), index=True, unique=False) # output kafka details
+    outKafkaPort = db.Column(db.Integer, index=True, unique=False)
+    conf = db.Column(db.String(140), index=True, unique=False)
+    LSCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<dbLSCore %r>' % (self.body)
+
+class dbKBCore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    hostFQDN = db.Column(db.String(64), index=True, unique=True)
+    hostIP = db.Column(db.String(64), index=True, unique=True)
+    hostOS = db.Column(db.String(120), index=True, unique=False)
+    kbPort = db.Column(db.Integer, index=True, unique=False,default = 5601)
+    conf = db.Column(db.String(140), index=True, unique=False)
+    KBCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<dbKBCore %r>' % (self.body)
+
+
+
+#%--------------------------------------------------------------------%
 
 #changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
 dmon = api.namespace('dmon', description='D-MON operations')
 
 #argument parser
 pQueryES = api.parser() 
-
-
-
-#/v1/observer/query/ POST
-# {
-#   "DMON":{
-#     "query":{
-#       "size":"<SIZEinINT>",
-#       "ordering":"<asc|desc>",
-#       "queryString":"<query>",
-#       "tstart":"<startDate>",
-#       "tstop":"<stopDate>"
-#     }
-#   }
-# }
-
-
+#pQueryES.add_argument('task',type=str, required=True, help='The task details', location='form')
 
 
 #descripes universal json @api.marshal_with for return or @api.expect for payload model
@@ -87,10 +151,28 @@ dMONQuery = api.model('queryES Model',{
 #     if todo_id not in TODOS:
 #         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
+@dmon.route('/v1/observer/nodes')
+class NodesMonitored(Resource):
+	def get(self):
+		return "Nodes Monitored"
 
-@dmon.route('/v1/observer/query/<ftype>', endpoint='my-resource')
+
+@dmon.route('/v1/observer/nodes/<nodeFQDN>')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+class NodeStatus(Resource):
+	def get(self, nodeFQDN):
+		return "Node " + nodeFQDN +" status!"
+
+
+@dmon.route('/v1/observer/nodes/<nodeFQDN>/services')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+class NodeStatusServices(Resource):
+	def get(self,nodeFQDN):
+		return "Node " + nodeFQDN +" status of services!"		
+
+@dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
-class queryEsCore(Resource):
+class QueryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
 	#@api.marshal_with(dMONQuery) # this is for response
 	@api.expect(dMONQuery)# this is for payload
@@ -101,12 +183,12 @@ class queryEsCore(Resource):
 			response = jsonify({'Supported types':supportType, "Submitted Type":ftype })
 			response.status_code = 415
 			return response
-		if ftype == 'csv':
-			query = queryConstructor(request.json['DMON']['tstart'],request.json['DMON']['tstop'],
-				request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
-			#return query
-			if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
-				ListMetrics, resJson = queryESCore(query, debug=False)
+		query = queryConstructor(request.json['DMON']['tstart'],request.json['DMON']['tstop'],
+			request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
+		#return query
+		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
+			ListMetrics, resJson = queryESCore(query, debug=False)
+			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
 					fileName = 'output'+'.csv'
 					dict2CSV(ListMetrics)
@@ -122,17 +204,24 @@ class queryEsCore(Resource):
 					response.status_code = 500
 					return response
 				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
-			else:
-				metrics = request.json['DMON']['metrics']
-				ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
-				#repeated from before create function
+			if ftype == 'json':
+				response = jsonify({'DMON':resJson})
+				response.status_code = 200
+				return response
+			if ftype == 'plain':
+				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
+
+		else:
+			metrics = request.json['DMON']['metrics']
+			ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
+			#repeated from before create function
+			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
 					fileName = 'output'+'.csv'
 					dict2CSV(ListMetrics)
 				else:
 					fileName = request.json['DMON']['fname']+'.csv'
 					dict2CSV(ListMetrics,request.json['DMON']['fname'])
-
 				csvOut = os.path.join(outDir,fileName)
 				try:
 					csvfile=open(csvOut,'r')
@@ -141,14 +230,124 @@ class queryEsCore(Resource):
 					response.status_code = 500
 					return response
 				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
+			if ftype == 'json':
+				response = jsonify({'DMON':resJson})
+				response.status_code = 200
+				return response
+			if ftype == 'plain':
+				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
+
+
+@dmon.route('/v1/overlord')
+class OverlordInfo(Resource):
+	def get(self):
+		return "Overlord Information"
+
+@dmon.route('/v1/overlord/core')
+class OverlordBootstrap(Resource):
+	def post(self):
+		return "Deploys all monitoring core components with default configuration"
+
+@dmon.route('/v1/overlord/core/status')
+class OverlordCoreStatus(Resource):
+	def get(self):
+		return "Monit Core Status!"
+
+@dmon.route('/v1/overlord/chef')
+class ChefClientStatus(Resource):
+	def get(self):
+		return "Monitoring Core Chef Client status"
+
+@dmon.route('/v1/overlord/nodes/chef')
+class ChefClientNodes(Resource):
+	def get(self):
+		return "Chef client status of monitored Nodes"
+
+
+@dmon.route('/v1/overlord/nodes')
+class MonitoredNodes(Resource):
+	def get(self):
+		return "Current monitored Nodes"
+
+	def post(self):
+		return "Submit Nodes for monitoring"
+
+
+@dmon.route('/v1/overlord/nodes/<nodeFQDN>')
+class MonitoredNodeInfo(Resource):
+	def get(self, nodeFQDN):
+		return "Return info of specific monitored node."
+
+	def put(self, nodeFQDN):
+		return "Change info of specific monitored node."
+
+@dmon.route('/v1/overlord/core/es/config')
+class ESCoreConfiguration(Resource):
+	def get(self):
+		return "Returns current configuration of ElasticSearch"
+
+	def put(self):
+		return "Changes configuration of ElasticSearch"
+
+@dmon.route('/v1/overlord/core/es')
+class ESCoreController(Resource):
+	def post(self):
+		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
+
+@dmon.route('/v1/overlord/core/kb/config')
+class KBCoreConfiguration(Resource):
+	def get(self):
+		return "Retruns Kibana current configuration"
+
+	def put(self):
+		return "Changes configuration of Kibana"
+
+@dmon.route('/v1/overlord/core/kb')
+class KKCoreController(Resource):
+	def post(self):
+		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Kibana"
+
+@dmon.route('/v1/overlord/core/ls/config')
+class LSCoreConfiguration(Resource):
+	def get(self):
+		return "Returns current logstash server configuration"
+
+	def put(self):
+		return "Changes configuration fo logstash server"
+
+@dmon.route('/v1/overlord/core/ls')
+class LSCoreController(Resource):
+	def post(self):
+		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Logstash Server"
 
 
 
+@dmon.route('/v1/overlord/aux')
+class AuxInfo(Resource):
+	def get(self):
+		return "Returns Information about AUX components"
 
 
+@dmon.route('/v1/overlord/aux/deploy')
+class AuxDeploy(Resource):
+	def get(self):
+		return "List of deployed aux monitoring components"
 
+	def post(self):
+		return "Deploy currently configured aux monitoring components"
 
+@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
+class AuxDeploySelective(Resource):
+	def post(self, auxComp, nodeFQDN):
+		return "Deploys auxiliary monitoring components on a node by node basis."
 
+@dmon.route('/v1/ocerlord/aux/<auxComp>/config')
+class AuxConfigSelective(Resource):
+	def get(self, auxComp):
+		return "Returns current configuration of aux components"
+
+	def put(self,auxComp):
+		return "Sets configuration of aux components use parameters (args) -unsafe"
 
 """
 Custom errot Handling
@@ -201,7 +400,16 @@ def bad_mediatype(e):
 #109.231.126.38
 
 if __name__ == '__main__':
+	#directory Location
 	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
+	tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+	cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
+	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
+
+	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
+	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+	db.create_all()
+
 	#print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
 	# testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
 	# metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']

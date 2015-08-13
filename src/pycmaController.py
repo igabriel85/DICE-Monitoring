@@ -122,56 +122,88 @@ def getServiceStatus(serviceList):
 			print "%s --- %s" % (chk['name'], chk['summary'])
 
 
-def getRoles(serviceList, stdOut=False):
+def getRoles(serviceList, debug=False):
 	'''
 		Function returns a dictionary containing service role information such as:
 		role type, state, health, reference  and reference id.
 
 		The function arguments are:
 		serviceList   ->  list of service objects
-		stdOut		  ->  if True enables debug messages
+		debug		  ->  if True enables debug messages
 					  ->  default is False
 	'''
 	dictRoles = {}
 	for s in serviceList:
-		print s
+		#print s
 		for r in s.get_all_roles():
 			roleList = {}
 			roleList["type"]={r.type}
 			roleList["RoleState"]={r.roleState}
 			roleList["RoleHealth"]={r.healthSummary}
 			roleList["HostRef"]={r.hostRef}
-			roleList["HostRefID"]={r.hostRef.hostId}
-			dictRoles[s]=roleList
-			if stdOut == True:
+			roleList["HostRefID"]={str(r.hostRef.hostId)}
+			dictRoles[s.name]=roleList
+			if debug == True:
 				print "%---------------------------------------------------------%"
 				print "Role name: %s\nState: %s\nHealth: %s\nHostRef %s\nHost: %s" % (r.name, r.roleState, r.healthSummary, r.hostRef, r.hostRef.hostId)
 				print "%---------------------------------------------------------%"
 	return dictRoles
 			
 
-def getHostRoles(api, hostsObjList):
-	print hosts
-	#for h in hosts:
-		#print h.hostname
-		#print h.roleRefs
+def getHostInfo(api, hostsObjList, debug=False):
+	'''
+		Function that returns a dictionary containing hostnames, uuid and
+		IP address.
 
-	#print hosts[0].get_all_roles()
-	# for host in hosts:
-	# 	print host.roleRefs
-	# 	for role_ref in host.roleRefs:
-	# 		if role_ref.get('clusterName') is None:
-	# 			continue
+		The function arguments are:
+		api    		 ->  ApiResource object
+		hostsObjList ->  List of host objects (as returned by getcdhMStatus)
+	'''
+	dictHostRoles = {}
+	for h in hostsObjList:
+		dictNU = {}
+		if debug == True:
+			print h.hostname
+			print api.get_host(h.hostname)
+		name = h.hostname
+		uuid = api.get_host(h.hostname)
+		dictNU["UUID"]=str(uuid) 
+		dictHostRoles[name] = dictNU
+	return dictHostRoles
 
-	# 		role = api.get_cluster(role_ref['clusterName']).get_service(role_ref['serviceName']).get_role(role_ref['roleName'])
-	# 		LOG.debug("Eval %s (%s)" % (role.name, host.hostname))
+def getHostRoles(serviceList, api, hostObjList):
+	#replace UUID with name
+	roles = getRoles(serviceList)
+	hosts = getHostInfo(api,hostObjList)
+	uuidDict=[]
+	uuidHostDict={}
+	HostDict ={}
+	#print roles.get('HostRefID')#['HostRefID']
+	#print only dict keys
+	#print roles.keys()
+	#print role dict values
+	#as it is returned as a list remove the list
+	#print roles.values()[0]
+	#print roles.values()[0].get('HostRefID')
+	for k,v in hosts.iteritems():
+		hostUUID = v.get('UUID').replace("<ApiHost>: ","").split()[0]
+		hostIP = v.get('UUID').replace("<ApiHost>: ","").split()[1].lstrip("(").rstrip(")")
+		uuidHostDict['UUID']=hostUUID
+		uuidHostDict['IP']=hostIP
+		HostDict[k]=uuidHostDict
+	print HostDict
+	for e in roles.values():
+		uuid= str(e.get('HostRefID')).lstrip("set(['").rstrip("'])")
+		print uuid
+		for k, v in HostDict.iteritems():
+			#print v.get('UUID')
+			#print str(e.get('HostRefID')).lstrip("set(['").rstrip("'])")
+			if v.get('UUID') == uuid:
+				roles['IP']= v.get('IP')
+				roles['HostName']=k
+	#print roles
+	
 
-		# 	if role.type == "DATANODE":
-		# 		print "Found DATANODE"
-		# 	elif role.type == 'KAFKA':
-		# 		print "Found KAFKA"
-		# 	else:
-		# 		continue
 
 
 def main(argv):
@@ -212,7 +244,7 @@ def main(argv):
 if __name__=='__main__':
 	if len(sys.argv) == 1:
 		cmdHost = "109.231.126.94"
-		api = ApiResource(cmdHost,7180, "admin", "admin")
+		api = ApiResource(cmdHost,7180, "admin", "rexmundi220")
 
 		#%--------------------------%
 		#getClusterList() usecase
@@ -224,7 +256,7 @@ if __name__=='__main__':
 		#%--------------------------%
 		#getCDHMStatus usecase
 		hosts,clusters,clusterServices = getcdhMStatus(api,False)
-		#print hosts
+		print hosts
 		#print clusters
 		#print clusterServices
 		#%--------------------------%
@@ -233,16 +265,27 @@ if __name__=='__main__':
 			cluster_services, cluster_service_vb= getServiceList(api, c)
 			#print cluster_services
 			#print cluster_service_vb
-			getServiceStatus(cluster_services)
-			for s in cluster_services:
-				#print s.name, s.serviceState
-				print s.get_all_roles()
+			
+			#only prints status
+			#getServiceStatus(cluster_services)
+			
+			# for s in cluster_services:
+			# 	#print s.name, s.serviceState
+			# 	print s.get_all_roles()
 				
 
 		#%--------------------------%
-		#print getRoles(cluster_services, stdOut = True)
-		#getHostRoles(api,hosts)
+		print getRoles(cluster_services, debug = True)
+		
 
 		#%--------------------------%
+
+		
+
+		#print getHostInfo(api, hosts, True)
+
+		#%--------------------------%
+		getHostRoles(cluster_services, api, hosts)
+
 	else:
 		main(sys.argv[1:])

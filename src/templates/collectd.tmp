@@ -1,0 +1,35 @@
+Hostname   "{{hostname}}"
+FQDNLookup false
+
+
+LoadPlugin cpu
+
+LoadPlugin df
+<Plugin df>
+        Device "/dev/sda1"
+        MountPoint "/"
+        FSType "ext4"
+        ReportReserved "true"
+</Plugin>
+LoadPlugin interface
+LoadPlugin load
+LoadPlugin memory
+LoadPlugin syslog
+<Plugin syslog>
+        LogLevel info
+</Plugin>
+
+LoadPlugin network
+<Plugin "interface">
+    Interface "eth0"
+    IgnoreSelected false
+</Plugin>
+<Plugin "network">
+    Server "{{logstash server ip}}" "{{logstash server port}}"
+</Plugin>
+
+LoadPlugin swap
+
+<Include "/etc/collectd/collectd.conf.d">
+        Filter ".conf"
+</Include>
