@@ -32,8 +32,11 @@ from flask import send_file
 from flask import send_from_directory
 import os
 import sys
+from flask.ext.sqlalchemy import SQLAlchemy
+from datetime import datetime
 #DICE Imports
 from pyESController import *
+#from dbModel import *
 
 
 app = Flask("D-MON")
@@ -41,7 +44,82 @@ api = Api(app, version='0.1', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
+db = SQLAlchemy(app)
+#%--------------------------------------------------------------------%
+class dbNodes(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nodeFQDN = db.Column(db.String(64), index=True, unique=True)
+    nodeIP = db.Column(db.String(64), index=True, unique=True)
+    nodeOS = db.Column(db.String(120), index=True, unique=False)
+    nUser = db.Column(db.String(64), index=True, unique=False)
+    nPass = db.Column(db.String(64), index=True, unique=False)
+    nkey = db.Column(db.String(120), index=True, unique=False)
+    nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
+    nMonitored = db.Column(db.Boolean, unique=False)
+    nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
+    def __repr__(self):
+        return '<dbNodes %r>' % (self.nickname)
+
+
+class dbESCore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    hostFQDN = db.Column(db.String(64), index=True, unique=True)
+    hostIP = db.Column(db.String(64), index=True, unique=True)
+    hostOS = db.Column(db.String(120), index=True, unique=False)
+    nodeName = db.Column(db.String(64), index=True, unique=True)
+    nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
+    clusterName = db.Column(db.String(64), index=True, unique=False)
+    conf = db.Column(db.String(140), index=True, unique=False)
+    ESCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<dbESCore %r>' % (self.body)
+
+class dbSCore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    hostFQDN = db.Column(db.String(64), index=True, unique=True)
+    hostIP = db.Column(db.String(64), index=True, unique=True)
+    hostOS = db.Column(db.String(120), index=True, unique=False)
+    inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
+    sslCert = db.Column(db.String(120), index=True, unique=False)
+    sslKey = db.Column(db.String(120), index=True, unique=False)
+    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
+    outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
+    outKafka = db.Column(db.String(64), index=True, unique=False) # output kafka details
+    outKafkaPort = db.Column(db.Integer, index=True, unique=False)
+    conf = db.Column(db.String(140), index=True, unique=False)
+    LSCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<dbLSCore %r>' % (self.body)
+
+class dbKBCore(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    hostFQDN = db.Column(db.String(64), index=True, unique=True)
+    hostIP = db.Column(db.String(64), index=True, unique=True)
+    hostOS = db.Column(db.String(120), index=True, unique=False)
+    kbPort = db.Column(db.Integer, index=True, unique=False,default = 5601)
+    conf = db.Column(db.String(140), index=True, unique=False)
+    KBCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<dbKBCore %r>' % (self.body)
+
+
+
+#%--------------------------------------------------------------------%
 
 #changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
 dmon = api.namespace('dmon', description='D-MON operations')
@@ -327,8 +405,10 @@ if __name__ == '__main__':
 	tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 	cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
-	#app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(basedir,'dmon.db')
-	#db.create_all()
+
+	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
+	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+	db.create_all()
 
 	#print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
 	# testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
