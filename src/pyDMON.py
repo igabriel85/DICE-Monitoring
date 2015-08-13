@@ -88,7 +88,7 @@ dMONQuery = api.model('queryES Model',{
 #         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
 
-@dmon.route('/v1/observer/query/<ftype>', endpoint='my-resource')
+@dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
 class queryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
@@ -101,12 +101,12 @@ class queryEsCore(Resource):
 			response = jsonify({'Supported types':supportType, "Submitted Type":ftype })
 			response.status_code = 415
 			return response
-		if ftype == 'csv':
-			query = queryConstructor(request.json['DMON']['tstart'],request.json['DMON']['tstop'],
-				request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
-			#return query
-			if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
-				ListMetrics, resJson = queryESCore(query, debug=False)
+		query = queryConstructor(request.json['DMON']['tstart'],request.json['DMON']['tstop'],
+			request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
+		#return query
+		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
+			ListMetrics, resJson = queryESCore(query, debug=False)
+			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
 					fileName = 'output'+'.csv'
 					dict2CSV(ListMetrics)
@@ -122,17 +122,24 @@ class queryEsCore(Resource):
 					response.status_code = 500
 					return response
 				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
-			else:
-				metrics = request.json['DMON']['metrics']
-				ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
-				#repeated from before create function
+			if ftype == 'json':
+				response = jsonify({'DMON':resJson})
+				response.status_code = 200
+				return response
+			if ftype == 'plain':
+				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
+
+		else:
+			metrics = request.json['DMON']['metrics']
+			ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
+			#repeated from before create function
+			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
 					fileName = 'output'+'.csv'
 					dict2CSV(ListMetrics)
 				else:
 					fileName = request.json['DMON']['fname']+'.csv'
 					dict2CSV(ListMetrics,request.json['DMON']['fname'])
-
 				csvOut = os.path.join(outDir,fileName)
 				try:
 					csvfile=open(csvOut,'r')
@@ -141,6 +148,13 @@ class queryEsCore(Resource):
 					response.status_code = 500
 					return response
 				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
+			if ftype == 'json':
+				response = jsonify({'DMON':resJson})
+				response.status_code = 200
+				return response
+			if ftype == 'plain':
+				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
+
 
 
 
@@ -201,6 +215,7 @@ def bad_mediatype(e):
 #109.231.126.38
 
 if __name__ == '__main__':
+	#directory Location
 	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 	#print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
 	# testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
