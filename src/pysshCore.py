@@ -259,16 +259,20 @@ def nmapScan(hostlist, port='22-443'):
 
 
 def detectOS(hostlist, userName, uPassword):
+	hostOS = {}
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	cmdStr = "lsb_release -a"
+	cmdStr = "uname -a"
 	try:
 		output = client.run_command(cmdStr)
 		for host in output:
 			for line in output[host]['stdout']:
-				print line
+				if 'Ubuntu' in line or 'ubuntu' in line:
+					hostOS.update({host:'Ubuntu'})
+				else:
+					hostOS.update({host:'Unknown'})
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
-
+	return hostOS
 
 
 
@@ -401,7 +405,7 @@ if __name__=='__main__':
 		#installCollectd(hostlist,userName,uPassword)
 		#installLogstashForwarder(hostlist,userName,uPassword)
 		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
-		detectOS(hostlist, 'ubuntu','rexmundi220')
+		print detectOS(hostlist, 'ubuntu','rexmundi220')
 		#nmapScan(hostlist)
 		# #----------------------------------------------------
 		# good, bad = hostsScan(hostlist)

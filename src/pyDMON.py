@@ -55,6 +55,7 @@ class dbNodes(db.Model):
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
     nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
+    nStatus = db.Column(db.Boolean, unique=False)
     nMonitored = db.Column(db.Boolean, unique=False)
     nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
     nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
@@ -117,6 +118,17 @@ class dbKBCore(db.Model):
     def __repr__(self):
         return '<dbKBCore %r>' % (self.body)
 
+#Not Used Yet
+class dbApp(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	appName = db.Column(db.String(64), index=True, unique=False)
+	appVersion = db.Column(db.String(64), index=True, unique=False)
+	jobID = db.Column(db.String(64), index=True, unique=True)
+	startTime = db.Column(db.String(64), index=True, unique=False)
+	stopTime = db.Column(db.String(64), index=True, unique=False)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+	def __repr__(self):
+		return '<dbApp %r>' % (self.body)
 
 
 #%--------------------------------------------------------------------%
@@ -147,21 +159,56 @@ dMONQuery = api.model('queryES Model',{
 	})
 
 
+# monNodes = api.model('Monitored Nodes',{
+# 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
+# 	})
+# nodeDet = api.model('Node Info',{
+# 	'FQDN' : field
+# 	})#[{'FQDN':'IP'}]
+
+
 # def abort_if_todo_doesnt_exist(todo_id):
 #     if todo_id not in TODOS:
 #         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
+#getGateway = dbNodes.query.filter_by(name = gateway).first()
 @dmon.route('/v1/observer/nodes')
 class NodesMonitored(Resource):
+	#@api.marshal_with(monNodes) # this is for response
 	def get(self):
-		return "Nodes Monitored"
+		nodeList = []
+		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP).all()
+		if nodesAll is None:
+			response = jsonify({'Status':'No monitored nodes found'})
+			response.status_code = 404
+			return response
+		for nl in nodesAll:
+			nodeDict= {}
+			print >>sys.stderr, nl[0]
+			nodeDict.update({nl[0]:nl[1]})
+			nodeList.append(nodeDict)
+		response = jsonify({'Nodes':nodeList})
+		response.status_code=200
+		return response
 
 
 @dmon.route('/v1/observer/nodes/<nodeFQDN>')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatus(Resource):
 	def get(self, nodeFQDN):
-		return "Node " + nodeFQDN +" status!"
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response.status_code = 404
+			return response
+		else:
+			response = jsonify({nodeFQDN:{
+				'Status':qNode.nStatus,
+				'IP':qNode.nodeIP,
+				'Monitored':qNode.nMonitored,
+				'OS':qNode.nodeOS}})
+			response.status_code = 200	
+		return response
 
 
 @dmon.route('/v1/observer/nodes/<nodeFQDN>/services')
@@ -341,7 +388,7 @@ class AuxDeploySelective(Resource):
 	def post(self, auxComp, nodeFQDN):
 		return "Deploys auxiliary monitoring components on a node by node basis."
 
-@dmon.route('/v1/ocerlord/aux/<auxComp>/config')
+@dmon.route('/v1/overlord/aux/<auxComp>/config')
 class AuxConfigSelective(Resource):
 	def get(self, auxComp):
 		return "Returns current configuration of aux components"

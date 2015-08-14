@@ -286,15 +286,12 @@ Changes the configuration of collectd or logstashfw and restarts all aux compone
  
 ```json
 {
-  "DMON":{
     "Nodes":[
       {"<NodeFQDN1>":"NodeIP1"},
       {"<NodeFQDN2>":"NodeIP2"},
-       .......................,
       {"<NodeFQDNn>":"NodeIPn"}
       ]
   }
-}
 ```
 
 `GET` `/v1/observer/nodes/{NodeFQDN}`
@@ -303,15 +300,12 @@ Returns information of a particular monitored node.
 
 ```json
 {
-  "DMON":{
     "<NodeFQDN>":{
-      "Status":"<online|offline|unstable>",
+      "Status":"<online|offline>",
       "IP":"<NodeIP>",
-      "OS":"Operating_Systen",
-      "CDH":"<active|inactive|unknown>",
-      "CDHVersion":"<version>"
+      "Monitored":"<true|false>"
+      "OS":"Operating_Systen"
     }
-  }
 }
 ```
 
@@ -358,25 +352,6 @@ Input:
 ```
 Output depends on the option selected by the user: csv, json or Plain. 
 
-`POST` `/v1/observer/query/{NodeFQDN}/{CSV|JSON|Plain}`
-
-Returns the required metrics of a given node in csv, json or plain format.
-
-```json
-{
-  "DMON":{
-    "query":{
-      "size":"<SIZEinINT>",
-      "ordering":"<asc|desc>",
-      "serivceMetrics":[
-        "<m1>","<m2>",....,<mn>
-        ],
-      "tstart":"<startDate>",
-      "tstop":"<stopDate>"
-    }
-  }
-}
-```
 NOTE: The metrics must be in the form of a list.
 
 
