@@ -18,6 +18,7 @@ limitations under the License.
 '''
 from pssh import *
 import os.path
+import os
 import nmap
 import sys, getopt
 
@@ -196,7 +197,7 @@ def hostsScan(hostlist):
 	goodHosts = [x for x in hostlist if x not in badHosts] 
 	return goodHosts, badHosts
 			
-def nmapScan(hostlist, port=22):
+def nmapScan(hostlist, port='22-443'):
 	'''
 	Takes a list of hosts and checks port 22 (default) ssh status.
 	If Host does not exist it returns an exception.
@@ -206,24 +207,24 @@ def nmapScan(hostlist, port=22):
 	- identify OS 
 	- lots
 	'''
-	for host in hostlist:
-		nm = nmap.PortScanner() #instantiate nmap.Scanner object
-		nm.scan(host,str(port))
+	nm = nmap.PortScanner() #instantiate nmap.Scanner object
+	for host1 in hostlist:
+		nm.scan(host1,str(port))
 		nm.command_line()
 		nm.scaninfo()
 		nm.all_hosts()
-		nm[host].hostname()          # get hostname for host 127.0.0.1
-		nm[host].state()             # get state of host 127.0.0.1 (up|down|unknown|skipped)
-		nm[host].all_protocols()     # get all scanned protocols ['tcp', 'udp'] in (ip|tcp|udp|sctp
-		nm[host]['tcp'].keys()       # get all ports for tcp protocol
-		nm[host].all_tcp()           # get all ports for tcp protocol (sorted version)
-		nm[host].all_udp()           # get all ports for udp protocol (sorted version)
-		nm[host].all_ip()            # get all ports for ip protocol (sorted version)
-		nm[host].all_sctp()          # get all ports for sctp protocol (sorted version)
-		nm[host].has_tcp(port)         # is there any information for port 22/tcp on host 127.0.0.1
-		nm[host]['tcp'][port]          # get infos about port 22 in tcp on host 127.0.0.1
-		nm[host].tcp(port)             # get infos about port 22 in tcp on host 127.0.0.1
-		nm[host]['tcp'][port]['state'] 
+		nm[host1].hostname()          # get hostname for host 127.0.0.1
+		nm[host1].state()             # get state of host 127.0.0.1 (up|down|unknown|skipped)
+		nm[host1].all_protocols()     # get all scanned protocols ['tcp', 'udp'] in (ip|tcp|udp|sctp
+		nm[host1]['tcp'].keys()       # get all ports for tcp protocol
+		nm[host1].all_tcp()           # get all ports for tcp protocol (sorted version)
+		nm[host1].all_udp()           # get all ports for udp protocol (sorted version)
+		nm[host1].all_ip()            # get all ports for ip protocol (sorted version)
+		nm[host1].all_sctp()          # get all ports for sctp protocol (sorted version)
+		if nm[host1].has_tcp(22):         # is there any information for port 22/tcp on host 127.0.0.1
+			nm[host1]['tcp'][22]          # get infos about port 22 in tcp on host 127.0.0.1
+			nm[host1].tcp(22)             # get infos about port 22 in tcp on host 127.0.0.1
+			nm[host1]['tcp'][22]['state'] 
 		for host in nm.all_hosts():
 			print('----------------------------------------------------')
 			print('Host : %s (%s)' % (host, nm[host].hostname()))
@@ -234,7 +235,42 @@ def nmapScan(hostlist, port=22):
 				lport = nm[host][proto].keys()
 				lport.sort()
 				for port in lport:
-					print('port : %s\tstate : %s' % (port, nm[host][proto][port]['state']))
+					print('port : %s\tstate : %s\n' % (port, nm[host][proto][port]['state']))
+			if os.getuid() == 0: #check if sudo user
+				nm.scan(host, arguments="-O")
+				if 'osclass' in nm[host]['osclass']:
+					for osclass in nm[host]['osclass']:
+						print 'OsClass.type : {0}'.format(osclass['type'])
+						print 'OsClass.vendor : {0}'.format(osclass['vendor'])
+						print 'OsClass.osfamily : {0}'.format(osclass['osfamily'])
+						print 'OsClass.osgen : {0}'.format(osclass['osgen'])
+						print 'OsClass.accuracy : {0}'.format(osclass['accuracy'])
+						print ''
+
+				if 'osmatch' in nm[host]:
+					for osmatch in nm[host]['osmatch']:
+						print('OsMatch.name : {0}'.format(osclass['name']))
+						print('OsMatch.accuracy : {0}'.format(osclass['accuracy']))
+						print('OsMatch.line : {0}'.format(osclass['line']))
+						print('')
+
+				if 'fingerprint' in nm[host]:
+					print('Fingerprint : {0}'.format(nm[host]['fingerprint']))
+
+
+def detectOS(hostlist, userName, uPassword):
+	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	cmdStr = "lsb_release -a"
+	try:
+		output = client.run_command(cmdStr)
+		for host in output:
+			for line in output[host]['stdout']:
+				print line
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured!"
+
+
+
 
 def checkSetup():
 	print "Check the logging remote setup"
@@ -357,7 +393,7 @@ def main(argv):
 if __name__=='__main__':
 	if len(sys.argv) == 1:
 		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
-		'109.231.126.146','109.231.126.157','10.10.10.10','10.10.10.13']
+		'109.231.126.146','109.231.126.157']
 		
 		
 		userName = 'na'
@@ -365,13 +401,12 @@ if __name__=='__main__':
 		#installCollectd(hostlist,userName,uPassword)
 		#installLogstashForwarder(hostlist,userName,uPassword)
 		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
-
+		detectOS(hostlist, 'ubuntu','rexmundi220')
 		#nmapScan(hostlist)
-		
 		# #----------------------------------------------------
-		good, bad = hostsScan(hostlist)
-		print 'These are the good hosts '+str(good)
-		print 'These are the bad hosts ', str(bad)
+		# good, bad = hostsScan(hostlist)
+		# print 'These are the good hosts '+str(good)
+		# print 'These are the bad hosts ', str(bad)
 		#----------------------------------------------------
 		#tests(hostlist)
 	else:

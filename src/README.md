@@ -102,15 +102,12 @@ Returns the status of the chef-clients from all monitored nodes.
  
 ```json
 {
-  "DMON":{
     "Nodes":[
       {"<NodeFQDN1>":"NodeIP1"},
       {"<NodeFQDN2>":"NodeIP2"},
-       .......................,
       {"<NodeFQDNn>":"NodeIPn"}
       ]
   }
-}
 ```
 
 
@@ -195,6 +192,19 @@ Input:
   }  
 }
 ```
+
+`POST`  `/v1/overlord/core/check`
+
+Returns complete health check report on all core components
+
+Response 
+
+**TODO** json structure
+
+
+`POST` `/v1/overlord/nodes/check`
+Returns complete health check report on all subscribed nodes
+
 
 `GET` `/v1/overlord/core/es/config`
 
