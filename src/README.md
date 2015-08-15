@@ -111,7 +111,7 @@ Returns the status of the chef-clients from all monitored nodes.
 ```
 
 
-`POST` `/v1/overlord/nodes`
+`PUT` `/v1/overlord/nodes`
 
 Inludes the given nodes into the monitored node pools.
 
@@ -119,33 +119,31 @@ Input:
 
 ```json
 {
-  "DMON":{
     "Nodes":[
-      {"<NodeFQDN1>":
+      
         {
+          "NodeName":"<NodeFQDN1>",
           "NodeIP":"<IP>",
-          "Credentials":{
-            "key":"<keyName|null>",
-            "username":"<uname|null>",
-            "password":"<pass|null>"
-          }
-        }
+          "key":"<keyName|null>",
+          "username":"<uname|null>",
+          "password":"<pass|null>"
       },
-      ..........................,
-      {"<NodeFQDNn>":
         {
+          "NodeName":"<NodeFQDNn>",
           "NodeIP":"<IP>",
-          "Credentials":{
-            "key":"<keyName|null>",
-            "username":"<uname|null>",
-            "password":"<pass|null>"
-          }
+          "key":"<keyName|null>",
+          "username":"<uname|null>",
+          "password":"<pass|null>"
         }
-      }
     ]
-  }
 }
 ```
+
+
+`POST` `/v1/overlord/nodes`
+
+Bootstrap of all non monitored nodes. Installs collectd and logstash forwarder
+
 
 `GET` `/v1/overlord/nodes/{NodeFQDN}`
 
@@ -153,21 +151,16 @@ Returns information of a particular monitored node.
 
 ```json
 {
-  "DMON":{
-    "<NodeFQDN>":{
+      "NodeName":"nodeFQDN",
       "Status":"<online|offline|unstable>",
       "IP":"<NodeIP>",
       "OS":"<Operating_Systen>",
-      "Credentials":{
-        "key":"<keyName|null>",
-        "username":"<uname|null>",
-        "password":"<pass|null>"
-      },
+      "key":"<keyName|null>",
+      "username":"<uname|null>",
+      "password":"<pass|null>",
       "chefclient":"<True|False>",
       "CDH":"<active|inactive|unknown>",
       "CDHVersion":"<version>"
-    }
-  }
 }
 ```
 
@@ -179,17 +172,12 @@ Input:
 
 ```json
 {
-  "DMON":{
-    "<NodeFQDN>":{
-      "IP":"<NodeIP>",
-      "OS":"<Operating_Systen>",
-      "Credentials":{
-        "key":"<keyName|null>",
-        "username":"<uname|null>",
-        "password":"<pass|null>"
-      }
-    }
-  }  
+  "NodeName":"<nodeFQDN>",
+  "IP":"<NodeIP>",
+  "OS":"<Operating_Systen>",
+  "key":"<keyName|null>",
+  "username":"<uname|null>",
+  "password":"<pass|null>"
 }
 ```
 
@@ -201,9 +189,6 @@ Response
 
 **TODO** json structure
 
-
-`POST` `/v1/overlord/nodes/check`
-Returns complete health check report on all subscribed nodes
 
 
 `GET` `/v1/overlord/core/es/config`
@@ -271,7 +256,7 @@ Returns the current collectd or logstashfw configuration
 
 `PUT` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
-Changes the configuration of collectd or logstashfw and restarts all aux components.
+Changes the configuration/status of collectd or logstashfw and restarts all aux components.
  
  Input:
 **TODO** json structure.
@@ -315,19 +300,17 @@ Returns information on the services running on a given node.
 
 ```json
 {
-  "DMON":{
     "<NodeFQDN>":[
       {
         "ServiceName":"<ServiceName>",
         "ServiceStatus":"<ServiceStatus>"
       },
-          ..........................,
+      ............................,
       {
         "ServiceName":"<ServiceName>",
         "ServiceStatus":"<ServiceStatus>"
       }
       ]
-  }
 }
 ```
 

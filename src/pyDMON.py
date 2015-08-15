@@ -50,15 +50,16 @@ class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
     nodeIP = db.Column(db.String(64), index=True, unique=True)
+    nodeUUID = db.Column(db.String(64), index=True, unique=True)
     nodeOS = db.Column(db.String(120), index=True, unique=False)
     nUser = db.Column(db.String(64), index=True, unique=False)
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
-    nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
-    nStatus = db.Column(db.Boolean, unique=False)
-    nMonitored = db.Column(db.Boolean, unique=False)
-    nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
-    nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') #hadoop roles running on server
+    nStatus = db.Column(db.Boolean,index=True, unique=False, default='1')
+    nMonitored = db.Column(db.Boolean,index=True, unique=False, default='0')
+    nCollectdState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
@@ -130,6 +131,17 @@ class dbApp(db.Model):
 	def __repr__(self):
 		return '<dbApp %r>' % (self.body)
 
+class dbCDHMng(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	cdhMng =  db.Column(db.String(64), index=True, unique=True)
+	cdhMngPort = db.Column(db.Integer, index=True, unique=False,default = 7180)
+	cpass = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+	cuser = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+	
+	def __repr__(self):
+		return '<dbCDHMng %r>' % (self.body)
+
+
 
 #%--------------------------------------------------------------------%
 
@@ -159,6 +171,25 @@ dMONQuery = api.model('queryES Model',{
 	})
 
 
+
+nodeSubmitCont = api.model('Submit Node Model Info',{
+	'NodeName':fields.String(required=True, description="Node FQDN"),
+	'NodeIP':fields.String(required=True, description="Node IP"),
+	'NodeOS':fields.String(required=False, description="Node OS"),
+	'key':fields.String(required=False, description="Node Pubilc key"),
+	'username':fields.String(required=False, description="Node User Name"),
+	'password':fields.String(required=False, description="Node Password"),
+	})
+
+
+nodeSubmit = api.model('Submit Node Model',{
+	'Nodes':fields.List(fields.Nested(nodeSubmitCont,required=True, description="Submit Node details"))
+	})
+
+
+
+
+
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
 # 	})
@@ -171,7 +202,7 @@ dMONQuery = api.model('queryES Model',{
 #     if todo_id not in TODOS:
 #         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
-#getGateway = dbNodes.query.filter_by(name = gateway).first()
+
 @dmon.route('/v1/observer/nodes')
 class NodesMonitored(Resource):
 	#@api.marshal_with(monNodes) # this is for response
@@ -288,7 +319,8 @@ class QueryEsCore(Resource):
 @dmon.route('/v1/overlord')
 class OverlordInfo(Resource):
 	def get(self):
-		return "Overlord Information"
+		message = 'Message goes Here and is not application/json (TODO)!'
+		return message
 
 @dmon.route('/v1/overlord/core')
 class OverlordBootstrap(Resource):
@@ -314,19 +346,75 @@ class ChefClientNodes(Resource):
 @dmon.route('/v1/overlord/nodes')
 class MonitoredNodes(Resource):
 	def get(self):
-		return "Current monitored Nodes"
+		nodeList = []
+		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP).all()
+		if nodesAll is None:
+			response = jsonify({'Status':'No monitored nodes found'})
+			response.status_code = 404
+			return response
+		for nl in nodesAll:
+			nodeDict= {}
+			print >>sys.stderr, nl[0]
+			nodeDict.update({nl[0]:nl[1]})
+			nodeList.append(nodeDict)
+		response = jsonify({'Nodes':nodeList})
+		response.status_code=200
+		return response
+
+	@api.expect(nodeSubmit)	
+	def put(self):
+		if not request.json:
+			abort(400)
+		listN =[]
+		for nodes in request.json['Nodes']:
+			qNodes = dbNodes.query.filter_by(nodeFQDN = nodes['NodeName']).first()
+			if qNodes is None:
+				e = dbNodes(nodeFQDN = nodes['NodeName'], nodeIP =nodes['NodeIP'] , nodeOS = nodes['NodeOS'], 
+					nkey = nodes['key'],nUser=nodes['username'],nPass=nodes['password'])
+				db.session.add(e)
+			else:
+				qNodes.nodeOS =nodes['NodeOS']
+				qNodes.nkey = nodes['key']
+				qNodes.nUser=nodes['username']
+				qNodes.nPass=nodes['password']
+				db.session.add(qNodes)
+			db.session.commit
+		response = jsonify({'Status':"Nodes list Updated!"})
+		response.status_code=200
+		return response	
 
 	def post(self):
-		return "Submit Nodes for monitoring"
+		return "Bootstrap monitoring"
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class MonitoredNodeInfo(Resource):
 	def get(self, nodeFQDN):
-		return "Return info of specific monitored node."
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response.status_code = 404
+			return response
+		else:
+			response = jsonify({
+				'NodeName':qNode.nodeFQDN,
+				'Status':qNode.nStatus,
+				'IP':qNode.nodeIP,
+				'Monitored':qNode.nMonitored,
+				'OS':qNode.nodeOS,
+				'Key':qNode.nkey,
+				'Password':qNode.nPass,
+				'User':qNode.nUser,
+				'ChefClient':"TODO",
+				'CDH':'TODO',
+				'Roles':'TODO'})
+			response.status_code = 200	
+		return response
 
 	def put(self, nodeFQDN):
 		return "Change info of specific monitored node."
+
 
 @dmon.route('/v1/overlord/core/es/config')
 class ESCoreConfiguration(Resource):

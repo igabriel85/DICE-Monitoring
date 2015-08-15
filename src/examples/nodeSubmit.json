@@ -1,0 +1,93 @@
+{
+  "Nodes": [
+  	{
+      "NodeIP": "109.231.126.94",
+      "NodeName": "dice.cdh5.mng.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.102",
+      "NodeName": "dice.cdh5.s1.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.166",
+      "NodeName": "dice.cdh5.s2.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+ 	{
+      "NodeIP": "109.231.126.70",
+      "NodeName": "dice.cdh5.s3.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.136",
+      "NodeName": "dice.cdh5.s4.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+ 	{
+      "NodeIP": "109.231.126.146",
+      "NodeName": "dice.cdh5.s5.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.145",
+      "NodeName": "dice.cdh5.s6.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+ 	{
+      "NodeIP": "109.231.126.157",
+      "NodeName": "dice.cdh5.s7.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.222",
+      "NodeName": "dice.cdh5.s8.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.190",
+      "NodeName": "dice.cdh5.s9.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    },
+    {
+      "NodeIP": "109.231.126.221",
+      "NodeName": "dice.cdh5.s10.internal",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "rexmundi220",
+      "username": "ubuntu"
+    }
+  ]
+}
+

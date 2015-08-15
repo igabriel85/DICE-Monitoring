@@ -267,7 +267,7 @@ if __name__=='__main__':
 			#print cluster_service_vb
 			
 			#only prints status
-			#getServiceStatus(cluster_services)
+			getServiceStatus(cluster_services)
 			
 			# for s in cluster_services:
 			# 	#print s.name, s.serviceState

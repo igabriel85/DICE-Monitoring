@@ -5,11 +5,13 @@ class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
     nodeIP = db.Column(db.String(64), index=True, unique=True)
+    nodeUUID = db.Column(db.String(64), index=True, unique=True)
     nodeOS = db.Column(db.String(120), index=True, unique=False)
     nUser = db.Column(db.String(64), index=True, unique=False)
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
     nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
+    nStatus = db.Column(db.Boolean, unique=False)
     nMonitored = db.Column(db.Boolean, unique=False)
     nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
     nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
@@ -71,3 +73,25 @@ class dbKBCore(db.Model):
 
     def __repr__(self):
         return '<dbKBCore %r>' % (self.body)
+
+#Not Used Yet
+class dbApp(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    appName = db.Column(db.String(64), index=True, unique=False)
+    appVersion = db.Column(db.String(64), index=True, unique=False)
+    jobID = db.Column(db.String(64), index=True, unique=True)
+    startTime = db.Column(db.String(64), index=True, unique=False)
+    stopTime = db.Column(db.String(64), index=True, unique=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    def __repr__(self):
+        return '<dbApp %r>' % (self.body)
+
+class dbCDHMng(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    cdhMng =  db.Column(db.String(64), index=True, unique=True)
+    cdhMngPort = db.Column(db.Integer, index=True, unique=False,default = 7180)
+    cpass = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+    cuser = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+    
+    def __repr__(self):
+        return '<dbCDHMng %r>' % (self.body)
