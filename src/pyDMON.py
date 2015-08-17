@@ -702,7 +702,7 @@ def bad_request(e):
 	response.status_code=400
 	return response
 
-@app.errorhandler(415)
+@api.errorhandler(415)
 def bad_mediatype(e):
 	response=jsonify({'error':'unsupported media type'})
 	response.status_code = 415
