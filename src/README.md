@@ -56,7 +56,6 @@ Returns the current status of the Monitoring platform status.
 
 ```json
 {
-  "DMON":{
     "ElasticSearch":{
       "Status":"<HTTP_CODE>",
       "Name":"<NAME>",
@@ -67,17 +66,16 @@ Returns the current status of the Monitoring platform status.
         "BuildTimestamp":"<TIMESTAMP>",
         "BuildSnapshot":"<BOOL>",
         "LuceneVersion":"<LC_VERSION>"
+      		}
       },
-      "Logstash":{
-        "Status":"<HTTP_CODE>",
-        "Version":"<VNUMBER>"
+    "Logstash":{
+      "Status":"<HTTP_CODE>",
+      "Version":"<VNUMBER>"
       },
-      "Kibana":{
-        "Status":"<HTTP_CODE>",
-        "Version":"<VNUMBER>"
-      }
+    "Kibana":{
+      "Status":"<HTTP_CODE>",
+      "Version":"<VNUMBER>"
     }
-  }
 }
 
 ```
@@ -102,19 +100,16 @@ Returns the status of the chef-clients from all monitored nodes.
  
 ```json
 {
-  "DMON":{
     "Nodes":[
       {"<NodeFQDN1>":"NodeIP1"},
       {"<NodeFQDN2>":"NodeIP2"},
-       .......................,
       {"<NodeFQDNn>":"NodeIPn"}
       ]
   }
-}
 ```
 
 
-`POST` `/v1/overlord/nodes`
+`PUT` `/v1/overlord/nodes`
 
 Inludes the given nodes into the monitored node pools.
 
@@ -122,33 +117,31 @@ Input:
 
 ```json
 {
-  "DMON":{
     "Nodes":[
-      {"<NodeFQDN1>":
+      
         {
+          "NodeName":"<NodeFQDN1>",
           "NodeIP":"<IP>",
-          "Credentials":{
-            "key":"<keyName|null>",
-            "username":"<uname|null>",
-            "password":"<pass|null>"
-          }
-        }
+          "key":"<keyName|null>",
+          "username":"<uname|null>",
+          "password":"<pass|null>"
       },
-      ..........................,
-      {"<NodeFQDNn>":
         {
+          "NodeName":"<NodeFQDNn>",
           "NodeIP":"<IP>",
-          "Credentials":{
-            "key":"<keyName|null>",
-            "username":"<uname|null>",
-            "password":"<pass|null>"
-          }
+          "key":"<keyName|null>",
+          "username":"<uname|null>",
+          "password":"<pass|null>"
         }
-      }
     ]
-  }
 }
 ```
+
+
+`POST` `/v1/overlord/nodes`
+
+Bootstrap of all non monitored nodes. Installs collectd and logstash forwarder
+
 
 `GET` `/v1/overlord/nodes/{NodeFQDN}`
 
@@ -156,21 +149,16 @@ Returns information of a particular monitored node.
 
 ```json
 {
-  "DMON":{
-    "<NodeFQDN>":{
+      "NodeName":"nodeFQDN",
       "Status":"<online|offline|unstable>",
       "IP":"<NodeIP>",
       "OS":"<Operating_Systen>",
-      "Credentials":{
-        "key":"<keyName|null>",
-        "username":"<uname|null>",
-        "password":"<pass|null>"
-      },
+      "key":"<keyName|null>",
+      "username":"<uname|null>",
+      "password":"<pass|null>",
       "chefclient":"<True|False>",
       "CDH":"<active|inactive|unknown>",
       "CDHVersion":"<version>"
-    }
-  }
 }
 ```
 
@@ -182,25 +170,58 @@ Input:
 
 ```json
 {
-  "DMON":{
-    "<NodeFQDN>":{
-      "IP":"<NodeIP>",
-      "OS":"<Operating_Systen>",
-      "Credentials":{
-        "key":"<keyName|null>",
-        "username":"<uname|null>",
-        "password":"<pass|null>"
-      }
-    }
-  }  
+  "NodeName":"<nodeFQDN>",
+  "IP":"<NodeIP>",
+  "OS":"<Operating_Systen>",
+  "key":"<keyName|null>",
+  "username":"<uname|null>",
+  "password":"<pass|null>"
 }
 ```
 
+`POST`  `/v1/overlord/core/check`
+
+Returns complete health check report on all core components
+
+Response 
+
+**TODO** json structure
+
+
+`GET` `/v1/overlord/core/es`
+
+Return a list of current hosts in comprising the ES core components
+
+```json
+{
+  "ES Instances": [
+    {
+      "ClusterName": "<clustername>",
+      "HostFQDN": "<HostFQDN>",
+      "IP": "<Host IP>",
+      "NodeName": "<NodeName>",
+      "NodePort": "<IP:int>",
+      "OS": "<host OS>",
+      "PID": "<ES component PID>",
+      "Status": "<ES Status>"
+    },
+    ..................
+  ]
+}
+
+```
+
+`POST` `/v1/overlord/core/es` 
+
+Generates and applies the new configuration options of the ES Core components.
+
+**NOTE**: If configuration is unchanged ES Core will not be restarted!
+
+
+
 `GET` `/v1/overlord/core/es/config`
 
-Returns the current configuration of ElasticSearch.
-
-**TODO** json structure.
+Returns the current configuration file of ElasticSearch in the form of a YAML file.
 
 `GET` `/v1/overlord/ls/config`
 
@@ -210,9 +231,8 @@ Returns the current configuration of LogstashServer
 
 `GET` `/v1/overlord/core/kb/config`
 
-Returns the current configuration for Kibana
+Returns the current configuration file for Kibana.
 
-**TODO** json structure.
 
 
 `PUT` `/v1/overlord/core/es/config`
@@ -220,14 +240,36 @@ Returns the current configuration for Kibana
 Changes the current configuration of ElasticSearch.
 
 Input:
-**TODO** json structure.
+
+```json
+{
+  "HostFQDN":"<nodeFQDN>",
+  "IP":"<NodeIP>",
+  "OS":"<Operating_Systen>",
+  "NodeName":"<ES host name>",
+  "NodePort":"<ES host port>",
+  "ClusterName":"<ES cluster name>"
+}
+
+```
 
 `PUT` `/v1/overlord/ls/config`
 
-Input:
 Changes the current configuration of LogstashServer
 
-**TODO** json structure.
+Input:
+
+```json
+{
+  "HostFQDN":"<nodeFQDN>",
+  "IP":"<NodeIP>",
+  "OS":"<Operating_Systen>",
+  "LPort":"<Lumberjack Port>",
+  "udpPort":"<UDP Collectd port>",
+  "ESClusterName":"<ES cluster Name>"
+}
+
+```
 
 `PUT` `/v1/overlord/core/kb/config`
 
@@ -261,7 +303,7 @@ Returns the current collectd or logstashfw configuration
 
 `PUT` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
-Changes the configuration of collectd or logstashfw and restarts all aux components.
+Changes the configuration/status of collectd or logstashfw and restarts all aux components.
  
  Input:
 **TODO** json structure.
@@ -276,15 +318,12 @@ Changes the configuration of collectd or logstashfw and restarts all aux compone
  
 ```json
 {
-  "DMON":{
     "Nodes":[
       {"<NodeFQDN1>":"NodeIP1"},
       {"<NodeFQDN2>":"NodeIP2"},
-       .......................,
       {"<NodeFQDNn>":"NodeIPn"}
       ]
   }
-}
 ```
 
 `GET` `/v1/observer/nodes/{NodeFQDN}`
@@ -293,15 +332,12 @@ Returns information of a particular monitored node.
 
 ```json
 {
-  "DMON":{
     "<NodeFQDN>":{
-      "Status":"<online|offline|unstable>",
+      "Status":"<online|offline>",
       "IP":"<NodeIP>",
-      "OS":"Operating_Systen",
-      "CDH":"<active|inactive|unknown>",
-      "CDHVersion":"<version>"
+      "Monitored":"<true|false>"
+      "OS":"Operating_Systen"
     }
-  }
 }
 ```
 
@@ -311,19 +347,17 @@ Returns information on the services running on a given node.
 
 ```json
 {
-  "DMON":{
     "<NodeFQDN>":[
       {
         "ServiceName":"<ServiceName>",
         "ServiceStatus":"<ServiceStatus>"
       },
-          ..........................,
+      ............................,
       {
         "ServiceName":"<ServiceName>",
         "ServiceStatus":"<ServiceStatus>"
       }
       ]
-  }
 }
 ```
 
@@ -348,25 +382,6 @@ Input:
 ```
 Output depends on the option selected by the user: csv, json or Plain. 
 
-`POST` `/v1/observer/query/{NodeFQDN}/{CSV|JSON|Plain}`
-
-Returns the required metrics of a given node in csv, json or plain format.
-
-```json
-{
-  "DMON":{
-    "query":{
-      "size":"<SIZEinINT>",
-      "ordering":"<asc|desc>",
-      "serivceMetrics":[
-        "<m1>","<m2>",....,<mn>
-        ],
-      "tstart":"<startDate>",
-      "tstop":"<stopDate>"
-    }
-  }
-}
-```
 NOTE: The metrics must be in the form of a list.
 
 

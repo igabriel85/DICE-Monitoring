@@ -34,6 +34,9 @@ import os
 import sys
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
+import jinja2
+import requests
+from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
 #from dbModel import *
@@ -50,16 +53,20 @@ class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
     nodeIP = db.Column(db.String(64), index=True, unique=True)
+    nodeUUID = db.Column(db.String(64), index=True, unique=True)
     nodeOS = db.Column(db.String(120), index=True, unique=False)
     nUser = db.Column(db.String(64), index=True, unique=False)
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
-    nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
-    nMonitored = db.Column(db.Boolean, unique=False)
-    nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
-    nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') #hadoop roles running on server
+    nStatus = db.Column(db.Boolean,index=True, unique=False, default='0')
+    nMonitored = db.Column(db.Boolean,index=True, unique=False, default='0')
+    nCollectdState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
+
+    #TODO: Create init function/method to populate db.Model
 
     def __repr__(self):
         return '<dbNodes %r>' % (self.nickname)
@@ -73,9 +80,12 @@ class dbESCore(db.Model):
     nodeName = db.Column(db.String(64), index=True, unique=True)
     nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
-    conf = db.Column(db.String(140), index=True, unique=False)
-    ESCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    conf = db.Column(db.LargeBinary, index=True, unique=False)
+    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)#Running, Pending, Stopped, unknown
+    ESCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
+    MasterNode = db.Column(db.Boolean,index=True, unique=False) # which node is master
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+   
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -90,8 +100,7 @@ class dbSCore(db.Model):
     inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
     sslCert = db.Column(db.String(120), index=True, unique=False)
     sslKey = db.Column(db.String(120), index=True, unique=False)
-    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
-    outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
+    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf  # same as ESCore clusterName
     outKafka = db.Column(db.String(64), index=True, unique=False) # output kafka details
     outKafkaPort = db.Column(db.Integer, index=True, unique=False)
     conf = db.Column(db.String(140), index=True, unique=False)
@@ -116,6 +125,28 @@ class dbKBCore(db.Model):
 
     def __repr__(self):
         return '<dbKBCore %r>' % (self.body)
+
+#Not Used Yet
+class dbApp(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	appName = db.Column(db.String(64), index=True, unique=False)
+	appVersion = db.Column(db.String(64), index=True, unique=False)
+	jobID = db.Column(db.String(64), index=True, unique=True)
+	startTime = db.Column(db.String(64), index=True, unique=False)
+	stopTime = db.Column(db.String(64), index=True, unique=False)
+	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+	def __repr__(self):
+		return '<dbApp %r>' % (self.body)
+
+class dbCDHMng(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	cdhMng =  db.Column(db.String(64), index=True, unique=True)
+	cdhMngPort = db.Column(db.Integer, index=True, unique=False,default = 7180)
+	cpass = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+	cuser = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+	
+	def __repr__(self):
+		return '<dbCDHMng %r>' % (self.body)
 
 
 
@@ -147,21 +178,87 @@ dMONQuery = api.model('queryES Model',{
 	})
 
 
-# def abort_if_todo_doesnt_exist(todo_id):
-#     if todo_id not in TODOS:
-#         api.abort(404, "Todo {} doesn't exist".format(todo_id))
+
+nodeSubmitCont = api.model('Submit Node Model Info',{
+	'NodeName':fields.String(required=True, description="Node FQDN"),
+	'NodeIP':fields.String(required=True, description="Node IP"),
+	'NodeOS':fields.String(required=False, description="Node OS"),
+	'key':fields.String(required=False, description="Node Pubilc key"),
+	'username':fields.String(required=False, description="Node User Name"),
+	'password':fields.String(required=False, description="Node Password"),
+	})
+
+
+nodeSubmit = api.model('Submit Node Model',{
+	'Nodes':fields.List(fields.Nested(nodeSubmitCont,required=True, description="Submit Node details"))
+	})
+
+
+esCore = api.model('Submit ES conf',{
+	'HostFQDN':fields.String(required=True, description='Host FQDN'),
+	'IP':fields.String(required=True, description='Host IP'),
+	'OS':fields.String(required=False,default='unknown',description='Host OS'),
+	'NodeName':fields.String(required=True,description='ES Host Name'),
+	'NodePort':fields.Integer(required=False, default=9200,description='ES Port'),
+	'ClusterName':fields.String(required=True,description='ES Host Name')
+	})
+
+
+nodeUpdate = api.model('Update Node Model Info',{
+	'IP':fields.String(required=True, description="Node IP"),
+	'OS':fields.String(required=False, description="Node OS"),
+	'Key':fields.String(required=False, description="Node Pubilc key"),
+	'User':fields.String(required=False, description="Node User Name"),
+	'Password':fields.String(required=False, description="Node Password")
+	})
+
+
+# monNodes = api.model('Monitored Nodes',{
+# 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
+# 	})
+# nodeDet = api.model('Node Info',{
+# 	'FQDN' : field
+# 	})#[{'FQDN':'IP'}]
+
+
 
 @dmon.route('/v1/observer/nodes')
 class NodesMonitored(Resource):
+	#@api.marshal_with(monNodes) # this is for response
 	def get(self):
-		return "Nodes Monitored"
+		nodeList = []
+		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP).all()
+		if nodesAll is None:
+			response = jsonify({'Status':'No monitored nodes found'})
+			response.status_code = 404
+			return response
+		for nl in nodesAll:
+			nodeDict= {}
+			print >>sys.stderr, nl[0]
+			nodeDict.update({nl[0]:nl[1]})
+			nodeList.append(nodeDict)
+		response = jsonify({'Nodes':nodeList})
+		response.status_code=200
+		return response
 
 
 @dmon.route('/v1/observer/nodes/<nodeFQDN>')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatus(Resource):
 	def get(self, nodeFQDN):
-		return "Node " + nodeFQDN +" status!"
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response.status_code = 404
+			return response
+		else:
+			response = jsonify({nodeFQDN:{
+				'Status':qNode.nStatus,
+				'IP':qNode.nodeIP,
+				'Monitored':qNode.nMonitored,
+				'OS':qNode.nodeOS}})
+			response.status_code = 200	
+		return response
 
 
 @dmon.route('/v1/observer/nodes/<nodeFQDN>/services')
@@ -170,12 +267,17 @@ class NodeStatusServices(Resource):
 	def get(self,nodeFQDN):
 		return "Node " + nodeFQDN +" status of services!"		
 
+
+
+
+
+
 @dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
 class QueryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
 	#@api.marshal_with(dMONQuery) # this is for response
-	@api.expect(dMONQuery)# this is for payload
+	@api.expect(dMONQuery)# this is for payload  
 	def post(self, ftype):
 		#args = pQueryES.parse_args()#parsing query arguments in URI
 		supportType = ["csv","json","plain"]
@@ -241,7 +343,8 @@ class QueryEsCore(Resource):
 @dmon.route('/v1/overlord')
 class OverlordInfo(Resource):
 	def get(self):
-		return "Overlord Information"
+		message = 'Message goes Here and is not application/json (TODO)!'
+		return message
 
 @dmon.route('/v1/overlord/core')
 class OverlordBootstrap(Resource):
@@ -251,7 +354,31 @@ class OverlordBootstrap(Resource):
 @dmon.route('/v1/overlord/core/status')
 class OverlordCoreStatus(Resource):
 	def get(self):
-		return "Monit Core Status!"
+		rspD = {}
+		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
+		if qESCore is None:
+			response = jsonify({"Status":"No master ES instances found!"})
+			response.status_code = 500
+			return response
+		try:
+			esCoreUrl='http://'+qESCore.hostIP+':'+str(qESCore.nodePort)
+			r = requests.get(esCoreUrl,timeout=2) #timeout in seconds
+		except:
+			response = jsonify({"Error":"Masteraster ES instances not reachable!"})
+			response.status_code = 500
+			return response
+
+		rsp = r.json()
+		rspES={'ElasticSearch':rsp}
+		rspLS = {'Logstash':{'Status':'TODO','Version':'TODO'}}
+		rspKB = {'Kibana':{'Status':'TODO','Version':'TODO'}}
+
+		rspD.update(rspES)
+		rspD.update(rspLS) #TODO
+		rspD.update(rspKB) #TODO
+		response = jsonify(rspD)
+		response.status_code = 200
+		return response
 
 @dmon.route('/v1/overlord/chef')
 class ChefClientStatus(Resource):
@@ -267,31 +394,197 @@ class ChefClientNodes(Resource):
 @dmon.route('/v1/overlord/nodes')
 class MonitoredNodes(Resource):
 	def get(self):
-		return "Current monitored Nodes"
+		nodeList = []
+		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP).all()
+		if nodesAll is None:
+			response = jsonify({'Status':'No monitored nodes found'})
+			response.status_code = 404
+			return response
+		for nl in nodesAll:
+			nodeDict= {}
+			print >>sys.stderr, nl[0]
+			nodeDict.update({nl[0]:nl[1]})
+			nodeList.append(nodeDict)
+		response = jsonify({'Nodes':nodeList})
+		response.status_code=200
+		return response
+
+	@api.expect(nodeSubmit)	
+	def put(self):
+		if not request.json:
+			abort(400)
+		listN =[]
+		for nodes in request.json['Nodes']:
+			qNodes = dbNodes.query.filter_by(nodeFQDN = nodes['NodeName']).first()
+			if qNodes is None:
+				e = dbNodes(nodeFQDN = nodes['NodeName'], nodeIP =nodes['NodeIP'] , nodeOS = nodes['NodeOS'], 
+					nkey = nodes['key'],nUser=nodes['username'],nPass=nodes['password'])
+				db.session.add(e)
+			else:
+				qNodes.nodeIP = nodes['NodeIP']
+				qNodes.nodeOS =nodes['NodeOS']
+				qNodes.nkey = nodes['key']
+				qNodes.nUser=nodes['username']
+				qNodes.nPass=nodes['password']
+				db.session.add(qNodes)
+			db.session.commit
+		response = jsonify({'Status':"Nodes list Updated!"})
+		response.status_code=201
+		return response	
 
 	def post(self):
-		return "Submit Nodes for monitoring"
+		return "Bootstrap monitoring"
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class MonitoredNodeInfo(Resource):
 	def get(self, nodeFQDN):
-		return "Return info of specific monitored node."
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response.status_code = 404
+			return response
+		else:
+			response = jsonify({
+				'NodeName':qNode.nodeFQDN,
+				'Status':qNode.nStatus,
+				'IP':qNode.nodeIP,
+				'Monitored':qNode.nMonitored,
+				'OS':qNode.nodeOS,
+				'Key':qNode.nkey,
+				'Password':qNode.nPass,
+				'User':qNode.nUser,
+				'ChefClient':"TODO",
+				'CDH':'TODO',
+				'Roles':'TODO'})
+			response.status_code = 200	
+			return response
 
+	@api.expect(nodeUpdate)	
 	def put(self, nodeFQDN):
-		return "Change info of specific monitored node."
+		if not request.json:
+			abort(400)
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response.status_code = 404
+			return response
+		else:
+			qNode.nodeIP = request.json['IP']
+			qNode.nodeOS = request.json['OS']
+			qNode.nkey = request.json['Key']
+			qNode.nPass = request.json['Password']
+			qNode.nUser = request.json['User']
+			response=jsonify({'Status':'Node '+ nodeFQDN+' updated!'})
+			response.status_code = 201
+			return response
 
-@dmon.route('/v1/overlord/core/es/config')
+
+@dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload
 class ESCoreConfiguration(Resource):
-	def get(self):
-		return "Returns current configuration of ElasticSearch"
+	def get(self): #TODO same for all get config file createfunction
+		if not os.path.isdir(cfgDir):
+			response = jsonify({'Error':'Config dir not found !'})
+			response.status_code = 404
+			return response
+		if not os.path.isfile(os.path.join(cfgDir,'elasticsearch.yml')):
+			response = jsonify({'Status':'Config file not found !'})
+			response.status_code = 404
+			return response
+		try:
+			esCfgfile=open(os.path.join(cfgDir,'elasticsearch.yml'),'r')
+		except EnvironmentError:
+			response = jsonify({'EnvError':'file not found'})
+			response.status_code = 500
+			return response
 
+		return send_file(esCfgfile,mimetype = 'text/yaml',as_attachment = True)
+
+	@api.expect(esCore)	
 	def put(self):
-		return "Changes configuration of ElasticSearch"
+		requiredKeys=['ClusterName','HostFQDN','IP','NodeName','NodePort']
+		if not request.json:
+			abort(400)
+		for key in requiredKeys:
+			if key not in request.json:
+				response = jsonify({'Error':'malformed request, missing key(s)'})
+				response.status_code = 400
+				return response 
+		test = db.session.query(dbESCore.hostFQDN).all()
+		if not test:
+			master = 1
+		else:
+			master = 0
+				
+		qESCore = dbESCore.query.filter_by(hostIP = request.json['IP']).first()
+		if request.json["OS"] is None:
+			os = "unknown"
+		else:
+			os=request.json["OS"]
+
+		if qESCore is None:
+			upES = dbESCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os, nodeName = request.json["NodeName"],
+			 clusterName=request.json["ClusterName"], conf = 'none', nodePort=request.json['NodePort'], MasterNode=master)
+			db.session.add(upES) 
+			db.session.commit()
+			response = jsonify({'Added':'ES Config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
+		else:
+			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
+			qESCore.hostOS = os
+			qESCore.nodename = request.json['NodeName']
+			qESCore.clusterName=request.json['ClusterName']
+			qESCore.nodePort=request.json['NodePort']
+			db.session.commit()
+			response=jsonify({'Updated':'ES config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
 
 @dmon.route('/v1/overlord/core/es')
 class ESCoreController(Resource):
+	def get(self):
+		hostsAll=db.session.query(dbESCore.hostFQDN,dbESCore.hostIP,dbESCore.hostOS,dbESCore.nodeName,dbESCore.nodePort,
+			dbESCore.clusterName,dbESCore.ESCoreStatus, dbESCore.ESCorePID,dbESCore.MasterNode).all()
+		resList=[]
+		for hosts in hostsAll:
+			confDict={}
+			confDict['HostFQDN']=hosts[0]
+			confDict['IP']=hosts[1]
+			confDict['OS']=hosts[2]
+			confDict['NodeName']=hosts[3]
+			confDict['NodePort']=hosts[4]
+			confDict['ClusterName']=hosts[5]
+			confDict['Status']=hosts[6]
+			confDict['PID']=hosts[7]
+			confDict['Master']=hosts[8]
+			resList.append(confDict)
+		response = jsonify({'ES Instances':resList})
+		response.status_code = 200
+		return response
+
 	def post(self):
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		esTemp= os.path.join(tmpDir,'elasticsearch.tmp')#tmpDir+"/collectd.tmp"
+		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
+		if qESCore is None:
+			response = jsonify({"Status":"No master ES instances found!"})
+			response.status_code = 500
+			return response 
+		try:
+			template = templateEnv.get_template( esTemp )
+			#print >>sys.stderr, template
+		except:
+			return "Tempalte file unavailable!"
+
+		infoESCore = {"clusterName":qESCore.clusterName,"nodeName":qESCore.nodeName}			
+		esConf = template.render(infoESCore)
+		qESCore.conf = esConf
+		#print >>sys.stderr, esConf
+		db.session.commit()
+		#TODO NOW -> use rendered tempalte to load es Core
 		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
 
 @dmon.route('/v1/overlord/core/kb/config')
@@ -310,9 +603,29 @@ class KKCoreController(Resource):
 @dmon.route('/v1/overlord/core/ls/config')
 class LSCoreConfiguration(Resource):
 	def get(self):
-		return "Returns current logstash server configuration"
+		if not os.path.isdir(cfgDir):
+			response = jsonify({'Error':'Config dir not found !'})
+			response.status_code = 404
+			return response
+		if not os.path.isfile(os.path.join(cfgDir,'logstash.conf')):
+			response = jsonify({'Error':'Config file not found !'})
+			response.status_code = 404
+			return response
+		try:
+			lsCfgfile=open(os.path.join(cfgDir,'logstash.conf'),'r')
+		except EnvironmentError:
+			response = jsonify({'EnvError':'file not found'})
+			response.status_code = 500
+			return response
+		return send_file(lsCfgfile,mimetype = 'text/plain',as_attachment = True)
 
 	def put(self):
+		# if request.headers['Content-Type'] == 'text/plain':
+		# 	cData = request.data
+		# 	#temporaryConf =  open(tmp_loc+'/temporary.conf',"w+")
+		# 	#temporaryConf.write(cData)
+		# 	#temporaryConf.close()
+		# 	print cData
 		return "Changes configuration fo logstash server"
 
 @dmon.route('/v1/overlord/core/ls')
@@ -341,7 +654,7 @@ class AuxDeploySelective(Resource):
 	def post(self, auxComp, nodeFQDN):
 		return "Deploys auxiliary monitoring components on a node by node basis."
 
-@dmon.route('/v1/ocerlord/aux/<auxComp>/config')
+@dmon.route('/v1/overlord/aux/<auxComp>/config')
 class AuxConfigSelective(Resource):
 	def get(self, auxComp):
 		return "Returns current configuration of aux components"
