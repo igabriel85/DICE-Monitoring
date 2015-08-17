@@ -35,6 +35,7 @@ import sys
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 import jinja2
+import requests
 from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
@@ -58,7 +59,7 @@ class dbNodes(db.Model):
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
     nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') #hadoop roles running on server
-    nStatus = db.Column(db.Boolean,index=True, unique=False, default='1')
+    nStatus = db.Column(db.Boolean,index=True, unique=False, default='0')
     nMonitored = db.Column(db.Boolean,index=True, unique=False, default='0')
     nCollectdState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
     nLogstashForwState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
@@ -84,6 +85,7 @@ class dbESCore(db.Model):
     ESCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
     MasterNode = db.Column(db.Boolean,index=True, unique=False) # which node is master
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+   
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -98,8 +100,7 @@ class dbSCore(db.Model):
     inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
     sslCert = db.Column(db.String(120), index=True, unique=False)
     sslKey = db.Column(db.String(120), index=True, unique=False)
-    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
-    outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
+    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf  # same as ESCore clusterName
     outKafka = db.Column(db.String(64), index=True, unique=False) # output kafka details
     outKafkaPort = db.Column(db.Integer, index=True, unique=False)
     conf = db.Column(db.String(140), index=True, unique=False)
@@ -203,6 +204,15 @@ esCore = api.model('Submit ES conf',{
 	})
 
 
+nodeUpdate = api.model('Update Node Model Info',{
+	'IP':fields.String(required=True, description="Node IP"),
+	'OS':fields.String(required=False, description="Node OS"),
+	'Key':fields.String(required=False, description="Node Pubilc key"),
+	'User':fields.String(required=False, description="Node User Name"),
+	'Password':fields.String(required=False, description="Node Password")
+	})
+
+
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
 # 	})
@@ -267,7 +277,7 @@ class NodeStatusServices(Resource):
 class QueryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
 	#@api.marshal_with(dMONQuery) # this is for response
-	@api.expect(dMONQuery)# this is for payload
+	@api.expect(dMONQuery)# this is for payload  
 	def post(self, ftype):
 		#args = pQueryES.parse_args()#parsing query arguments in URI
 		supportType = ["csv","json","plain"]
@@ -344,7 +354,31 @@ class OverlordBootstrap(Resource):
 @dmon.route('/v1/overlord/core/status')
 class OverlordCoreStatus(Resource):
 	def get(self):
-		return "Monit Core Status!"
+		rspD = {}
+		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
+		if qESCore is None:
+			response = jsonify({"Status":"No master ES instances found!"})
+			response.status_code = 500
+			return response
+		try:
+			esCoreUrl='http://'+qESCore.hostIP+':'+str(qESCore.nodePort)
+			r = requests.get(esCoreUrl,timeout=2) #timeout in seconds
+		except:
+			response = jsonify({"Error":"Masteraster ES instances not reachable!"})
+			response.status_code = 500
+			return response
+
+		rsp = r.json()
+		rspES={'ElasticSearch':rsp}
+		rspLS = {'Logstash':{'Status':'TODO','Version':'TODO'}}
+		rspKB = {'Kibana':{'Status':'TODO','Version':'TODO'}}
+
+		rspD.update(rspES)
+		rspD.update(rspLS) #TODO
+		rspD.update(rspKB) #TODO
+		response = jsonify(rspD)
+		response.status_code = 200
+		return response
 
 @dmon.route('/v1/overlord/chef')
 class ChefClientStatus(Resource):
@@ -387,6 +421,7 @@ class MonitoredNodes(Resource):
 					nkey = nodes['key'],nUser=nodes['username'],nPass=nodes['password'])
 				db.session.add(e)
 			else:
+				qNodes.nodeIP = nodes['NodeIP']
 				qNodes.nodeOS =nodes['NodeOS']
 				qNodes.nkey = nodes['key']
 				qNodes.nUser=nodes['username']
@@ -394,7 +429,7 @@ class MonitoredNodes(Resource):
 				db.session.add(qNodes)
 			db.session.commit
 		response = jsonify({'Status':"Nodes list Updated!"})
-		response.status_code=200
+		response.status_code=201
 		return response	
 
 	def post(self):
@@ -424,10 +459,26 @@ class MonitoredNodeInfo(Resource):
 				'CDH':'TODO',
 				'Roles':'TODO'})
 			response.status_code = 200	
-		return response
+			return response
 
+	@api.expect(nodeUpdate)	
 	def put(self, nodeFQDN):
-		return "Change info of specific monitored node."
+		if not request.json:
+			abort(400)
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response.status_code = 404
+			return response
+		else:
+			qNode.nodeIP = request.json['IP']
+			qNode.nodeOS = request.json['OS']
+			qNode.nkey = request.json['Key']
+			qNode.nPass = request.json['Password']
+			qNode.nUser = request.json['User']
+			response=jsonify({'Status':'Node '+ nodeFQDN+' updated!'})
+			response.status_code = 201
+			return response
 
 
 @dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload
@@ -438,7 +489,7 @@ class ESCoreConfiguration(Resource):
 			response.status_code = 404
 			return response
 		if not os.path.isfile(os.path.join(cfgDir,'elasticsearch.yml')):
-			response = jsonify({'Error':'Config file not found !'})
+			response = jsonify({'Status':'Config file not found !'})
 			response.status_code = 404
 			return response
 		try:
@@ -566,9 +617,7 @@ class LSCoreConfiguration(Resource):
 			response = jsonify({'EnvError':'file not found'})
 			response.status_code = 500
 			return response
-
 		return send_file(lsCfgfile,mimetype = 'text/plain',as_attachment = True)
-		#return "Returns current logstash server configuration"
 
 	def put(self):
 		# if request.headers['Content-Type'] == 'text/plain':

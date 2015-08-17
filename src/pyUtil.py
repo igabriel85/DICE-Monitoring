@@ -21,7 +21,7 @@ import sys
 import signal
 import subprocess
 from datetime import datetime
-
+import requests
 
 def portScan(addrs,ports):
 	'''
@@ -72,5 +72,7 @@ def checkPID(pid):
 hosts = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
 		'109.231.126.146','109.231.126.157','109.231.126.38']
 ports = ['22','443','7180','50020','5601']
-
 portScan(hosts,ports)
+
+
+

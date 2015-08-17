@@ -56,7 +56,6 @@ Returns the current status of the Monitoring platform status.
 
 ```json
 {
-  "DMON":{
     "ElasticSearch":{
       "Status":"<HTTP_CODE>",
       "Name":"<NAME>",
@@ -67,17 +66,16 @@ Returns the current status of the Monitoring platform status.
         "BuildTimestamp":"<TIMESTAMP>",
         "BuildSnapshot":"<BOOL>",
         "LuceneVersion":"<LC_VERSION>"
+      		}
       },
-      "Logstash":{
-        "Status":"<HTTP_CODE>",
-        "Version":"<VNUMBER>"
+    "Logstash":{
+      "Status":"<HTTP_CODE>",
+      "Version":"<VNUMBER>"
       },
-      "Kibana":{
-        "Status":"<HTTP_CODE>",
-        "Version":"<VNUMBER>"
-      }
+    "Kibana":{
+      "Status":"<HTTP_CODE>",
+      "Version":"<VNUMBER>"
     }
-  }
 }
 
 ```
@@ -233,9 +231,8 @@ Returns the current configuration of LogstashServer
 
 `GET` `/v1/overlord/core/kb/config`
 
-Returns the current configuration for Kibana
+Returns the current configuration file for Kibana.
 
-**TODO** json structure.
 
 
 `PUT` `/v1/overlord/core/es/config`
@@ -258,10 +255,21 @@ Input:
 
 `PUT` `/v1/overlord/ls/config`
 
-Input:
 Changes the current configuration of LogstashServer
 
-**TODO** json structure.
+Input:
+
+```json
+{
+  "HostFQDN":"<nodeFQDN>",
+  "IP":"<NodeIP>",
+  "OS":"<Operating_Systen>",
+  "LPort":"<Lumberjack Port>",
+  "udpPort":"<UDP Collectd port>",
+  "ESClusterName":"<ES cluster Name>"
+}
+
+```
 
 `PUT` `/v1/overlord/core/kb/config`
 
