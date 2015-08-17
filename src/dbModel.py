@@ -1,6 +1,7 @@
 from pyDMON import db
 from datetime import datetime
 
+#%--------------------------------------------------------------------%
 class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
@@ -10,13 +11,15 @@ class dbNodes(db.Model):
     nUser = db.Column(db.String(64), index=True, unique=False)
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
-    nRoles = db.Column(db.String(120), index=True, unique=False) #hadoop roles running on server
-    nStatus = db.Column(db.Boolean, unique=False)
-    nMonitored = db.Column(db.Boolean, unique=False)
-    nCollectdState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
-    nLogstashForwState = db.Column(db.String(64), index=True, unique=False) #Running, Pending, Stopped, None
+    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') #hadoop roles running on server
+    nStatus = db.Column(db.Boolean,index=True, unique=False, default='1')
+    nMonitored = db.Column(db.Boolean,index=True, unique=False, default='0')
+    nCollectdState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
+
+    #TODO: Create init function/method to populate db.Model
 
     def __repr__(self):
         return '<dbNodes %r>' % (self.nickname)
@@ -30,8 +33,10 @@ class dbESCore(db.Model):
     nodeName = db.Column(db.String(64), index=True, unique=True)
     nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
-    conf = db.Column(db.String(140), index=True, unique=False)
-    ESCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    conf = db.Column(db.LargeBinary, index=True, unique=False)
+    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)#Running, Pending, Stopped, unknown
+    ESCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
+    MasterNode = db.Column(db.Boolean,index=True, unique=False) # which node is master
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -95,3 +100,7 @@ class dbCDHMng(db.Model):
     
     def __repr__(self):
         return '<dbCDHMng %r>' % (self.body)
+
+
+
+#%--------------------------------------------------------------------%

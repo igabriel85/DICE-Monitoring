@@ -1,5 +1,4 @@
-Hostname   "{{hostname}}"
-FQDNLookup false
+FQDNLookup true
 
 
 LoadPlugin cpu
@@ -25,7 +24,7 @@ LoadPlugin network
     IgnoreSelected false
 </Plugin>
 <Plugin "network">
-    Server "{{logstash server ip}}" "{{logstash server port}}"
+    Server "{{logstash_server_ip}}" "{{logstash_server_port}}"
 </Plugin>
 
 LoadPlugin swap

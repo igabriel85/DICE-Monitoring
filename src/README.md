@@ -190,12 +190,40 @@ Response
 **TODO** json structure
 
 
+`GET` `/v1/overlord/core/es`
+
+Return a list of current hosts in comprising the ES core components
+
+```json
+{
+  "ES Instances": [
+    {
+      "ClusterName": "<clustername>",
+      "HostFQDN": "<HostFQDN>",
+      "IP": "<Host IP>",
+      "NodeName": "<NodeName>",
+      "NodePort": "<IP:int>",
+      "OS": "<host OS>",
+      "PID": "<ES component PID>",
+      "Status": "<ES Status>"
+    },
+    ..................
+  ]
+}
+
+```
+
+`POST` `/v1/overlord/core/es` 
+
+Generates and applies the new configuration options of the ES Core components.
+
+**NOTE**: If configuration is unchanged ES Core will not be restarted!
+
+
 
 `GET` `/v1/overlord/core/es/config`
 
-Returns the current configuration of ElasticSearch.
-
-**TODO** json structure.
+Returns the current configuration file of ElasticSearch in the form of a YAML file.
 
 `GET` `/v1/overlord/ls/config`
 
@@ -215,7 +243,18 @@ Returns the current configuration for Kibana
 Changes the current configuration of ElasticSearch.
 
 Input:
-**TODO** json structure.
+
+```json
+{
+  "HostFQDN":"<nodeFQDN>",
+  "IP":"<NodeIP>",
+  "OS":"<Operating_Systen>",
+  "NodeName":"<ES host name>",
+  "NodePort":"<ES host port>",
+  "ClusterName":"<ES cluster name>"
+}
+
+```
 
 `PUT` `/v1/overlord/ls/config`
 

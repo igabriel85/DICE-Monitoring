@@ -34,6 +34,8 @@ import os
 import sys
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
+import jinja2
+from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
 #from dbModel import *
@@ -63,6 +65,8 @@ class dbNodes(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
+    #TODO: Create init function/method to populate db.Model
+
     def __repr__(self):
         return '<dbNodes %r>' % (self.nickname)
 
@@ -75,8 +79,10 @@ class dbESCore(db.Model):
     nodeName = db.Column(db.String(64), index=True, unique=True)
     nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
-    conf = db.Column(db.String(140), index=True, unique=False)
-    ESCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    conf = db.Column(db.LargeBinary, index=True, unique=False)
+    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)#Running, Pending, Stopped, unknown
+    ESCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
+    MasterNode = db.Column(db.Boolean,index=True, unique=False) # which node is master
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -187,7 +193,14 @@ nodeSubmit = api.model('Submit Node Model',{
 	})
 
 
-
+esCore = api.model('Submit ES conf',{
+	'HostFQDN':fields.String(required=True, description='Host FQDN'),
+	'IP':fields.String(required=True, description='Host IP'),
+	'OS':fields.String(required=False,default='unknown',description='Host OS'),
+	'NodeName':fields.String(required=True,description='ES Host Name'),
+	'NodePort':fields.Integer(required=False, default=9200,description='ES Port'),
+	'ClusterName':fields.String(required=True,description='ES Host Name')
+	})
 
 
 # monNodes = api.model('Monitored Nodes',{
@@ -197,10 +210,6 @@ nodeSubmit = api.model('Submit Node Model',{
 # 	'FQDN' : field
 # 	})#[{'FQDN':'IP'}]
 
-
-# def abort_if_todo_doesnt_exist(todo_id):
-#     if todo_id not in TODOS:
-#         api.abort(404, "Todo {} doesn't exist".format(todo_id))
 
 
 @dmon.route('/v1/observer/nodes')
@@ -247,6 +256,11 @@ class NodeStatus(Resource):
 class NodeStatusServices(Resource):
 	def get(self,nodeFQDN):
 		return "Node " + nodeFQDN +" status of services!"		
+
+
+
+
+
 
 @dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
@@ -416,17 +430,110 @@ class MonitoredNodeInfo(Resource):
 		return "Change info of specific monitored node."
 
 
-@dmon.route('/v1/overlord/core/es/config')
+@dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload
 class ESCoreConfiguration(Resource):
-	def get(self):
-		return "Returns current configuration of ElasticSearch"
+	def get(self): #TODO same for all get config file createfunction
+		if not os.path.isdir(cfgDir):
+			response = jsonify({'Error':'Config dir not found !'})
+			response.status_code = 404
+			return response
+		if not os.path.isfile(os.path.join(cfgDir,'elasticsearch.yml')):
+			response = jsonify({'Error':'Config file not found !'})
+			response.status_code = 404
+			return response
+		try:
+			esCfgfile=open(os.path.join(cfgDir,'elasticsearch.yml'),'r')
+		except EnvironmentError:
+			response = jsonify({'EnvError':'file not found'})
+			response.status_code = 500
+			return response
 
+		return send_file(esCfgfile,mimetype = 'text/yaml',as_attachment = True)
+
+	@api.expect(esCore)	
 	def put(self):
-		return "Changes configuration of ElasticSearch"
+		requiredKeys=['ClusterName','HostFQDN','IP','NodeName','NodePort']
+		if not request.json:
+			abort(400)
+		for key in requiredKeys:
+			if key not in request.json:
+				response = jsonify({'Error':'malformed request, missing key(s)'})
+				response.status_code = 400
+				return response 
+		test = db.session.query(dbESCore.hostFQDN).all()
+		if not test:
+			master = 1
+		else:
+			master = 0
+				
+		qESCore = dbESCore.query.filter_by(hostIP = request.json['IP']).first()
+		if request.json["OS"] is None:
+			os = "unknown"
+		else:
+			os=request.json["OS"]
+
+		if qESCore is None:
+			upES = dbESCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os, nodeName = request.json["NodeName"],
+			 clusterName=request.json["ClusterName"], conf = 'none', nodePort=request.json['NodePort'], MasterNode=master)
+			db.session.add(upES) 
+			db.session.commit()
+			response = jsonify({'Added':'ES Config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
+		else:
+			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
+			qESCore.hostOS = os
+			qESCore.nodename = request.json['NodeName']
+			qESCore.clusterName=request.json['ClusterName']
+			qESCore.nodePort=request.json['NodePort']
+			db.session.commit()
+			response=jsonify({'Updated':'ES config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
 
 @dmon.route('/v1/overlord/core/es')
 class ESCoreController(Resource):
+	def get(self):
+		hostsAll=db.session.query(dbESCore.hostFQDN,dbESCore.hostIP,dbESCore.hostOS,dbESCore.nodeName,dbESCore.nodePort,
+			dbESCore.clusterName,dbESCore.ESCoreStatus, dbESCore.ESCorePID,dbESCore.MasterNode).all()
+		resList=[]
+		for hosts in hostsAll:
+			confDict={}
+			confDict['HostFQDN']=hosts[0]
+			confDict['IP']=hosts[1]
+			confDict['OS']=hosts[2]
+			confDict['NodeName']=hosts[3]
+			confDict['NodePort']=hosts[4]
+			confDict['ClusterName']=hosts[5]
+			confDict['Status']=hosts[6]
+			confDict['PID']=hosts[7]
+			confDict['Master']=hosts[8]
+			resList.append(confDict)
+		response = jsonify({'ES Instances':resList})
+		response.status_code = 200
+		return response
+
 	def post(self):
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		esTemp= os.path.join(tmpDir,'elasticsearch.tmp')#tmpDir+"/collectd.tmp"
+		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
+		if qESCore is None:
+			response = jsonify({"Status":"No master ES instances found!"})
+			response.status_code = 500
+			return response 
+		try:
+			template = templateEnv.get_template( esTemp )
+			#print >>sys.stderr, template
+		except:
+			return "Tempalte file unavailable!"
+
+		infoESCore = {"clusterName":qESCore.clusterName,"nodeName":qESCore.nodeName}			
+		esConf = template.render(infoESCore)
+		qESCore.conf = esConf
+		#print >>sys.stderr, esConf
+		db.session.commit()
+		#TODO NOW -> use rendered tempalte to load es Core
 		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
 
 @dmon.route('/v1/overlord/core/kb/config')
@@ -445,9 +552,31 @@ class KKCoreController(Resource):
 @dmon.route('/v1/overlord/core/ls/config')
 class LSCoreConfiguration(Resource):
 	def get(self):
-		return "Returns current logstash server configuration"
+		if not os.path.isdir(cfgDir):
+			response = jsonify({'Error':'Config dir not found !'})
+			response.status_code = 404
+			return response
+		if not os.path.isfile(os.path.join(cfgDir,'logstash.conf')):
+			response = jsonify({'Error':'Config file not found !'})
+			response.status_code = 404
+			return response
+		try:
+			lsCfgfile=open(os.path.join(cfgDir,'logstash.conf'),'r')
+		except EnvironmentError:
+			response = jsonify({'EnvError':'file not found'})
+			response.status_code = 500
+			return response
+
+		return send_file(lsCfgfile,mimetype = 'text/plain',as_attachment = True)
+		#return "Returns current logstash server configuration"
 
 	def put(self):
+		# if request.headers['Content-Type'] == 'text/plain':
+		# 	cData = request.data
+		# 	#temporaryConf =  open(tmp_loc+'/temporary.conf',"w+")
+		# 	#temporaryConf.write(cData)
+		# 	#temporaryConf.close()
+		# 	print cData
 		return "Changes configuration fo logstash server"
 
 @dmon.route('/v1/overlord/core/ls')
