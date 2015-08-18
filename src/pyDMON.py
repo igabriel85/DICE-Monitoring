@@ -399,7 +399,7 @@ class ChefClientNodes(Resource):
 		return "Chef client status of monitored Nodes"
 
 
-@dmon.route('/v1/overlord/nodes')
+@dmon.route('/v1/overlord/nodes') #TODO -checkOS and -checkRoles
 class MonitoredNodes(Resource):
 	def get(self):
 		nodeList = []
@@ -713,7 +713,8 @@ class AuxInfo(Resource):
 @dmon.route('/v1/overlord/aux/deploy')
 class AuxDeploy(Resource):
 	def get(self):
-		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP,dbNodes.nMonitored,dbNodes.nCollectdState,dbNodes.nLogstashForwState).all()
+		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP,dbNodes.nMonitored,
+			dbNodes.nCollectdState,dbNodes.nLogstashForwState).all()
 		mnList = []
 		for nm in qNodes:
 			mNode = {}
@@ -727,10 +728,37 @@ class AuxDeploy(Resource):
 		response = jsonify({'Aux Status':mnList})
 		response.status_code=200
 		return response
-		#return "List of deployed aux monitoring components"
 
-	def post(self):
-		return "Deploy currently configured aux monitoring components"
+	def post(self): #TODO currently works only if the same username and password is used for all Nodes
+		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nMonitored,
+			dbNodes.nCollectdState,dbNodes.nLogstashForwState,dbNodes.nUser,dbNodes.nPass).all()
+		result = []
+		credentials ={}
+		for n in qNodes:
+			credentials['User'] = n[4]#TODO need a more elegant solution, currently it is rewriten every iteration
+			credentials['Pass'] = n[5]
+			print >> sys.stderr, credentials
+			rp = {}
+			if n[1] == False: #check if node is monitored
+				rp['Node'] = n[0]
+				rp['Collectd']=n[2]
+				rp['LSF']=n[3]
+				#rp['User']=n[4]
+				#rp['Pass']=n[5]
+				result.append(rp) 
+		collectdList=[]
+		LSFList = []		
+		for res in result:
+			if res['Collectd'] == 'None':
+				print >> sys.stderr, 'No collectd!'
+				collectdList.append(res['Node'])
+			if res['LSF'] == 'None':
+				LSFList.append(res['Node'])
+				print >> sys.stderr, 'No LSF!'
+		print >> sys.stderr, collectdList
+		print >> sys.stderr, LSFList		
+		return result			
+		#return "Deploy currently configured aux monitoring components"
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
 class AuxDeploySelective(Resource):
@@ -758,7 +786,7 @@ class AuxConfigSelective(Resource):
 				response.status_code = 404
 				return response
 			try:
-				collectdCfgfile=open(os.path.join(cfgDir,'collectd.conf'),'r')
+				Cfgfile=open(os.path.join(cfgDir,'collectd.conf'),'r')
 			except EnvironmentError:
 				response = jsonify({'EnvError':'file not found'})
 				response.status_code = 500
@@ -770,12 +798,12 @@ class AuxConfigSelective(Resource):
 				response.status_code = 404
 				return response
 			try:
-				collectdCfgfile=open(os.path.join(cfgDir,'logstash-forwarder.conf'),'r')
+				Cfgfile=open(os.path.join(cfgDir,'logstash-forwarder.conf'),'r')
 			except EnvironmentError:
 				response = jsonify({'EnvError':'file not found'})
 				response.status_code = 500
 				return response
-		return send_file(collectdCfgfile,mimetype = 'text/plain',as_attachment = True)
+		return send_file(Cfgfile,mimetype = 'text/plain',as_attachment = True)
 
 	def put(self,auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"

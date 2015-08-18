@@ -75,6 +75,7 @@ def installCollectd(hostlist,userName,uPassword):
 
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
+	return True
 
 def installLogstashForwarder(hostlist,userName,uPassword):
 	'''
@@ -130,6 +131,7 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 		print "All DONE!"
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
+	return True
 
 # client = ParallelSSHClient(['109.231.126.221','109.231.126.222'], user=userName,password=uPassword)
 # try:
