@@ -713,7 +713,21 @@ class AuxInfo(Resource):
 @dmon.route('/v1/overlord/aux/deploy')
 class AuxDeploy(Resource):
 	def get(self):
-		return "List of deployed aux monitoring components"
+		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP,dbNodes.nMonitored,dbNodes.nCollectdState,dbNodes.nLogstashForwState).all()
+		mnList = []
+		for nm in qNodes:
+			mNode = {}
+			mNode['NodeFQDN']=nm[0]
+			mNode['NodeIP']=nm[1]
+			mNode['Monitored']=nm[2]
+			mNode['Collectd']=nm[3]
+			mNode['LSF']=nm[4]
+			mnList.append(mNode)
+			#print >> sys.stderr, nm
+		response = jsonify({'Aux Status':mnList})
+		response.status_code=200
+		return response
+		#return "List of deployed aux monitoring components"
 
 	def post(self):
 		return "Deploy currently configured aux monitoring components"

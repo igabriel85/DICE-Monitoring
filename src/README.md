@@ -281,14 +281,37 @@ Changes the current configuration for Kibana
 -
 #### Monitoring auxiliary
 
-`GET` `/v1/overlord/aux/deploy/{NodeName}`
+`GET` `/v1/overlord/aux/deploy`
 
-Retruns the current deployment of auxiliary monitoring components to all nodes or to a specified Node defined by {NodeName}
+Returns monitoring status of all nodes.
+
+```json
+{
+	{
+		"NodeFQDN":"<nodeFQDN>",
+		"Monit":"<True|False>",
+		"Collectd":"<status>",
+		"LSF":"<status>"
+	},
+	............................
+}
+
+```
 
 
 `POST` `/v1/overlord/aux/deploy`
 
 Deploys all auxiliary monitoring applications and configures them.
+
+
+
+
+`GET` `/v1/overlord/aux/deploy/{NodeName}`
+
+Retruns the current deployment of auxiliary monitoring components to all nodes or to a specified Node defined by {NodeName}
+
+
+
 
 `POST` `/v1/overlord/aux/deploy/{collectd|logstashfw}/{NodeName}`
 
