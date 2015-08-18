@@ -405,8 +405,8 @@ if __name__=='__main__':
 		#installCollectd(hostlist,userName,uPassword)
 		#installLogstashForwarder(hostlist,userName,uPassword)
 		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
-		print detectOS(hostlist, 'ubuntu','rexmundi220')
-		#nmapScan(hostlist)
+		#print detectOS(hostlist, 'ubuntu','rexmundi220')
+		nmapScan(hostlist)
 		# #----------------------------------------------------
 		# good, bad = hostsScan(hostlist)
 		# print 'These are the good hosts '+str(good)

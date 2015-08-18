@@ -98,13 +98,14 @@ class dbSCore(db.Model):
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
     inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
-    sslCert = db.Column(db.String(120), index=True, unique=False)
-    sslKey = db.Column(db.String(120), index=True, unique=False)
-    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf  # same as ESCore clusterName
-    outKafka = db.Column(db.String(64), index=True, unique=False) # output kafka details
-    outKafkaPort = db.Column(db.Integer, index=True, unique=False)
+    sslCert = db.Column(db.String(120), index=True, unique=False,default = 'unknown')
+    sslKey = db.Column(db.String(120), index=True, unique=False,default = 'unknown')
+    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
+    outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
+    outKafka = db.Column(db.String(64), index=True, unique=False,default = 'unknown') # output kafka details
+    outKafkaPort = db.Column(db.Integer, index=True, unique=False,default = 'unknown')
     conf = db.Column(db.String(140), index=True, unique=False)
-    LSCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    LSCoreStatus = db.Column(db.String(64), index=True, unique=False,default = 'unknown')#Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -212,7 +213,14 @@ nodeUpdate = api.model('Update Node Model Info',{
 	'Password':fields.String(required=False, description="Node Password")
 	})
 
-
+lsCore=api.model('Submit LS conf',{
+	'HostFQDN':fields.String(required=True, description='Host FQDN'),
+	'IP':fields.String(required=True, description='Host IP'),
+	'OS':fields.String(required=False, description='Host OS'),
+	'LPort':fields.Integer(required=True, description='Lumberhack port'),
+	'udpPort':fields.String(required=True,default= 25826 ,description='UDP Collectd Port'),
+	'ESClusterName':fields.String(required=True, description='ES cluster name')
+	})
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
 # 	})
@@ -277,7 +285,7 @@ class NodeStatusServices(Resource):
 class QueryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
 	#@api.marshal_with(dMONQuery) # this is for response
-	@api.expect(dMONQuery)# this is for payload  
+	@api.expect(dMONQuery)# this is for payload 
 	def post(self, ftype):
 		#args = pQueryES.parse_args()#parsing query arguments in URI
 		supportType = ["csv","json","plain"]
@@ -619,6 +627,7 @@ class LSCoreConfiguration(Resource):
 			return response
 		return send_file(lsCfgfile,mimetype = 'text/plain',as_attachment = True)
 
+	@api.expect(lsCore)
 	def put(self):
 		# if request.headers['Content-Type'] == 'text/plain':
 		# 	cData = request.data
@@ -626,11 +635,71 @@ class LSCoreConfiguration(Resource):
 		# 	#temporaryConf.write(cData)
 		# 	#temporaryConf.close()
 		# 	print cData
-		return "Changes configuration fo logstash server"
+		requiredKeys=['ESClusterName','HostFQDN','IP','LPort','udpPort']
+		if not request.json:
+			abort(400)
+		for key in requiredKeys:
+			if key not in request.json:
+				response = jsonify({'Error':'malformed request, missing key(s)'})
+				response.status_code = 400
+				return response 
+		
+		qESCheck = dbESCore.query.filter_by(clusterName=request.json['ESClusterName'])
+		if qESCheck is None:
+			response = jsonify({'Status':'Invalid cluster name: '+request.json['ESClusterName']})
+			response.status_code = 404
+			return response		
+		qSCore = dbSCore.query.filter_by(hostIP = request.json['IP']).first()
+		if request.json["OS"] is None:
+			os = "unknown"
+		else:
+			os=request.json["OS"]
+
+		if qSCore is None:
+			upS = dbSCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os,
+			 outESclusterName=request.json["ESClusterName"], udpPort = request.json["udpPort"], inLumberPort=request.json['LPort'])
+			db.session.add(upS) 
+			db.session.commit()
+			response = jsonify({'Added':'LS Config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
+		else:
+			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
+			qSCore.hostOS = os
+			qSCore.outESclusterName=request.json['ESClusterName']
+			qSCore.udpPort=request.json['udpPort']
+			qSCore.inLumberPort=request.json['LPort']
+			db.session.commit()
+			response=jsonify({'Updated':'LS config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
+		#return "Changes configuration fo logstash server"
 
 @dmon.route('/v1/overlord/core/ls')
 class LSCoreController(Resource):
 	def post(self):
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		esTemp= os.path.join(tmpDir,'logstash.tmp')#tmpDir+"/collectd.tmp"
+		#qSCore = db.session.query(dbSCore.hostFQDN).first()
+		qSCore=dbSCore.query.first()
+		#return qSCore
+		if qSCore is None:
+			response = jsonify({"Status":"No LS instances registered"})
+			response.status_code = 404
+			return response
+		try:
+			template = templateEnv.get_template( esTemp )
+			#print >>sys.stderr, template
+		except:
+			return "Tempalte file unavailable!"
+
+		infoSCore = {"sslcert":qSCore.sslCert,"sslkey":qSCore.sslKey,"udpPort":qSCore.udpPort,"ESCluster":qSCore.outESclusterName}			
+		sConf = template.render(infoSCore)
+		qSCore.conf = sConf
+		#print >>sys.stderr, esConf
+		db.session.commit()
+		#TODO NOW -> use rendered tempalte to load ls Core
 		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Logstash Server"
 
 
@@ -655,9 +724,44 @@ class AuxDeploySelective(Resource):
 		return "Deploys auxiliary monitoring components on a node by node basis."
 
 @dmon.route('/v1/overlord/aux/<auxComp>/config')
+@api.doc(params={'auxComp':'Aux Component'})
 class AuxConfigSelective(Resource):
 	def get(self, auxComp):
-		return "Returns current configuration of aux components"
+		allowed = ['collectd','lsf']
+		if auxComp not in allowed:
+			response = jsonify({'Status':'unrecognized aux component ' +auxComp})
+			response.status_code = 404
+			return response
+
+		if not os.path.isdir(cfgDir):
+			response = jsonify({'Error':'Config dir not found !'})
+			response.status_code = 404
+			return response
+
+		if auxComp == 'collectd':
+			if not os.path.isfile(os.path.join(cfgDir,'collectd.conf')):
+				response = jsonify({'Error':'Config file not found !'})
+				response.status_code = 404
+				return response
+			try:
+				collectdCfgfile=open(os.path.join(cfgDir,'collectd.conf'),'r')
+			except EnvironmentError:
+				response = jsonify({'EnvError':'file not found'})
+				response.status_code = 500
+				return response
+		
+		if auxComp == 'lsf':
+			if not os.path.isfile(os.path.join(cfgDir,'logstash-forwarder.conf')):
+				response = jsonify({'Error':'Config file not found !'})
+				response.status_code = 404
+				return response
+			try:
+				collectdCfgfile=open(os.path.join(cfgDir,'logstash-forwarder.conf'),'r')
+			except EnvironmentError:
+				response = jsonify({'EnvError':'file not found'})
+				response.status_code = 500
+				return response
+		return send_file(collectdCfgfile,mimetype = 'text/plain',as_attachment = True)
 
 	def put(self,auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
