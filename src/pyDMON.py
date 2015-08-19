@@ -761,9 +761,10 @@ class AuxDeploy(Resource):
 		print >> sys.stderr, LSFList		
 		print >> sys.stderr, credentials['User']
 		print >> sys.stderr, confDir
+		
 		try:
 			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
-		except:
+		except:#TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
 			response = jsonify({'Status':'Error Installing collectd!'})
 			response.status_code = 500
 			return response
