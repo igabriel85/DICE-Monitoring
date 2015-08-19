@@ -39,6 +39,7 @@ import requests
 from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
+from pysshCore import *
 #from dbModel import *
 
 
@@ -731,7 +732,7 @@ class AuxDeploy(Resource):
 
 	def post(self): #TODO currently works only if the same username and password is used for all Nodes
 		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nMonitored,
-			dbNodes.nCollectdState,dbNodes.nLogstashForwState,dbNodes.nUser,dbNodes.nPass).all()
+			dbNodes.nCollectdState,dbNodes.nLogstashForwState,dbNodes.nUser,dbNodes.nPass,dbNodes.nodeIP).all()
 		result = []
 		credentials ={}
 		for n in qNodes:
@@ -743,6 +744,7 @@ class AuxDeploy(Resource):
 				rp['Node'] = n[0]
 				rp['Collectd']=n[2]
 				rp['LSF']=n[3]
+				rp['IP']=n[6]
 				#rp['User']=n[4]
 				#rp['Pass']=n[5]
 				result.append(rp) 
@@ -751,13 +753,28 @@ class AuxDeploy(Resource):
 		for res in result:
 			if res['Collectd'] == 'None':
 				print >> sys.stderr, 'No collectd!'
-				collectdList.append(res['Node'])
+				collectdList.append(res['IP'])
 			if res['LSF'] == 'None':
-				LSFList.append(res['Node'])
+				LSFList.append(res['IP'])
 				print >> sys.stderr, 'No LSF!'
 		print >> sys.stderr, collectdList
 		print >> sys.stderr, LSFList		
-		return result			
+		print >> sys.stderr, credentials['User']
+		print >> sys.stderr, confDir
+		try:
+			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
+		except:
+			response = jsonify({'Status':'Error Installing collectd!'})
+			response.status_code = 500
+			return response
+
+		# try:
+		# 	installLogstashForwarder(LDFList,credentials['User'],credentials['Pass'])
+		# except:
+		# 	response = jsonify({'Status':'Error Installig LSF!'})
+		# 	response.status_code = 500
+		# 	return response
+		return 'DONE!'			
 		#return "Deploy currently configured aux monitoring components"
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')

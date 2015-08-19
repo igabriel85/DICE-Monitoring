@@ -22,6 +22,8 @@ import os
 import nmap
 import sys, getopt
 
+from pyFabDmon import *
+
 
 #folder locations
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -45,7 +47,7 @@ def listOutput(out):
 		for line in out[host]['stdout']:
 			print line
 
-def installCollectd(hostlist,userName,uPassword):
+def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	'''
 	Installs and uploads a conf file to selected hosts.
 
@@ -60,23 +62,47 @@ def installCollectd(hostlist,userName,uPassword):
 	try:
 		#Installing Collectd to hosts ...
 		output = client.run_command('apt-get install -y collectd', sudo=True)
-		listOutput(ouput)
+		listOutput(output)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured Installing collectd!"
+	
+	try:	
 		print "Copying collectd conf files ....."
 		client.copy_file(localCopy,"collectd.conf")
-		client.pool.join()
-
-		print "Stopping Collectd...."
-		client.run_command('service collectd stop', sudo=True)
-		client.pool.join()
-		client.run_command('mv /etc/collectd/collectd.conf /etc/collectd/collectd.default', sudo=True)
-		client.run_command('mv collectd.conf /etc/collectd/collectd.conf', sudo=True)
-		client.run_command('service collectd restart', sudo=True)
-		print "Done Collectd"
-
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured!"
-	return True
+		print "An exception has occured copying collectd.conf!"
+		#client.pool.join()
 
+	print "Stopping Collectd...."
+
+	try:	
+		client.run_command('service collectd stop', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured stopping collectd service!"
+	try:
+		client.run_command('mv /etc/collectd/collectd.conf /etc/collectd/collectd.default', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured renaming collectd.conf!"
+	
+	try:		
+		client.run_command('mv collectd.conf /etc/collectd/collectd.conf', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured moving new collectd.conf to /etc!"	
+		#client.pool.join()
+		#print 'collectd -C ' +localCopy
+	print "Starting Collectd ..."
+	try:
+		out = client.exec_command('collectd',sudo=True,pty=False)
+		#out = client.run_command('collectd',sudo=True)
+		#listOutput(out)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured starting collectd!"
+		#client.run_command('service collectd start', sudo=True)
+
+	
+
+	print "Done Collectd"	
+	#del client
 def installLogstashForwarder(hostlist,userName,uPassword):
 	'''
 		Installs and configures logstash-forwarder on all listed hosts.
@@ -128,10 +154,10 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 		listOutput(run)
 		client.pool.join()
 
+
 		print "All DONE!"
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
-	return True
 
 # client = ParallelSSHClient(['109.231.126.221','109.231.126.222'], user=userName,password=uPassword)
 # try:
@@ -142,6 +168,17 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 # except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 # 	print "Stff"
 
+
+def mf(hostlist,userName,uPassword,confDir=confDir):
+	localCopyCrt = os.path.join(confDir,'collectd.sh')
+	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	client.copy_file(localCopyCrt,"collectd.sh")
+	output = client.run_command('chmod +x collectd.sh',sudo=True)
+	listOutput(output)
+	#out2 = client.run_command('./collectd.sh',sudo=True)
+	out2=client.exec_command('./collectd.sh',sudo=True)
+
+	listOutput(out2)
 
 def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
@@ -171,7 +208,7 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 					sline = line.split()
 					slineLength = len(sline)
 					print "Service " + serviceName + " is running as process " +str(sline[slineLength-1]) + " on host " + host
-				elif 'started' in line:
+				elif 'started' or 'Starring' in line:
 					print "Service " + serviceName+" has started Runnning on host " + host
 				else:
 					print "Unknown output!"
@@ -400,15 +437,16 @@ if __name__=='__main__':
 	if len(sys.argv) == 1:
 		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
 		'109.231.126.146','109.231.126.157']
+		hostlist = ['109.231.126.189','109.231.126.177']
 		
-		
-		userName = 'na'
-		uPassword = 'na'
-		#installCollectd(hostlist,userName,uPassword)
+		userName = 'ubuntu'
+		uPassword = 'rexmundi220'
+		installCollectd(hostlist,userName,uPassword)
+		#mf(hostlist,userName,uPassword)
 		#installLogstashForwarder(hostlist,userName,uPassword)
-		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
+		#serviceCtrl(hostlist,userName,uPassword,'collectd','start')
 		#print detectOS(hostlist, 'ubuntu','rexmundi220')
-		nmapScan(hostlist)
+		#nmapScan(hostlist)
 		# #----------------------------------------------------
 		# good, bad = hostsScan(hostlist)
 		# print 'These are the good hosts '+str(good)
