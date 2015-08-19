@@ -92,9 +92,9 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		#print 'collectd -C ' +localCopy
 	print "Starting Collectd ..."
 	try:
-		out = client.exec_command('collectd',sudo=True,pty=False)
-		#out = client.run_command('collectd',sudo=True)
-		#listOutput(out)
+		#out = client.exec_command('collectd',sudo=True,pty=False)
+		out = client.run_command('nohup collectd',sudo=True)
+		listOutput(out)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting collectd!"
 		#client.run_command('service collectd start', sudo=True)
@@ -172,13 +172,10 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 def mf(hostlist,userName,uPassword,confDir=confDir):
 	localCopyCrt = os.path.join(confDir,'collectd.sh')
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	client.copy_file(localCopyCrt,"collectd.sh")
-	output = client.run_command('chmod +x collectd.sh',sudo=True)
-	listOutput(output)
+	#client.copy_file(localCopyCrt,"collectd.sh")
+	client.exec_command('nohup collectd',sudo=True)
 	#out2 = client.run_command('./collectd.sh',sudo=True)
-	out2=client.exec_command('./collectd.sh',sudo=True)
-
-	listOutput(out2)
+	#out2=client.exec_command('./collectd.sh',sudo=True)
 
 def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
