@@ -229,7 +229,15 @@ lsCore=api.model('Submit LS conf',{
 # 	'FQDN' : field
 # 	})#[{'FQDN':'IP'}]
 
+@dmon.route('/v1/observer/applications')
+class ObsApplications(Resource):
+	def get(self):
+		return 'Returns a list of all applications from YARN.'
 
+@dmon.route('/v1/observer/application/<appID>')
+class ObsAppbyID(Resource):
+	def get(self,appID):
+		return 'Returns information on a particular YARN applicaiton identified by '+appID+'!'
 
 @dmon.route('/v1/observer/nodes')
 class NodesMonitored(Resource):
@@ -354,6 +362,11 @@ class OverlordInfo(Resource):
 	def get(self):
 		message = 'Message goes Here and is not application/json (TODO)!'
 		return message
+
+@dmon.route('/v1/overlord/applicaiton')
+class OverlordAppSubmit(Resource):
+	def put(self):
+		return 'Registers an applicaiton with DMON and creates a unique tag!'
 
 @dmon.route('/v1/overlord/core')
 class OverlordBootstrap(Resource):
@@ -488,6 +501,12 @@ class MonitoredNodeInfo(Resource):
 			response=jsonify({'Status':'Node '+ nodeFQDN+' updated!'})
 			response.status_code = 201
 			return response
+
+	def post(self, nodeFQDN):
+		return "Bootstrap specified node!"	
+
+	def delete(self, nodeFQDN):
+		return "delete specified node!"
 
 
 @dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload

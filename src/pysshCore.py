@@ -237,7 +237,7 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 
 	'''
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	cmdStr = 'service ' + serviceName +' ' + command
+	cmdStr = 'nohup service ' + serviceName +' ' + command
 	if command not in ['status','stop','start','force-start']:
 		print "Command "+ command +" unsupported!"
 		exit()
@@ -261,6 +261,9 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
 
+def overlordCommand(hostlist,userName,uPassword,command):
+	cmd = ParallelSSHClient(hostlist,userName,password)
+	
 
 def hostsScan(hostlist):
 	'''
@@ -469,10 +472,10 @@ def main(argv):
 			else:
 				print "%-------------------------------------------------------------------------------------------%"
 				print "Starting Collectd deployment on hosts."
-				installCollectd(hostlist,userName,uPassword)
+				installCollectd(hostlist,userName,uPassword,confDir)
 				print ""
 				print "Starting Logstash-Forwarder deployment on hosts."
-				installLogstashForwarder(hostlist,userName,uPassword)
+				installLogstashForwarder(hostlist,userName,uPassword,confDir)
 				print ""
 				print "Deployment DONE!"
 				print "%-------------------------------------------------------------------------------------------%"
