@@ -757,26 +757,59 @@ class AuxDeploy(Resource):
 			if res['LSF'] == 'None':
 				LSFList.append(res['IP'])
 				print >> sys.stderr, 'No LSF!'
+
+		if not collectdList and not LSFList:
+			response = jsonify({'Status':'All registred nodes are already monitored!'})
+			response.status_code=200
+			return response	
+
 		print >> sys.stderr, collectdList
 		print >> sys.stderr, LSFList		
 		print >> sys.stderr, credentials['User']
 		print >> sys.stderr, confDir
+
 		
 		try:
 			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
-		except:#TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
+		except Exception as inst:#TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
+			print >> sys.stderr, type(inst) #TODO change all exceptions to this for debuging
+			print >> sys.stderr, inst.args
 			response = jsonify({'Status':'Error Installing collectd!'})
 			response.status_code = 500
 			return response
 
-		# try:
-		# 	installLogstashForwarder(LDFList,credentials['User'],credentials['Pass'])
-		# except:
-		# 	response = jsonify({'Status':'Error Installig LSF!'})
-		# 	response.status_code = 500
-		# 	return response
-		return 'DONE!'			
-		#return "Deploy currently configured aux monitoring components"
+		try:
+			installLogstashForwarder(LSFList,userName=credentials['User'],uPassword=credentials['Pass'],confDir=cfgDir)
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+			response = jsonify({'Status':'Error Installig LSF!'})
+			response.status_code = 500
+			return response
+
+		for c in collectdList:
+			updateNodesCollectd =  dbNodes.query.filter_by(nodeIP = c).first()
+			if updateNodesCollectd is None:
+				response = jsonify({'Error':'DB error, IP ' + c + ' not found!'})
+				reponse.status_code=500
+				return response
+			updateNodesCollectd.nCollectdState='Running'
+
+		for l in LSFList:
+			updateNodesLSF =  dbNodes.query.filter_by(nodeIP = l).first()
+			if updateNodesLSF is None:
+				response = jsonify({'Error':'DB error, IP ' + l + ' not found!'})
+				reponse.status_code=500
+				return response
+			updateNodesLSF.nLogstashForwState='Running'	
+
+		updateAll = dbNodes.query.filter_by(nMonitored = 0).all()
+		for ua in updateAll:
+			ua.nMonitored = 1
+
+		response = jsonify({'Status':'Aux Componnets deployed!'})
+		response.status_code = 201		
+		return response			
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
 class AuxDeploySelective(Resource):
