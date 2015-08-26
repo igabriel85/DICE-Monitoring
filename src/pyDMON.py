@@ -506,6 +506,36 @@ class MonitoredNodeInfo(Resource):
 		return "Bootstrap specified node!"	
 
 	def delete(self, nodeFQDN):
+		dNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if dNode is None:
+			response = jsonify({'Status':'Node '+nodeFQDN+' not found'})
+			return response
+		dlist = []
+		dlist.append(dNode.nodeIP)
+		try:
+			serviceCtrl(dlist,dNode.nUser,dNode.nPass,'collectd', 'stop')
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+			response = jsonify({'Error':'Collectd stopping error!'})
+			response.status_code = 500
+			return response
+
+		try:
+			serviceCtrl(dlist,dNode.nUser,dNode.nPass,'logstash-forwarder', 'stop')
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+			response = jsonify({'Error':'LSF stopping error!'})
+			response.status_code = 500
+			return response
+		dNode.nMonitored = 0
+		dNode.nCollectdState = 'None'
+		dNode.nLogstashForwState = 'None'
+		response =jsonify({'Status':'Node '+ nodeFQDN+' monitoring stopped!'})
+		response.status_code = 200
+		return response
+
 		return "delete specified node!"
 
 
@@ -831,7 +861,7 @@ class AuxDeploy(Resource):
 		return response			
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
-@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
+@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO decide when to set nMonitored to true and false
 class AuxDeploySelective(Resource):
 	def post(self, auxComp, nodeFQDN):
 		auxList = ['collectd','lsf']
