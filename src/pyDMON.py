@@ -831,9 +831,65 @@ class AuxDeploy(Resource):
 		return response			
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
+@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
 class AuxDeploySelective(Resource):
 	def post(self, auxComp, nodeFQDN):
-		return "Deploys auxiliary monitoring components on a node by node basis."
+		auxList = ['collectd','lsf']
+		#status = {}
+		if auxComp not in auxList:
+			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response.status_code = 400
+			return response
+		qAux =  dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qAux is None:
+			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
+			response.status_code=404
+			return response
+		if qAux.nMonitored == 0:
+			node = []
+			node.append(qAux.nodeIP)
+			if auxComp == 'collectd':
+				if qAux.nCollectdState == 'None':
+					try:
+						installCollectd(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
+					except Exception as inst:
+						print >> sys.stderr, type(inst)
+						print >> sys.stderr, inst.args
+						response = jsonify({'Status':'Error Installig Collectd on '+ qAux.nodeFQDN +'!'})
+						response.status_code = 500
+						return response
+					#status[auxComp] = 'Running'	
+					qAux.nCollectdState = 'Running'
+					response = jsonify({'Status':'Collectd started on '+nodeFQDN+'.'})
+					response.status_code = 201
+					return response
+				else:
+					response = jsonify({'Status':'Node '+ nodeFQDN +' collectd already started!' })
+					response.status_code = 200
+					return response 
+			elif auxComp == 'lsf':
+				if qAux.nLogstashForwState == 'None':
+					try:
+						installLogstashForwarder(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
+					except Exception as inst:
+						print >> sys.stderr, type(inst)
+						print >> sys.stderr, inst.args
+						response = jsonify({'Status':'Error Installig LSF on '+qAux.nodeFQDN+'!'})
+						response.status_code = 500
+						return response
+					#status[auxComp] = 'Running'	
+					qAux.nLogstashForwState = 'Running'
+					response = jsonify({'Status':'LSF started on '+nodeFQDN+'.'})
+					response.status_code = 201
+					return response
+				else:
+					response = jsonify({'Status':'Node '+ nodeFQDN +' LSF already started!' })
+					response.status_code = 200
+					return response
+		else:
+			response = jsonify({'Status':'Node '+ nodeFQDN+' already monitored!'})
+			response.status_code = 200
+			return response
 
 @dmon.route('/v1/overlord/aux/<auxComp>/config')
 @api.doc(params={'auxComp':'Aux Component'})
