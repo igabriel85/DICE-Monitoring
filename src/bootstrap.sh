@@ -45,7 +45,7 @@ update-rc.d kibana4 defaults 96 9
 # install Elasticsearch 1.4.4
 cd /opt
 wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.4.4.tar.gz
-tar zxf /vagrant/elasticsearch-1.4.4.tar.gz
+tar zxf elasticsearch-1.4.4.tar.gz
 ln -sf elasticsearch-1.4.4 elasticsearch
 
 #delete config file
@@ -59,7 +59,7 @@ rm -f /opt/elasticsearch/config/elastcisearch.yml
 # install Logstash
 cd /opt
 wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
-tar zxf /vagrant/logstash-1.5.4.tar.gz
+tar zxf logstash-1.5.4.tar.gz
 ln -sf logstash-1.5.4 logstash
 
 # fix permissions
