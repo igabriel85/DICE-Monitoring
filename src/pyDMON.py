@@ -45,6 +45,14 @@ from pysshCore import *
 from pyUtil import *
 
 
+#directory Location
+outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
+tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
+baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
+pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+
+
 app = Flask("D-MON")
 api = Api(app, version='0.1', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
@@ -1070,12 +1078,12 @@ def bad_mediatype(e):
 #109.231.126.38
 
 if __name__ == '__main__':
-	#directory Location
-	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-	tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-	cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
-	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
-	pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+	# #directory Location
+	# outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
+	# tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+	# cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
+	# baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
+	# pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 
 
 	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
