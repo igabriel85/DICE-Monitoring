@@ -23,3 +23,5 @@ elasticsearch==1.6.0
 parallel-ssh==0.70.2
 paramiko==1.15.2
 requests==2.4.3
+pycrypto==2.6.1
+ecdsa==0.13
