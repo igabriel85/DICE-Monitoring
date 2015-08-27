@@ -75,7 +75,7 @@ def main(argv):
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
 				lock =  open('dmon.lock',"w+")
-				lock.write(datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S'))
+				lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				lock.close()
 		elif opt in ("-p","--port"):
 			if isinstance(arg,int) is not True:
