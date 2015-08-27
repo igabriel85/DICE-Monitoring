@@ -78,7 +78,7 @@ def main(argv):
 				lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				lock.close()
 		elif opt in ("-p","--port"):
-			if isinstance(arg,int) is not True:
+			if isinstance(int(arg),int) is not True:
 				print >> sys.stderr, "Argument must be an integer!"
 				sys.exit(2)
 			port = arg
@@ -91,9 +91,9 @@ def main(argv):
 	if chkESCoreDB is not None:
 		corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
 			clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
-		db.session.add(corePopES) 
-		db.session.commit()
-
+		db.session.add(corePopES)
+		db.session.commit() 
+		
 	chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 	if chkLSCoreDB is not None:
 		corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
