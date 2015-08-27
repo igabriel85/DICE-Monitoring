@@ -22,7 +22,6 @@ import os
 import nmap
 import sys, getopt
 
-from pyFabDmon import *
 
 
 #fix for UNicodeDecoder Error -> ascii codec

@@ -32,6 +32,7 @@ from flask import send_file
 from flask import send_from_directory
 import os
 import sys
+import signal
 from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 import jinja2
@@ -41,6 +42,7 @@ from werkzeug import secure_filename #unused
 from pyESController import *
 from pysshCore import *
 #from dbModel import *
+from pyUtil import *
 
 
 app = Flask("D-MON")
@@ -509,6 +511,7 @@ class MonitoredNodeInfo(Resource):
 		dNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
 		if dNode is None:
 			response = jsonify({'Status':'Node '+nodeFQDN+' not found'})
+			response.status_code = 404
 			return response
 		dlist = []
 		dlist.append(dNode.nodeIP)
@@ -537,6 +540,43 @@ class MonitoredNodeInfo(Resource):
 		return response
 
 		return "delete specified node!"
+
+
+@dmon.route('/v1/overlord/nodes/purge/<nodeFQDN>')
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+class PurgeNode(Resource):
+	def delete(self,nodeFQDN):
+		qPurge = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qPurge is None:
+			abort(404)
+
+		lPurge=[]
+		lPurge.append(qPurge.nodeIP)
+		try:
+			serviceCtrl(lPurge,qPurge.uUser,qPurge.uPass,'logstash-forwarder', 'stop')
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+			response = jsonify({'Error':'Stopping LSF!'})
+			response.status_code = 500
+			return response
+
+		try:
+			serviceCtrl(lPurge,qPurge.uUser,qPurge.uPass,'collectd', 'stop')
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+			response = jsonify({'Error':'Stopping collectd!'})
+			response.status_code = 500
+			return response
+				
+		db.session.delete(qPurge)
+		db.session.commit()
+		response = jsonify ({'Status':'Node ' +nodeFQDN+ ' deleted!'})
+		response.status_code = 200
+		return response
+
+
 
 
 @dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload
@@ -626,11 +666,16 @@ class ESCoreController(Resource):
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
 		esTemp= os.path.join(tmpDir,'elasticsearch.tmp')#tmpDir+"/collectd.tmp"
+		esfConf = os.path.join(cfgDir,'elasticsearch.yml')
 		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
 		if qESCore is None:
 			response = jsonify({"Status":"No master ES instances found!"})
 			response.status_code = 500
-			return response 
+			return response
+
+		if checkPID(qESCore.ESCorePID) is True:
+			call(["kill", "-9", qESCore.ESCorePID])
+
 		try:
 			template = templateEnv.get_template( esTemp )
 			#print >>sys.stderr, template
@@ -642,8 +687,22 @@ class ESCoreController(Resource):
 		qESCore.conf = esConf
 		#print >>sys.stderr, esConf
 		db.session.commit()
+		esCoreConf = open(esfConf,"w+")
+		esCoreConf.write(esConf)
+		esCoreConf.close()
+
+		try:
+			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m','/opt/elasticsearch -d','>','/dev/null','2>&1'])
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+		#procStart = subprocess.Popen(['haproxy', '-f', tmp_loc+'/running.conf'])
+		qESCore.ESCorePID = esPid
+		response = jsonify({'Status':'Started ElasticSearch with PID: '+esPid})
+		response.status_code = 200
+		return response
 		#TODO NOW -> use rendered tempalte to load es Core
-		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
+		#return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
 
 @dmon.route('/v1/overlord/core/kb/config')
 class KBCoreConfiguration(Resource):
@@ -861,7 +920,7 @@ class AuxDeploy(Resource):
 		return response			
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
-@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO decide when to set nMonitored to true and false
+@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	def post(self, auxComp, nodeFQDN):
 		auxList = ['collectd','lsf']
@@ -875,52 +934,48 @@ class AuxDeploySelective(Resource):
 			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
 			response.status_code=404
 			return response
-		if qAux.nMonitored == 0:
-			node = []
-			node.append(qAux.nodeIP)
-			if auxComp == 'collectd':
-				if qAux.nCollectdState == 'None':
-					try:
-						installCollectd(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
-					except Exception as inst:
-						print >> sys.stderr, type(inst)
-						print >> sys.stderr, inst.args
-						response = jsonify({'Status':'Error Installig Collectd on '+ qAux.nodeFQDN +'!'})
-						response.status_code = 500
-						return response
-					#status[auxComp] = 'Running'	
-					qAux.nCollectdState = 'Running'
-					response = jsonify({'Status':'Collectd started on '+nodeFQDN+'.'})
-					response.status_code = 201
-					return response
-				else:
-					response = jsonify({'Status':'Node '+ nodeFQDN +' collectd already started!' })
-					response.status_code = 200
-					return response 
-			elif auxComp == 'lsf':
-				if qAux.nLogstashForwState == 'None':
-					try:
-						installLogstashForwarder(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
-					except Exception as inst:
-						print >> sys.stderr, type(inst)
-						print >> sys.stderr, inst.args
-						response = jsonify({'Status':'Error Installig LSF on '+qAux.nodeFQDN+'!'})
-						response.status_code = 500
-						return response
-					#status[auxComp] = 'Running'	
-					qAux.nLogstashForwState = 'Running'
-					response = jsonify({'Status':'LSF started on '+nodeFQDN+'.'})
-					response.status_code = 201
-					return response
-				else:
-					response = jsonify({'Status':'Node '+ nodeFQDN +' LSF already started!' })
-					response.status_code = 200
-					return response
-		else:
-			response = jsonify({'Status':'Node '+ nodeFQDN+' already monitored!'})
-			response.status_code = 200
-			return response
 
+		node = []
+		node.append(qAux.nodeIP)
+		if auxComp == 'collectd':
+			if qAux.nCollectdState == 'None':
+				try:
+					installCollectd(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error Installig Collectd on '+ qAux.nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				#status[auxComp] = 'Running'	
+				qAux.nCollectdState = 'Running'
+				response = jsonify({'Status':'Collectd started on '+nodeFQDN+'.'})
+				response.status_code = 201
+				return response
+			else:
+				response = jsonify({'Status':'Node '+ nodeFQDN +' collectd already started!' })
+				response.status_code = 200
+				return response 
+		elif auxComp == 'lsf':
+			if qAux.nLogstashForwState == 'None':
+				try:
+					installLogstashForwarder(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error Installig LSF on '+qAux.nodeFQDN+'!'})
+					response.status_code = 500
+					return response
+				#status[auxComp] = 'Running'	
+				qAux.nLogstashForwState = 'Running'
+				response = jsonify({'Status':'LSF started on '+nodeFQDN+'.'})
+				response.status_code = 201
+				return response
+			else:
+				response = jsonify({'Status':'Node '+ nodeFQDN +' LSF already started!' })
+				response.status_code = 200
+				return response
+		
 @dmon.route('/v1/overlord/aux/<auxComp>/config')
 @api.doc(params={'auxComp':'Aux Component'})
 class AuxConfigSelective(Resource):
@@ -1020,6 +1075,8 @@ if __name__ == '__main__':
 	tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 	cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
+	pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+
 
 	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
@@ -1030,4 +1087,10 @@ if __name__ == '__main__':
 	# metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
 	# test, test2 = queryESCore(testQuery, debug=False)
 	# print >>sys.stderr, test2
-	app.run(debug=True)
+	if len(sys.argv) == 1:
+		#esDir=
+		#lsDir=
+		#kibanaDir=
+		app.run(debug=True)
+	else:
+		app.run(host='0.0.0.0', port=8080, debug = True)
