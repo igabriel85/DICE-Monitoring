@@ -1078,14 +1078,6 @@ def bad_mediatype(e):
 #109.231.126.38
 
 if __name__ == '__main__':
-	# #directory Location
-	# outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-	# tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
-	# cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
-	# baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
-	# pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
-
-
 	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 	db.create_all()
