@@ -39,8 +39,8 @@ update-rc.d kibana4 defaults 96 9
 #sudo apt-get install ant -y
 # TODO Replace wget command
 
-cd /tmp
-wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
+#cd /tmp
+#wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
 # install Elasticsearch 1.4.4
 cd /opt
