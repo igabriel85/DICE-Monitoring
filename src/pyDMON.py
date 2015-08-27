@@ -698,7 +698,7 @@ class ESCoreController(Resource):
 		esCoreConf = open(esfConf,"w+")
 		esCoreConf.write(esConf)
 		esCoreConf.close()
-		esPID = 0
+		esPid = 0
 		try:
 			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m','/opt/elasticsearch -d','>','/dev/null','2>&1'])
 		except Exception as inst:
@@ -706,7 +706,7 @@ class ESCoreController(Resource):
 			print >> sys.stderr, inst.args
 		#procStart = subprocess.Popen(['haproxy', '-f', tmp_loc+'/running.conf'])
 		qESCore.ESCorePID = esPid
-		response = jsonify({'Status':'Started ElasticSearch with PID: '+esPid})
+		response = jsonify({'Status':'Started ElasticSearch with PID: '+str(esPid)})
 		response.status_code = 200
 		return response
 		#TODO NOW -> use rendered tempalte to load es Core
