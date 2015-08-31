@@ -700,7 +700,7 @@ class ESCoreController(Resource):
 		esCoreConf.close()
 		esPid = 0
 		try:
-			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m','/opt/elasticsearch -d','>','/dev/null','2>&1'])
+			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m','/opt/elasticsearch/bin/elasticsearch -d','>','/dev/null','2>&1'])
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
