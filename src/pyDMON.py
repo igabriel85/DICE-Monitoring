@@ -37,7 +37,8 @@ from flask.ext.sqlalchemy import SQLAlchemy
 from datetime import datetime
 import jinja2
 import requests
-from werkzeug import secure_filename #unused
+import shutil
+#from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
 from pysshCore import *
@@ -51,6 +52,9 @@ tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+
+
+ = '/opt/elasticsearch' #TODO: only provisory for testing
 
 
 app = Flask("D-MON")
@@ -698,9 +702,11 @@ class ESCoreController(Resource):
 		esCoreConf = open(esfConf,"w+")
 		esCoreConf.write(esConf)
 		esCoreConf.close()
+
+		shutil.copy(esfConf, os.path.join(esDir,'elasticsearch.yml'))
 		esPid = 0
 		try:
-			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m','/opt/elasticsearch/bin/elasticsearch -d','>','/dev/null','2>&1'])
+			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m','/opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'])
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
