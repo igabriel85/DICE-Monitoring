@@ -22,6 +22,7 @@ import signal
 import subprocess
 from datetime import datetime
 import requests
+import os
 
 def portScan(addrs,ports):
 	'''
