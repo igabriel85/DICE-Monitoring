@@ -704,15 +704,14 @@ class ESCoreController(Resource):
 		esCoreConf.close()
 
 		shutil.copy(esfConf, os.path.join(esDir,'elasticsearch.yml'))
-		esPid = 0
+		#esPid = 0
 		try:
-			esPid = startLocalProcess(['ES_HEAP_SIZE=1024m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'])
+			esProc = subprocess.Popen(['ES_HEAP_SIZE=1024m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'])
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-		#procStart = subprocess.Popen(['haproxy', '-f', tmp_loc+'/running.conf'])
-		qESCore.ESCorePID = esPid
-		response = jsonify({'Status':'Started ElasticSearch with PID: '+str(esPid)})
+		qESCore.ESCorePID = esProc.pid
+		response = jsonify({'Status':'Started ElasticSearch with PID: '+str(esProc.pid)})
 		response.status_code = 200
 		return response
 		#TODO NOW -> use rendered tempalte to load es Core
