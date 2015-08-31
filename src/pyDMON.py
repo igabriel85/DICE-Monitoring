@@ -686,7 +686,7 @@ class ESCoreController(Resource):
 			return response
 
 		if checkPID(qESCore.ESCorePID) is True:
-			call(["kill", "-9", qESCore.ESCorePID])
+			subprocess.call(["kill", "-9", qESCore.ESCorePID])
 
 		try:
 			template = templateEnv.get_template( esTemp )
