@@ -707,7 +707,8 @@ class ESCoreController(Resource):
 		esPid = 0
 		FNULL = open(os.devnull, 'w')
 		try:
-			esPid = subprocess.Popen(['ES_HEAP_SIZE=512m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'],stdout=subprocess.DEVNULL, stderr = subprocess.DEVNULL).pid
+			FNULL = open(os.devnull, 'w')
+			esPid = subprocess.Popen(['ES_HEAP_SIZE=512m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'],stdout=FNULL, stderr = FNULL).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
