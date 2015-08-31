@@ -703,8 +703,11 @@ class ESCoreController(Resource):
 		esCoreConf.write(esConf)
 		esCoreConf.close()
 
-		os.rename(os.path.join(esDir,'elasticsearch.yml'),os.path.join(esDir,'elasticsearch.old'))
-		shutil.copy(esfConf, os.path.join(esDir,'elasticsearch.yml'))
+		#TODO find better solution
+		os.system('rm -rf /opt/elasticsearch/config/elasticsearch.yml')
+		os.system('cp '+esfConf+' /opt/elasticsearch/config/elasticsearch.yml ')
+		# os.rename(os.path.join(esDir,'elasticsearch.yml'),os.path.join(esDir,'elasticsearch.old'))
+		# shutil.copy(esfConf, os.path.join(esDir,'elasticsearch.yml'))
 		esPid = 0
 		FNULL = open(os.devnull, 'w')
 		try:
