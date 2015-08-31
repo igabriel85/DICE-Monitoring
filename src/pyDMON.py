@@ -706,7 +706,7 @@ class ESCoreController(Resource):
 		shutil.copy(esfConf, os.path.join(esDir,'elasticsearch.yml'))
 		esPid = 0
 		try:
-			esPid = subprocess.Popen(['ES_HEAP_SIZE=1024m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'],shell=True).pid
+			esPid = subprocess.Popen(['ES_HEAP_SIZE=512m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1'],shell=True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
