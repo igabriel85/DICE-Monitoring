@@ -54,7 +54,7 @@ baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 
 
- = '/opt/elasticsearch' #TODO: only provisory for testing
+esDir = '/opt/elasticsearch' #TODO: only provisory for testing
 
 
 app = Flask("D-MON")
