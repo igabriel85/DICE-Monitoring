@@ -77,7 +77,7 @@ def startLocalProcess(command):
 
 	Returns integer: PID
 	'''
-	process = subprocess.Popen(command, shell=True)
+	process = subprocess.Popen(command, shell=True,close_fds = True)
 	
 
 	return process.pid
