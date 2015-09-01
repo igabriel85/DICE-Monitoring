@@ -854,7 +854,7 @@ class LSCoreController(Resource):
 		lsCoreConf.close()
 
 		#TODO find better solution
-		subprocess.cal(['cp',lsfCore,lsCDir+'/logstash.conf'])
+		subprocess.call(['cp',lsfCore,lsCDir+'/logstash.conf'])
 
 		lsPid = 0
 		try:
