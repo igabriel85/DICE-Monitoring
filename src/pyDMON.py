@@ -858,7 +858,7 @@ class LSCoreController(Resource):
 
 		lsPid = 0
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash -f '+lsfCore, shell= True, stdout=subprocess.PIPE).pid
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f '+lsfCore, shell= True, stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
