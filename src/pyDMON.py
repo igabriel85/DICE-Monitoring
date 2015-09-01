@@ -121,6 +121,7 @@ class dbSCore(db.Model):
     outKafkaPort = db.Column(db.Integer, index=True, unique=False,default = 'unknown')
     conf = db.Column(db.String(140), index=True, unique=False)
     LSCoreStatus = db.Column(db.String(64), index=True, unique=False,default = 'unknown')#Running, Pending, Stopped, None
+    LSCorePID = db.Column(db.Integer, index=True,  unique=False, default=0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -706,22 +707,18 @@ class ESCoreController(Resource):
 		#TODO find better solution
 		os.system('rm -rf /opt/elasticsearch/config/elasticsearch.yml')
 		os.system('cp '+esfConf+' /opt/elasticsearch/config/elasticsearch.yml ')
-		# os.rename(os.path.join(esDir,'elasticsearch.yml'),os.path.join(esDir,'elasticsearch.old'))
-		# shutil.copy(esfConf, os.path.join(esDir,'elasticsearch.yml'))
+		
 		esPid = 0
-		FNULL = open(os.devnull, 'w')
 		try:
-			FNULL = open(os.devnull, 'w')
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',stdout=subprocess.PIPE).pid #TODO modify to use .communicate() and &
+			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',stdout=subprocess.PIPE).pid 
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qESCore.ESCorePID = esPid
-		response = jsonify({'Status':'Started ElasticSearch with PID: '+str(esPid)})
+		response = jsonify({'Status':'ElasticSearch Core  PID: '+str(esPid)})
 		response.status_code = 200
 		return response
-		#TODO NOW -> use rendered tempalte to load es Core
-		#return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of ElasticSearch"
+		
 
 @dmon.route('/v1/overlord/core/kb/config')
 class KBCoreConfiguration(Resource):
@@ -809,13 +806,18 @@ class LSCoreController(Resource):
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
 		esTemp= os.path.join(tmpDir,'logstash.tmp')#tmpDir+"/collectd.tmp"
+		lsfCore= os.path.join(cfgDir,'logstash.conf')
 		#qSCore = db.session.query(dbSCore.hostFQDN).first()
-		qSCore=dbSCore.query.first()
+		qSCore=dbSCore.query.first()# TODO: currently only one LS instance supported
 		#return qSCore
 		if qSCore is None:
 			response = jsonify({"Status":"No LS instances registered"})
-			response.status_code = 404
+			response.status_code = 500
 			return response
+
+		if checkPID(qSCore.LSCorePID) is True:
+			subprocess.call(['kill','-9', str(qSCore.LSCorePID)])	
+
 		try:
 			template = templateEnv.get_template( esTemp )
 			#print >>sys.stderr, template
@@ -827,8 +829,25 @@ class LSCoreController(Resource):
 		qSCore.conf = sConf
 		#print >>sys.stderr, esConf
 		db.session.commit()
+
+		lsCoreConf = open(lsfCore,"w+")
+		lsCoreConf.write(sConf)
+		lsCoreConf.close()
+
+		lsPid = 0
+		try:
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent -f '+lsfCore,stdout=subprocess.PIPE).pid
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+
+		qSCore.LSCorePID=lsPid
+		repsonse = jsonify({'Status':'Logstash Core Pid: '+str(lsPid)})
+		response.status_code=200
+		return response
+
 		#TODO NOW -> use rendered tempalte to load ls Core
-		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Logstash Server"
+		#return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Logstash Server"
 
 
 
