@@ -25,6 +25,7 @@ from pyESController import *
 
 
 import datetime
+import time
 from sqlalchemy import desc
 import sqlite3, os
 import socket
@@ -71,6 +72,7 @@ def main(argv):
 			else:
 				try:
 					procStart = subprocess.Popen(['./bootstrap.sh'],stdout=subprocess.PIPE)
+					procStart.wait()
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
