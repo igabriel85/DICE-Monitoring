@@ -88,14 +88,14 @@ def main(argv):
 			ip = arg
 
 	chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
-	if chkESCoreDB is not None:
+	if chkESCoreDB is None:
 		corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
 			clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
 		db.session.add(corePopES)
 		db.session.commit() 
 		
 	chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
-	if chkLSCoreDB is not None:
+	if chkLSCoreDB is  None:
 		corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
 			 outESclusterName='dice-monit', udpPort = 25680, inLumberPort=5000)
 		db.session.add(corePopLS) 
