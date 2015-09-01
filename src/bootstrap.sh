@@ -26,6 +26,7 @@ wget https://download.elasticsearch.org/kibana/kibana/kibana-4.0.1-linux-x64.tar
 tar xvf kibana-4.0.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
 cp -R ~/kibana-4.0.1-linux-x64/* /opt/kibana/
+echo Registering Kibana as a service ....
 cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
 chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
@@ -43,6 +44,7 @@ update-rc.d kibana4 defaults 96 9
 #wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
 # install Elasticsearch 1.4.4
+echo Installing Elasticsearch ....
 cd /opt
 wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.4.4.tar.gz
 tar zxf elasticsearch-1.4.4.tar.gz
@@ -53,17 +55,22 @@ rm -f /opt/elasticsearch/config/elastcisearch.yml
 #ln -sf /vagrant/elasticsearch.yml /opt/elasticsearch/config/elasticsearch.yml
 
 # install Marvel (posibly obsolete afther further testing)
+echo Installing Elasticsearch plugin marvel .....
 /opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
 
 
 # install Logstash
+echo Installing Logstash
 cd /opt
 wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
 tar zxf logstash-1.5.4.tar.gz
 ln -sf logstash-1.5.4 logstash
 
 # fix permissions
+echo Setting permissions ....
 cd /opt
 chown -R ubuntu.ubuntu logstash* elasticsearch*
 
+
+echo Done!
 
