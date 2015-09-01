@@ -854,11 +854,11 @@ class LSCoreController(Resource):
 		lsCoreConf.close()
 
 		#TODO find better solution
-		subprocess.call(['cp',lsfCore,lsCDir+'/logstash.conf'])
+		#subprocess.call(['cp',lsfCore,lsCDir+'/logstash.conf'])
 
 		lsPid = 0
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash',shell=True, stdout=subprocess.PIPE).pid
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash -f '+lsfCore, stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
