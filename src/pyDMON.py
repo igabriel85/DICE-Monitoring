@@ -53,8 +53,9 @@ cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 
-
-esDir = '/opt/elasticsearch' #TODO: only provisory for testing
+#TODO: only provisory for testing
+esDir = '/opt/elasticsearch' 
+lsCDir = '/etc/logstash/conf.d/'
 
 
 app = Flask("D-MON")
@@ -235,7 +236,7 @@ lsCore=api.model('Submit LS conf',{
 	'OS':fields.String(required=False, description='Host OS'),
 	'LPort':fields.Integer(required=True, description='Lumberhack port'),
 	'udpPort':fields.String(required=True,default= 25826 ,description='UDP Collectd Port'),
-	'ESClusterName':fields.String(required=True, description='ES cluster name')
+	'ESClusterName':fields.String(required=True, description='ES cluster name') # TODO: use as foreign key same as ClusterName in esCore
 	})
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
@@ -802,6 +803,24 @@ class LSCoreConfiguration(Resource):
 
 @dmon.route('/v1/overlord/core/ls')
 class LSCoreController(Resource):
+	def get(self):
+		hostsAll=db.session.query(dbSCore.hostFQDN,dbSCore.hostIP,dbSCore.hostOS,dbSCore.inLumberPort, 
+			dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName, dbSCore.LSCoreStatus).all()
+		resList=[]
+		for hosts in hostsAll:
+			confDict={}
+			confDict['HostFQDN']=hosts[0]
+			confDict['IP']=hosts[1]
+			confDict['OS']=hosts[2]
+			confDict['LPort']=hosts[3]
+			confDict['udpPort']=hosts[6]
+			confDict['ClusterName']=hosts[7]
+			confDict['Status']=hosts[8]
+			resList.append(confDict)
+		response = jsonify({'LS Instances':resList})
+		response.status_code = 200
+		return response
+
 	def post(self):
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
@@ -834,9 +853,12 @@ class LSCoreController(Resource):
 		lsCoreConf.write(sConf)
 		lsCoreConf.close()
 
+		#TODO find better solution
+		subprocess.cal(['cp',lsfCore,lsCDir+'/logstash.conf'])
+
 		lsPid = 0
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent -f '+lsfCore,stdout=subprocess.PIPE).pid
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash',shell=True, stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
@@ -847,9 +869,6 @@ class LSCoreController(Resource):
 		return response
 
 		#TODO NOW -> use rendered tempalte to load ls Core
-		#return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Logstash Server"
-
-
 
 @dmon.route('/v1/overlord/aux')
 class AuxInfo(Resource):

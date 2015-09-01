@@ -32,12 +32,14 @@ chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
 
 # install Java 8
-#sudo apt-get install python-software-properties -y
-#sudo echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
-#sudo add-apt-repository ppa:webupd8team/java -y
-#sudo apt-get update -y
-#sudo apt-get install oracle-java8-installer -y
-#sudo apt-get install ant -y
+apt-get install python-software-properties -y
+echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+add-apt-repository ppa:webupd8team/java -y
+apt-get update -y
+apt-get install oracle-java8-installer -y
+apt-get install ant -y
+
+
 # TODO Replace wget command
 
 #cd /tmp
