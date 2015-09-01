@@ -68,7 +68,7 @@ def main(argv):
 			#hostfile=arg
 			if os.path.isfile('dmon.lock') is True: 
 				print >>sys.stderr, "D-Mon Core already installed!"
-				#sys.exit(2) #uncoment if exit upon 
+				sys.exit(2) #uncoment if exit upon 
 			else:
 				try:
 					procStart = subprocess.call(['./bootstrap.sh'],stdout=subprocess.PIPE, shell=True)
