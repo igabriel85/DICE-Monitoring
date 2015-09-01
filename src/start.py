@@ -71,7 +71,7 @@ def main(argv):
 				#sys.exit(2) #uncoment if exit upon 
 			else:
 				try:
-					procStart = subprocess.Popen(['./bootstrap.sh'],stdout=subprocess.PIPE)
+					procStart = subprocess.Popen(['sudo ./bootstrap.sh'],stdout=subprocess.PIPE)
 					procStart.wait()
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
@@ -90,6 +90,7 @@ def main(argv):
 			ip = arg
 
 	chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
+	print >> sys.stderr, chkESCoreDB
 	if chkESCoreDB is None:
 		corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
 			clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
@@ -97,6 +98,7 @@ def main(argv):
 		db.session.commit() 
 		
 	chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
+	print >> sys.stderr, chkLSCoreDB
 	if chkLSCoreDB is  None:
 		corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
 			 outESclusterName='dice-monit', udpPort = 25680, inLumberPort=5000)
