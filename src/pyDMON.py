@@ -716,7 +716,7 @@ class ESCoreController(Resource):
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qESCore.ESCorePID = esPid
-		response = jsonify({'Status':'ElasticSearch Core  PID: '+str(esPid)})
+		response = jsonify({'Status':'ElasticSearch Core  PID '+str(esPid)})
 		response.status_code = 200
 		return response
 		
@@ -864,10 +864,9 @@ class LSCoreController(Resource):
 			print >> sys.stderr, inst.args
 
 		qSCore.LSCorePID=lsPid
-		repsonse = jsonify({'Status':'Logstash Core Pid: '+str(lsPid)})
+		response = jsonify({'Status':'Logstash Core PID '+str(lsPid)})
 		response.status_code=200
 		return response
-
 		#TODO NOW -> use rendered tempalte to load ls Core
 
 @dmon.route('/v1/overlord/aux')
