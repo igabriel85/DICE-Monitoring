@@ -89,23 +89,23 @@ def main(argv):
 			if isinstance(arg,str) is not True:
 				print >> sys.stderr, "Argument must be string!"
 			ip = arg
+		if os.environ.get("WERKZEUG_RUN_MAIN") == "false":		
+			if opt in ("-l", "--local"):
+				chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
+				print >> sys.stderr, chkESCoreDB
+				if chkESCoreDB is not None:
+					corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
+						clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
+					db.session.add(corePopES)
+					db.session.commit() 
 
-		if opt in ("-l", "--local"):
-			chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
-			print >> sys.stderr, chkESCoreDB
-			if chkESCoreDB is not None:
-				corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
-					clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
-				db.session.add(corePopES)
-				db.session.commit() 
-
-			chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
-			print >> sys.stderr, chkLSCoreDB
-			if chkLSCoreDB is not None:
-				corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
-					outESclusterName='dice-monit', udpPort = 25680, inLumberPort=5000)
-				db.session.add(corePopLS) 
-				db.session.commit()
+				chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
+				print >> sys.stderr, chkLSCoreDB
+				if chkLSCoreDB is not None:
+					corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
+						outESclusterName='dice-monit', udpPort = 25680, inLumberPort=5000)
+					db.session.add(corePopLS) 
+					db.session.commit()
 	app.run(host = ip,port=port,debug=True)
 
 if __name__=='__main__':
