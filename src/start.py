@@ -71,7 +71,9 @@ def main(argv):
 				sys.exit(2) #uncoment if exit upon 
 			else:
 				try:
+					print >>sys.stderr, "Bootstrapping D-Mon Core please wait..."
 					procStart = subprocess.Popen(['./bootstrap.sh'],stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=False).communicate()
+					print >>sys.stderr, "Bootstrap finished!"
 				except Exception as inst:
 					print >> sys.stderr, 'Error while executing bootstrap script!'
 					print >> sys.stderr, type(inst)
@@ -84,7 +86,7 @@ def main(argv):
 			if isinstance(int(arg),int) is not True:
 				print >> sys.stderr, "Argument must be an integer!"
 				sys.exit(2)
-			port = arg
+			port = int(arg)
 		if opt in ("-e", "--endpoint-ip"):
 			if isinstance(arg,str) is not True:
 				print >> sys.stderr, "Argument must be string!"
@@ -98,7 +100,13 @@ def main(argv):
 						corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
 							clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
 						db.session.add(corePopES)
-						db.session.commit() 
+						try:
+							db.session.commit() 
+						except Exception as inst:
+							print >> sys.stderr, 'Duplicate entry exception!'
+							print >> sys.stderr, type(inst)
+							print >> sys.stderr, inst.args
+							pass
 
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
@@ -106,7 +114,14 @@ def main(argv):
 						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
 							outESclusterName='dice-monit', udpPort = 25680, inLumberPort=5000)
 						db.session.add(corePopLS) 
-						db.session.commit()
+						try:
+							db.session.commit() 
+						except Exception as inst:
+							print >> sys.stderr, 'Duplicate entry exception!'
+							print >> sys.stderr, type(inst)
+							print >> sys.stderr, inst.args
+							pass
+
 	app.run(host = ip,port=port,debug=True)
 
 if __name__=='__main__':
