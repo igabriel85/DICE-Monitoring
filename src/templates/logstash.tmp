@@ -163,7 +163,7 @@ if [type]=="secondarynamenode-metrics"{
 if [type]=="reducetask-metrics"{
     grok{
       break_on_match => false
-     
+
      #ugi.UgiMetrics
      match=>["message","\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{WORD:hostname1}-%{WORD%{WORD:hostname2}-%{WORD:hostname3}, LoginSuccessNumOps=%{NUMBER:LoginSuccessNumOps}, LoginSuccessAvgTime=%{NUMBER:LoginSuccessAvgTime}, LoginFailureNumOps=%{NUMBER:LoginFailureNumOps}, LoginFailureAvgTime=%{NUMBER:LoginFailureAvgTime}, GetGroupsNumOps=%{NUMBER:GetGroupsNumOps}, GetGroupsAvgTime=%{NUMBER:GetGroupsAvgTime}"]
 
@@ -209,6 +209,3 @@ output {
     protocol => http
   }
 }
-
-
-

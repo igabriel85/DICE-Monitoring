@@ -73,6 +73,9 @@ echo Setting permissions ....
 cd /opt
 chown -R ubuntu.ubuntu logstash* elasticsearch*
 
+echo Finishing touches .....
+mkdir -p /etc/logstash/conf.d
+
 
 echo Done!
 

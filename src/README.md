@@ -84,14 +84,18 @@ Returns the current status of the Monitoring platform status.
 
 Returns the status of the chef-client of the monitoring core services.
 
-**TODO** json structure.
+**TODO:** json structure.
+
+**NOTE:** This feature will be developed for future versions.
 
 
 `GET` `/v1/overlord/nodes/chef`
 
 Returns the status of the chef-clients from all monitored nodes.
 
-**TODO** json structure.
+**TODO:** json structure.
+
+**NOTE:** This feature will be developed for future versions.
 
 
 `GET` `/v1/overlord/nodes`
@@ -140,12 +144,12 @@ Input:
 
 `POST` `/v1/overlord/nodes`
 
-Bootstrap of all non monitored nodes. Installs collectd and logstash forwarder
+Bootstrap of all non monitored nodes. Installs collectd and logstash-forwarder on them.
 
 
 `GET` `/v1/overlord/nodes/{NodeFQDN}`
 
-Returns information of a particular monitored node.
+Returns information of a particular monitored node identified by its NodeFQDN.
 
 ```json
 {
@@ -164,7 +168,7 @@ Returns information of a particular monitored node.
 
 `PUT` `/v1/overlord/nodes/{NodeFQDN}`
 
-Changes the current information of a given node.
+Changes the current information of a given node. Node FQDN and IP may not change from one version to another.
 
 Input:
 
@@ -179,18 +183,10 @@ Input:
 }
 ```
 
-`POST`  `/v1/overlord/core/check`
-
-Returns complete health check report on all core components
-
-Response 
-
-**TODO** json structure
-
 
 `GET` `/v1/overlord/core/es`
 
-Return a list of current hosts in comprising the ES core components
+Return a list of current hosts in comprising the ES cluster core components.
 
 ```json
 {
@@ -216,6 +212,7 @@ Return a list of current hosts in comprising the ES core components
 Generates and applies the new configuration options of the ES Core components.
 
 **NOTE**: If configuration is unchanged ES Core will not be restarted!
+It is possible to deploy the monitoring platform on different hosts than elasticsearch. 
 
 
 
@@ -225,19 +222,21 @@ Returns the current configuration file of ElasticSearch in the form of a YAML fi
 
 `GET` `/v1/overlord/ls/config`
 
-Returns the current configuration of LogstashServer
+Returns the current configuration file of Logstash Server.
 
-**TODO** json structure.
+
 
 `GET` `/v1/overlord/core/kb/config`
 
 Returns the current configuration file for Kibana.
 
+**NOTE:** Marked as obsolete!
+
 
 
 `PUT` `/v1/overlord/core/es/config`
 
-Changes the current configuration of ElasticSearch.
+Changes the current configuration options of ElasticSearch.
 
 Input:
 
@@ -255,7 +254,7 @@ Input:
 
 `PUT` `/v1/overlord/ls/config`
 
-Changes the current configuration of LogstashServer
+Changes the current configuration of LogstashServer.
 
 Input:
 
@@ -276,7 +275,7 @@ Input:
 Input:
 Changes the current configuration for Kibana
 
-**TODO** json structure.
+**NOTE:** Marked as obsolete!
 
 -
 #### Monitoring auxiliary
@@ -289,6 +288,7 @@ Returns monitoring status of all nodes.
 {
 	{
 		"NodeFQDN":"<nodeFQDN>",
+		"NodeIP":"<nodeIP>",
 		"Monit":"<True|False>",
 		"Collectd":"<status>",
 		"LSF":"<status>"
@@ -301,21 +301,13 @@ Returns monitoring status of all nodes.
 
 `POST` `/v1/overlord/aux/deploy`
 
-Deploys all auxiliary monitoring applications and configures them.
-
-
-
-
-`GET` `/v1/overlord/aux/deploy/{NodeName}`
-
-Retruns the current deployment of auxiliary monitoring components to all nodes or to a specified Node defined by {NodeName}
-
+Deploys all auxiliary monitoring components on registered nodes and configures them.
 
 
 
 `POST` `/v1/overlord/aux/deploy/{collectd|logstashfw}/{NodeName}`
 
-Deploys either collectd or logstash-forwarder to all nodes if {NodeName} is specified it deploys the selected auxiliary component to the node specified.
+Deploys either collectd or logstash-forwarder to the specified node. It is
 
 
 `GET` `/v1/overlord/aux/{collectd|logstashfw}/config`

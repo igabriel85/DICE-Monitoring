@@ -322,7 +322,7 @@ class QueryEsCore(Resource):
 			request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
 		#return query
 		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
-			ListMetrics, resJson = queryESCore(query, debug=False)
+			ListMetrics, resJson = queryESCore(query, debug=False) #TODO enclose in Try Catch if es instance unreachable
 			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
 					fileName = 'output'+'.csv'
