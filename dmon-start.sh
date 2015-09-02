@@ -17,8 +17,8 @@ fi
 if [ $# -eq 0 ]; then
     echo "Starting default."
 	. $DIR/dmonEnv/bin/activate
-        python $DIR/start.py
+        python $DIR/src/start.py
 else
 	. $DIR/dmonEnv/bin/activate
-	python $DIR/start.py $1 $2 $3
+	python $DIR/src/start.py $1 $2 $3
 fi
