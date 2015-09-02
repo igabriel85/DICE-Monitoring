@@ -71,7 +71,7 @@ def main(argv):
 				sys.exit(2) #uncoment if exit upon 
 			else:
 				try:
-					procStart = subprocess.call(['./bootstrap.sh'],stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=False).communicate()
+					procStart = subprocess.Popen(['./bootstrap.sh'],stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=False).communicate()
 				except Exception as inst:
 					print >> sys.stderr, 'Error while executing bootstrap script!'
 					print >> sys.stderr, type(inst)
@@ -90,7 +90,7 @@ def main(argv):
 				print >> sys.stderr, "Argument must be string!"
 			ip = arg
 		if opt in ("-l", "--local"):
-			if os.environ.get("WERKZEUG_RUN_MAIN") == "false":		
+			if os.environ.get("WERKZEUG_RUN_MAIN") == "true":		
 				if opt in ("-l", "--local"):
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
 					print >> sys.stderr, chkESCoreDB
