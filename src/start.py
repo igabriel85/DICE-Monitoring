@@ -97,7 +97,7 @@ def main(argv):
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
 					print >> sys.stderr, chkESCoreDB
 					if chkESCoreDB is not None:
-						corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
+						corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '10.211.55.195',hostOS='ubuntu', nodeName = 'esCoreMaster',
 							clusterName='diceMonit', conf = 'None', nodePort=9200, MasterNode=1)
 						db.session.add(corePopES)
 						try:
@@ -111,7 +111,7 @@ def main(argv):
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkLSCoreDB is not None:
-						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu',
+						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '10.211.55.195',hostOS='ubuntu',
 							outESclusterName='diceMonit', udpPort = 25680, inLumberPort=5000)
 						db.session.add(corePopLS) 
 						try:
