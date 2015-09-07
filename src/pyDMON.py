@@ -1032,6 +1032,12 @@ class AuxDeploy(Resource):
 		return response
 
 	def post(self): #TODO currently works only if the same username and password is used for all Nodes
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		lsfTemp= os.path.join(tmpDir,'logstash-forwarder.tmp')#tmpDir+"/collectd.tmp"
+		collectdTemp = os.path.join(tmpDir,'collectd.tmp')
+		collectdConfLoc = os.path.join(cfgDir,'collectd.conf')
+		lsfConfLoc = os.path.join(cfgDir,'logstash-forwarder.conf')
 		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nMonitored,
 			dbNodes.nCollectdState,dbNodes.nLogstashForwState,dbNodes.nUser,dbNodes.nPass,dbNodes.nodeIP).all()
 		result = []
@@ -1069,7 +1075,34 @@ class AuxDeploy(Resource):
 		print >> sys.stderr, credentials['User']
 		print >> sys.stderr, confDir
 
+		qSCore = dbSCore.query.first()#TODO Change for distributed deployment
+		try:
+			lsfTemplate = templateEnv.get_template( lsfTemp )
+			#print >>sys.stderr, template
+		except:
+			return "Tempalte file unavailable!"
+
+		#{{ESCoreIP}}:{{LSLumberPort}}	
+		infolsfAux = {"ESCoreIP":qSCore.hostIP,"LSLumberPort":qSCore.inLumberPort}			
+		lsfConf = lsfTemplate.render(infolsfAux)
 		
+		lsfConfFile = open(lsfConfLoc,"w+") #TODO trycatch
+		lsfConfFile.write(lsfConf)
+		lsfConfFile.close()
+
+		#{{logstash_server_ip}}" "{{logstash_server_port}}
+		try:
+			collectdTemplate = templateEnv.get_template( collectdTemp )
+		except:
+			return "Template file unavailable!"
+
+		infocollectdAux = {"ogstash_server_ip":qSCore.hostIP,"logstash_server_port":qSCore.udpPort}
+		collectdConf = collectdTemplate.render(infocollectdAux)
+
+		collectdConfFile = open(collectdConfLoc,"w+")
+		collectdConfFile.write(collectdConf)
+		collectdConfFile.close()
+
 		try:
 			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
 		except Exception as inst:#TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
