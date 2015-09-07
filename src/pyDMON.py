@@ -1096,7 +1096,7 @@ class AuxDeploy(Resource):
 		except:
 			return "Template file unavailable!"
 
-		infocollectdAux = {"ogstash_server_ip":qSCore.hostIP,"logstash_server_port":qSCore.udpPort}
+		infocollectdAux = {"logstash_server_ip":qSCore.hostIP,"logstash_server_port":qSCore.udpPort}
 		collectdConf = collectdTemplate.render(infocollectdAux)
 
 		collectdConfFile = open(collectdConfLoc,"w+")

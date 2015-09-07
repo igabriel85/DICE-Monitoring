@@ -91,7 +91,7 @@ def main(argv):
 			if isinstance(arg,str) is not True:
 				print >> sys.stderr, "Argument must be string!"
 			ip = arg
-		if opt in ("-l", "--local"):
+		if opt in ("-l", "--local"):#TODO add the ability to define local IP
 			if os.environ.get("WERKZEUG_RUN_MAIN") == "true":		
 				if opt in ("-l", "--local"):
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
