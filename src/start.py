@@ -68,7 +68,7 @@ def main(argv):
 			#hostfile=arg
 			if os.path.isfile('dmon.lock') is True: 
 				print >>sys.stderr, "D-Mon Core already installed!"
-				sys.exit(2) #uncoment if exit upon 
+				#sys.exit(2) #uncoment if exit upon 
 			else:
 				try:
 					print >>sys.stderr, "Bootstrapping D-Mon Core please wait..."
@@ -103,7 +103,7 @@ def main(argv):
 						try:
 							db.session.commit() 
 						except Exception as inst:
-							print >> sys.stderr, 'Duplicate entry exception!'
+							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
 							print >> sys.stderr, type(inst)
 							print >> sys.stderr, inst.args
 							pass
@@ -117,7 +117,7 @@ def main(argv):
 						try:
 							db.session.commit() 
 						except Exception as inst:
-							print >> sys.stderr, 'Duplicate entry exception!'
+							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
 							print >> sys.stderr, type(inst)
 							print >> sys.stderr, inst.args
 							pass

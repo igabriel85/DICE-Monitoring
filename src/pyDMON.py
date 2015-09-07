@@ -38,7 +38,7 @@ from datetime import datetime
 import jinja2
 import requests
 import shutil
-#from werkzeug import secure_filename #unused
+from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
 from pysshCore import *
@@ -52,6 +52,7 @@ tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 #TODO: only provisory for testing
 esDir = '/opt/elasticsearch' 
@@ -114,8 +115,8 @@ class dbSCore(db.Model):
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
     inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
-    sslCert = db.Column(db.String(120), index=True, unique=False,default = 'unknown')
-    sslKey = db.Column(db.String(120), index=True, unique=False,default = 'unknown')
+    sslCert = db.Column(db.String(120), index=True, unique=False,default = 'default')
+    sslKey = db.Column(db.String(120), index=True, unique=False,default = 'default')
     udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
     outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
     outKafka = db.Column(db.String(64), index=True, unique=False,default = 'unknown') # output kafka details
@@ -244,6 +245,10 @@ lsCore=api.model('Submit LS conf',{
 # nodeDet = api.model('Node Info',{
 # 	'FQDN' : field
 # 	})#[{'FQDN':'IP'}]
+
+certModel = api.model('Update',{
+	'Certificate':fields.String(required=False, description='Certificate')
+	})
 
 @dmon.route('/v1/observer/applications')
 class ObsApplications(Resource):
@@ -843,7 +848,18 @@ class LSCoreController(Resource):
 		except:
 			return "Tempalte file unavailable!"
 
-		infoSCore = {"sslcert":qSCore.sslCert,"sslkey":qSCore.sslKey,"udpPort":qSCore.udpPort,"ESCluster":qSCore.outESclusterName}			
+		if qSCore.sslCert == 'default':
+			certLoc = os.path.join(credDir,'logstash-forwarder.crt')
+		else:
+			certLoc = os.path.join(credDir,qSCore.sslCert+'.crt') 
+
+
+		if qSCore.sslKey == 'default':
+			keyLoc = os.path.join(credDir,'logstash-forwarder.key')
+		else:
+			keyLoc = os.path.join(credDir,qSCore.sslKey+'.key') 
+
+		infoSCore = {"sslcert":certLoc,"sslkey":keyLoc,"udpPort":qSCore.udpPort,"ESCluster":qSCore.outESclusterName}			
 		sConf = template.render(infoSCore)
 		qSCore.conf = sConf
 		#print >>sys.stderr, esConf
@@ -868,6 +884,127 @@ class LSCoreController(Resource):
 		response.status_code=200
 		return response
 		#TODO NOW -> use rendered tempalte to load ls Core
+
+
+@dmon.route('/v1/overlord/core/ls/credentials')
+class LSCredControl(Resource):
+	def get(self):
+		credList = []
+		credAll=db.session.query(dbSCore.hostFQDN,dbSCore.hostIP,dbSCore.sslCert,dbSCore.sslKey).all()
+		if credAll is None:
+			response = jsonify({'Status':'No credentials set!'})
+			response.status_code = 404
+			return response
+		for nl in credAll:
+			credDict= {}
+			print >>sys.stderr, nl[0]
+			credDict['LS Host']=nl[0]
+			credDict['Certificate']=nl[2]
+			credDict['Key']=nl[3]
+			credList.append(credDict)
+		response = jsonify({'Credentials':credList})
+		response.status_code=200
+		return response
+
+@dmon.route('/v1/overlord/core/ls/cert/<certName>')
+@api.doc(params={'certName': 'Name of the certificate'})
+class LSCertQuery(Resource):
+	def get(self,certName):
+		if certName == 'default':
+			response = jsonify({'Certificate':'default'})
+			response.status_code=200
+			return response
+		qSCoreCert = dbSCore.query.filter_by(sslCert = certName).first()
+		if qSCoreCert is None:
+			response = jsonify({'Status':certName+' not found!'})
+			response.status_code = 404
+			return response
+
+		response=jsonify({'Host':qSCoreCert.hostFQDN, 'Certificate':qSCoreCert.sslCert})
+		response.status_code = 200
+		return response
+
+@dmon.route('/v1/overlord/core/ls/cert/<certName>/<hostFQDN>')
+@api.doc(params={'certName': 'Name of the certificate',
+	'hostFQDN':'Host FQDN'})
+class LSCertControl(Resource):
+	@api.expect(certModel)	#TODO FIX THIS
+	def put(self,certName,hostFQDN):
+		if request.headers['Content-Type'] == 'application/x-pem-file':
+			pemData = request.data
+		else:
+			abort(400)
+		qSCoreCert = dbSCore.query.filter_by(hostFQDN = hostFQDN).first()
+		if qSCoreCert is None:
+			response=jsonify({'Status':'unknown host'})
+			response.status_code = 404
+			return response
+		else:
+			if certName == 'default':
+				crtFile = os.path.join(credDir,'logstash-forwarder.crt')
+			else:
+				crtFile = os.path.join(credDir,certName+'.crt')
+			try:
+				cert = open(crtFile,'w+')
+				cert.write(pemData)
+				cert.close()
+			except IOError:
+				response = jsonify({'Error':'File I/O!'})
+				response.status_code = 500
+				return response	
+
+		qSCoreCert.sslCert = certName
+		response = jsonify({'Status':'updated certificate!'})
+		response.status_code=201
+		return response
+
+@dmon.route('/v1/overlord/core/ls/key/<keyName>')
+class LSKeyQuery(Resource):
+	def get(self, keyName):
+		if keyName == 'default':
+			response = jsonify({'Key':'default'})
+			response.status_code=200
+			return response
+		qSCoreKey = dbSCore.query.filter_by(sslKey = keyName).first()
+		if qSCoreKey is None:
+			response = jsonify({'Status':keyName+' not found!'})
+			response.status_code = 404
+			return response
+
+		response=jsonify({'Host':qSCoreKey.hostFQDN, 'Certificate':qSCoreKey.sslKey})
+		response.status_code = 200
+		return response
+		
+@dmon.route('/v1/overlord/core/ls/key/<keyName>/<hostFQDN>')
+class LSKeyControl(Resource):
+	def put(self,keyName, hostFQDN):
+		if request.headers['Content-Type'] == 'application/x-pem-file':
+			pemData = request.data
+		else:
+			abort(400)
+		qSCoreKey = dbSCore.query.filter_by(hostFQDN = hostFQDN).first()
+		if qSCoreKey is None:
+			response=jsonify({'Status':'unknown host'})
+			response.status_code = 404
+			return response
+		else:
+			if keyName == 'default':
+				keyFile = os.path.join(credDir,'logstash-forwarder.key')
+			else:
+				keyFile = os.path.join(credDir,keyName+'.key')
+			try:
+				key = open(keyFile,'w+')
+				key.write(pemData)
+				key.close()
+			except IOError:
+				response = jsonify({'Error':'File I/O!'})
+				response.status_code = 500
+				return response	
+
+		qSCorekey.sslKey = keyName
+		response = jsonify({'Status':'updated key!'})
+		response.status_code=201
+		return response
 
 @dmon.route('/v1/overlord/aux')
 class AuxInfo(Resource):
@@ -1139,6 +1276,6 @@ if __name__ == '__main__':
 		#esDir=
 		#lsDir=
 		#kibanaDir=
-		app.run(debug=True)
+		app.run(port = 5001, debug=True)
 	else:
 		app.run(host='0.0.0.0', port=8080, debug = True)

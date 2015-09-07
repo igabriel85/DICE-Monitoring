@@ -31,6 +31,7 @@ sys.setdefaultencoding('utf8')
 #folder locations
 basedir = os.path.abspath(os.path.dirname(__file__))
 confDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
+credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 #monitoring endpoints
 #logstashsip = ''
@@ -125,7 +126,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 
 	print "Install logstash-forwarder"
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	localCopyCrt = os.path.join(confDir,'logstash-forwarder.crt')
+	localCopyCrt = os.path.join(credDir,'logstash-forwarder.crt')
 	localCopyConf = os.path.join(confDir,'logstash-forwarder.conf')
 	localLFList = os.path.join(confDir,'logstashforwarder.list')
 	try:
@@ -217,13 +218,6 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 # 	print "Stff"
 
 
-def mf(hostlist,userName,uPassword,confDir=confDir):
-	localCopyCrt = os.path.join(confDir,'collectd.sh')
-	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	#client.copy_file(localCopyCrt,"collectd.sh")
-	client.exec_command('nohup collectd',sudo=True)
-	#out2 = client.run_command('./collectd.sh',sudo=True)
-	#out2=client.exec_command('./collectd.sh',sudo=True)
 
 def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
