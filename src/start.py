@@ -98,7 +98,7 @@ def main(argv):
 					print >> sys.stderr, chkESCoreDB
 					if chkESCoreDB is not None:
 						corePopES = dbESCore(hostFQDN=socket.getfqdn(),hostIP = '127.0.0.1',hostOS='ubuntu', nodeName = 'esCoreMaster',
-							clusterName='dice-monit', conf = 'None', nodePort=9200, MasterNode=1)
+							clusterName='diceMonit', conf = 'None', nodePort=9200, MasterNode=1)
 						db.session.add(corePopES)
 						try:
 							db.session.commit() 
