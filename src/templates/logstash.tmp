@@ -4,8 +4,8 @@ input {
 lumberjack{
 port =>5000
 type=> "log"
-ssl_certificate => {{sslcert}}
-ssl_key=> {{sslkey}}
+ssl_certificate => "{{sslcert}}"
+ssl_key=> "{{sslkey}}"
 }
   udp {
     port => {{udpPort}}         # 25826 matches port specified in collectd.conf
