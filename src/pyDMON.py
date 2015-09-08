@@ -1145,7 +1145,7 @@ class AuxDeploy(Resource):
 		response.status_code = 201		
 		return response			
 
-@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')
+@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')#TODO add parameter -force to redeploy config 
 @api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	def post(self, auxComp, nodeFQDN):
