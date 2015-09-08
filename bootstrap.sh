@@ -33,6 +33,7 @@ chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
 
 #Start kibana after install #TODO need better solution
+service kibana4 start
 
 # install Java 8
 echo "Installing Oracle Java 1.8 ...."
