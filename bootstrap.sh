@@ -71,7 +71,7 @@ ln -sf logstash-1.5.4 logstash
 # fix permissions
 echo Setting permissions ....
 cd /opt
-chown -R ubuntu.ubuntu logstash* elasticsearch*
+chown -R vagrant.vagrant logstash* elasticsearch*
 
 echo Finishing touches .....
 mkdir -p /etc/logstash/conf.d

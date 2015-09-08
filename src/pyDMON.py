@@ -736,6 +736,7 @@ class KBCoreConfiguration(Resource):
 @dmon.route('/v1/overlord/core/kb')
 class KKCoreController(Resource):
 	def post(self):
+
 		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Kibana"
 
 @dmon.route('/v1/overlord/core/ls/config')
@@ -1085,7 +1086,7 @@ class AuxDeploy(Resource):
 		infolsfAux = {"ESCoreIP":qSCore.hostIP,"LSLumberPort":qSCore.inLumberPort}			
 		lsfConf = lsfTemplate.render(infolsfAux)
 		
-		lsfConfFile = open(lsfConfLoc,"w+") #TODO trycatch
+		lsfConfFile = open(lsfConfLoc,"wb") #TODO trycatch
 		lsfConfFile.write(lsfConf)
 		lsfConfFile.close()
 
@@ -1098,7 +1099,7 @@ class AuxDeploy(Resource):
 		infocollectdAux = {"logstash_server_ip":qSCore.hostIP,"logstash_server_port":qSCore.udpPort}
 		collectdConf = collectdTemplate.render(infocollectdAux)
 
-		collectdConfFile = open(collectdConfLoc,"w+")
+		collectdConfFile = open(collectdConfLoc,"wb")
 		collectdConfFile.write(collectdConf)
 		collectdConfFile.close()
 

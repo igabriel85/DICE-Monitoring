@@ -36,7 +36,7 @@ def main(argv):
 	'''
 		Starts 
 	'''
-	port = 5000
+	port = 5001
 	ip = '0.0.0.0'
 	try:
 		opts, args=getopt.getopt(argv,"hi:p:e:l",["core-install","port","endpoint-ip","local"])
@@ -58,7 +58,7 @@ def main(argv):
 			print 'Arguments:'
 			print '-h 	-> help'
 			print '-i 	-> install D-Mon core componets (WARNING: sudo required)'
-			print '-p 	-> designate port for D-Mon web service (default is 5000)'
+			print '-p 	-> designate port for D-Mon web service (default is 5001)'
 			print '-e 	-> designate IP for D-Mon web service (default is 0.0.0.0)'
 			print "Usage Example:"
 			print" start.py -i -p 8088 -e 127.0.0.1 "
