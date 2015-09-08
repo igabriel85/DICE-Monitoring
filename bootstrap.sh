@@ -68,6 +68,8 @@ wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
 tar zxf logstash-1.5.4.tar.gz
 ln -sf logstash-1.5.4 logstash
 
+#TODO Generate key and certificates for logstash server and logstash-forwarder
+
 # fix permissions
 echo Setting permissions ....
 cd /opt

@@ -906,6 +906,28 @@ class LSCredControl(Resource):
 		response.status_code=200
 		return response
 
+	def post(self):
+		qLSCore = dbSCore.query.first()
+		if qLSCore is None:
+			response = jsonify({'Status':'No LS Core set!'})
+			response.status_code = 404
+			return response
+
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		oSSLTemp= os.path.join(tmpDir,'openssl.tmp')
+		oSSLLoc = os.path.join(cfgDir,'openssl.cnf')
+
+		template = templateEnv.get_template( oSSLTemp )
+		osslPop = {"LSHostIP":qLSCore.hostIP}			
+		oSSLConf = template.render(osslPop)
+
+		osslFile = open(lsfCore,"wb")
+		osslFile.write(oSSLLoc)
+		osslFile.close()
+
+
+
 @dmon.route('/v1/overlord/core/ls/cert/<certName>')
 @api.doc(params={'certName': 'Name of the certificate'})
 class LSCertQuery(Resource):
