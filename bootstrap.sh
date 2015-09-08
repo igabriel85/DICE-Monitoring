@@ -32,6 +32,8 @@ cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15a
 chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
 
+#Start kibana after install #TODO need better solution
+
 # install Java 8
 echo "Installing Oracle Java 1.8 ...."
 apt-get install python-software-properties -y
@@ -84,6 +86,7 @@ openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey 
 echo "Setting permissions ...."
 cd /opt
 chown -R vagrant.vagrant logstash* elasticsearch*
+chown -R vagrant.vagrant *
 
 echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
