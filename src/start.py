@@ -44,7 +44,7 @@ def main(argv):
 		print "%-------------------------------------------------------------------------------------------%"
 		print "Invalid argument! Arguments must take the form:"
 		print ""
-		print "start.py -i  -p <port> -e <IP>"
+		print "start.py -i  -p <port> -e <host IP>"
 		print ""
 		print "%-------------------------------------------------------------------------------------------%"
 		sys.exit(2)

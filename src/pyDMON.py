@@ -558,7 +558,6 @@ class MonitoredNodeInfo(Resource):
 		response.status_code = 200
 		return response
 
-		return "delete specified node!"
 
 
 @dmon.route('/v1/overlord/nodes/purge/<nodeFQDN>')
