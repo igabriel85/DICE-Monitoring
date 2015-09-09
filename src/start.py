@@ -82,6 +82,7 @@ def main(argv):
 				lock =  open('dmon.lock',"w+")
 				lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				lock.close()
+				sys.exit(0) #exit when done
 		if opt in ("-p","--port"):
 			if isinstance(int(arg),int) is not True:
 				print >> sys.stderr, "Argument must be an integer!"
