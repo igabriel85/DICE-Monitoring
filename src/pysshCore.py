@@ -77,6 +77,12 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		print "An exception has occured copying collectd.conf!"
 		#client.pool.join()
 
+	try:
+		print "Adding Comment to File..."
+		client.run_command('echo  \' \' >> /etc/collectd/collectd.conf')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException)
+		print "An exception has occured while editing collectd.conf!"	
+		
 	print "Stopping Collectd...."
 
 	try:	
