@@ -80,7 +80,7 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	try:
 		print "Adding Comment to File..."
 		client.run_command('echo  \' \' >> /etc/collectd/collectd.conf')
-	except (AuthenticationException, UnknownHostException, ConnectionErrorException)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while editing collectd.conf!"	
 		
 	print "Stopping Collectd...."
