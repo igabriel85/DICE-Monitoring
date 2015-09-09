@@ -77,11 +77,7 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		print "An exception has occured copying collectd.conf!"
 		#client.pool.join()
 
-	try:
-		print "Adding Comment to File..."
-		client.run_command('echo >> /etc/collectd/collectd.conf')
-	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured while editing collectd.conf!"	
+	
 		
 	print "Stopping Collectd...."
 
@@ -100,10 +96,17 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		print "An exception has occured moving new collectd.conf to /etc!"	
 		#client.pool.join()
 		#print 'collectd -C ' +localCopy
+
+	try:
+		print "Adding Comment to File..."
+		client.run_command('echo >> /etc/collectd/collectd.conf')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while editing collectd.conf!"	
+			
 	print "Starting Collectd ..."
 	try:
 		#out = client.exec_command('collectd',sudo=True,pty=False)
-		out = client.run_command('nohup service collectd start',sudo=True)
+		out = client.run_command('nohup service collectd restart',sudo=True)
 		listOutput(out)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting collectd!"
