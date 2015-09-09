@@ -75,7 +75,7 @@ ln -sf logstash-1.5.4 logstash
 
 
 echo "Generating certificates for Logstash ..."
-HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth1 for vagrant
+HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
 
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
 

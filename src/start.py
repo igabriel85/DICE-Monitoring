@@ -58,6 +58,7 @@ def main(argv):
 			print 'Arguments:'
 			print '-h 	-> help'
 			print '-i 	-> install D-Mon core componets (WARNING: sudo required)'
+			print '-l 	-> deploys D-Mon in local mode (also populates ES and LS Core component settings)'
 			print '-p 	-> designate port for D-Mon web service (default is 5001)'
 			print '-e 	-> designate IP for D-Mon web service (default is 0.0.0.0)'
 			print "Usage Example:"

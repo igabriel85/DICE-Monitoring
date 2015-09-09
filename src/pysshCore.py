@@ -79,14 +79,14 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 
 	try:
 		print "Adding Comment to File..."
-		client.run_command('echo  \' \' >> /etc/collectd/collectd.conf')
+		client.run_command('echo >> /etc/collectd/collectd.conf')
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while editing collectd.conf!"	
 		
 	print "Stopping Collectd...."
 
 	try:	
-		client.run_command('service collectd stop', sudo=True)
+		client.run_command('nohup service collectd stop', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured stopping collectd service!"
 	try:
@@ -103,7 +103,7 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	print "Starting Collectd ..."
 	try:
 		#out = client.exec_command('collectd',sudo=True,pty=False)
-		out = client.run_command('nohup collectd',sudo=True)
+		out = client.run_command('nohup service collectd start',sudo=True)
 		listOutput(out)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting collectd!"
@@ -202,7 +202,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 
 	print "Starting logstash-forwarder ...."
 	try:
-		run = client.run_command('nohup service logstash-forwarder start', sudo=True)
+		run = client.run_command('nohup service logstash-forwarder restart', sudo=True)
 		listOutput(run)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting LSF"	
