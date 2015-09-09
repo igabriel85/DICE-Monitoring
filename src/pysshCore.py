@@ -226,7 +226,17 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 # except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 # 	print "Stff"
 
-
+def uploadFile(fileLoc,fileName, upLoc):
+	cmdMove = 'mv '+fileName+' '+upLoc
+	try:	
+		client.copy_file(fileLoc,fileName)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while uploading file!"
+	try:	
+		client.run_command(cmdMove,sudo=True)
+		client.run_command('echo >> '+upLoc,sudo=True) #TODO replace ugly fix
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while moving file"
 
 def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
@@ -234,7 +244,6 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 		Only supported commands are start, stop, status
 
 		TODO: 
-		- Some bugs in starting services
 		- return hosts on which services are not running
 
 	'''
@@ -262,9 +271,6 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 					print "Unknown output!"
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
-
-def overlordCommand(hostlist,userName,uPassword,command):
-	cmd = ParallelSSHClient(hostlist,userName,password)
 	
 
 def hostsScan(hostlist):

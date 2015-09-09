@@ -175,7 +175,10 @@ class dbCDHMng(db.Model):
 dmon = api.namespace('dmon', description='D-MON operations')
 
 #argument parser
-pQueryES = api.parser() 
+dmonAux = api.parser() 
+dmonAux.add_argument('redeploy', type=str, required=False, help = 'Redeploys configuration of Auxiliary components on the specified node.')
+dmonAuxAll=api.parser()
+dmonAuxAll.add_argument('redeploy-all', type=str, required=False, help = 'Redeploys configuration of Auxiliary components on all nodes.')
 #pQueryES.add_argument('task',type=str, required=True, help='The task details', location='form')
 
 
@@ -926,6 +929,8 @@ class LSCredControl(Resource):
 		osslFile.write(oSSLLoc)
 		osslFile.close()
 
+		#TODO Finish 
+
 
 
 @dmon.route('/v1/overlord/core/ls/cert/<certName>')
@@ -1053,6 +1058,7 @@ class AuxDeploy(Resource):
 		response.status_code=200
 		return response
 
+	@api.doc(parser=dmonAuxAll)
 	def post(self): #TODO currently works only if the same username and password is used for all Nodes
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
@@ -1078,7 +1084,8 @@ class AuxDeploy(Resource):
 				#rp['Pass']=n[5]
 				result.append(rp) 
 		collectdList=[]
-		LSFList = []		
+		LSFList = []
+		allNodes = []		
 		for res in result:
 			if res['Collectd'] == 'None':
 				print >> sys.stderr, 'No collectd!'
@@ -1086,8 +1093,10 @@ class AuxDeploy(Resource):
 			if res['LSF'] == 'None':
 				LSFList.append(res['IP'])
 				print >> sys.stderr, 'No LSF!'
+			allNodes.append(res['IP'])
 
-		if not collectdList and not LSFList:
+		args = dmonAuxAll.parse_args()
+		if not collectdList and not LSFList and args != 'redeploy-all':
 			response = jsonify({'Status':'All registred nodes are already monitored!'})
 			response.status_code=200
 			return response	
@@ -1124,6 +1133,17 @@ class AuxDeploy(Resource):
 		collectdConfFile = open(collectdConfLoc,"wb")
 		collectdConfFile.write(collectdConf)
 		collectdConfFile.close()
+
+		args = dmonAuxAll.parse_args()
+
+		if args == 'redeploy-all':
+			uploadFile(allNodes,credentials['User'],credentials['Pass'],collectdConfLoc,'collectd.conf', '/etc/collectd/collectd.conf')
+			uploadFile(allNodes,credentials['User'],credentials['Pass'],lsfConfLoc,'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
+			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'collectd', 'restart')
+			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'logstash-forwarder', 'restart')
+			response = jsonify({'Status':'All aux components reloaded!'})
+			response.status_code = 200
+			return response
 
 		try:
 			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
@@ -1170,6 +1190,7 @@ class AuxDeploy(Resource):
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')#TODO add parameter -force to redeploy config 
 @api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
+	@api.doc(parser=dmonAux)
 	def post(self, auxComp, nodeFQDN):
 		auxList = ['collectd','lsf']
 		#status = {}
@@ -1183,9 +1204,27 @@ class AuxDeploySelective(Resource):
 			response.status_code=404
 			return response
 
+		args = dmonAux.parse_args()
+		
 		node = []
 		node.append(qAux.nodeIP)
 		if auxComp == 'collectd':
+			if args == 'redeploy':
+				if qAux.nCollectdState != 'Running':
+					response = jsonify({'Status:No collectd instance to restart!'})
+					response.status_code=404
+					return response 
+				try:
+					serviceCtrl(node,qAux.nUser,qAux.nPass,'collectd', 'restart')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error restarting Collectd on '+ nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				response = jsonify({'Status':'Collectd restarted on '+nodeFQDN})
+				response.status_code = 200
+				return response
 			if qAux.nCollectdState == 'None':
 				try:
 					installCollectd(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
@@ -1205,6 +1244,22 @@ class AuxDeploySelective(Resource):
 				response.status_code = 200
 				return response 
 		elif auxComp == 'lsf':
+			if args == 'redeploy':
+				if qAux.nLogstashForwState != 'Running':
+					response = jsonify({'Status:No LSF instance to restart!'})
+					response.status_code=404
+					return response 
+				try:
+					serviceCtrl(node,qAux.nUser,qAux.nPass,'logstash-forwarder', 'restart')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error restarting LSF on '+ nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				response = jsonify({'Status':'LSF restarted on '+nodeFQDN})
+				response.status_code = 200
+				return response
 			if qAux.nLogstashForwState == 'None':
 				try:
 					installLogstashForwarder(node,qAux.nUser,qAux.nPass,confDir=cfgDir)

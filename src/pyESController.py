@@ -29,7 +29,7 @@ import sys, getopt
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 
 #Global es
-es = Elasticsearch()
+es = Elasticsearch('109.231.126.38')
 
 # class ESCoreInit:
 #   def __init__(self, IP):
