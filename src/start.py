@@ -64,7 +64,7 @@ def main(argv):
 			print" start.py -i -p 8088 -e 127.0.0.1 "
 			print "%-------------------------------------------------------------------------------------------%"
 			sys.exit()
-		elif opt in ("-i","--core-install"):
+		if opt in ("-i","--core-install"):
 			#hostfile=arg
 			if os.path.isfile('dmon.lock') is True: 
 				print >>sys.stderr, "D-Mon Core already installed!"
