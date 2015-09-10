@@ -1096,7 +1096,17 @@ class AuxDeploy(Resource):
 			allNodes.append(res['IP'])
 
 		args = dmonAuxAll.parse_args()
-		if not collectdList and not LSFList and args != 'redeploy-all':
+
+		if args == 'redeploy-all': #TODO check of conf files exist if not catch error
+			uploadFile(allNodes,credentials['User'],credentials['Pass'],collectdConfLoc,'collectd.conf', '/etc/collectd/collectd.conf')
+			uploadFile(allNodes,credentials['User'],credentials['Pass'],lsfConfLoc,'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
+			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'collectd', 'restart')
+			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'logstash-forwarder', 'restart')
+			response = jsonify({'Status':'All aux components reloaded!'})
+			response.status_code = 200
+			return response
+
+		if not collectdList and not LSFList:
 			response = jsonify({'Status':'All registred nodes are already monitored!'})
 			response.status_code=200
 			return response	
@@ -1134,16 +1144,7 @@ class AuxDeploy(Resource):
 		collectdConfFile.write(collectdConf)
 		collectdConfFile.close()
 
-		args = dmonAuxAll.parse_args()
-
-		if args == 'redeploy-all':
-			uploadFile(allNodes,credentials['User'],credentials['Pass'],collectdConfLoc,'collectd.conf', '/etc/collectd/collectd.conf')
-			uploadFile(allNodes,credentials['User'],credentials['Pass'],lsfConfLoc,'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
-			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'collectd', 'restart')
-			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'logstash-forwarder', 'restart')
-			response = jsonify({'Status':'All aux components reloaded!'})
-			response.status_code = 200
-			return response
+		
 
 		try:
 			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
