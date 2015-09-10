@@ -226,7 +226,8 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 # except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 # 	print "Stff"
 
-def uploadFile(fileLoc,fileName, upLoc):
+def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
+	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
 	cmdMove = 'mv '+fileName+' '+upLoc
 	try:	
 		client.copy_file(fileLoc,fileName)
