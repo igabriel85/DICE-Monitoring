@@ -113,7 +113,7 @@ def main(argv):
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkLSCoreDB is not None:
-						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '10.211.55.195',hostOS='ubuntu',
+						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '109.231.126.166',hostOS='ubuntu',
 							outESclusterName='diceMonit', udpPort = 25680, inLumberPort=5000)
 						db.session.add(corePopLS) 
 						try:
