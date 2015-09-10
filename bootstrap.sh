@@ -75,7 +75,7 @@ ln -sf logstash-1.5.4 logstash
 
 
 echo "Generating certificates for Logstash ..."
-HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
+HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
 
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
 
@@ -86,8 +86,8 @@ openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey 
 # fix permissions
 echo "Setting permissions ...."
 cd /opt
-chown -R vagrant.vagrant logstash* elasticsearch*
-chown -R vagrant.vagrant /opt
+chown -R ubuntu.ubuntu logstash* elasticsearch*
+chown -R ubuntu.ubuntu /opt
 
 echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
