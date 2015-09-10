@@ -27,6 +27,6 @@ cd /opt
 
 git clone https://github.com/igabriel85/IeAT-DICE-Repository.git
 
-chown -R vagrant.vagrant /opt
+chown -R ubuntu.ubuntu /opt
 
 pip install -r /opt/IeAT-DICE-Repository/src/requirements.txt
