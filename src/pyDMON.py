@@ -841,7 +841,7 @@ class LSCoreController(Resource):
 	def post(self):
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
-		esTemp= os.path.join(tmpDir,'logstash.tmp')#tmpDir+"/collectd.tmp"
+		lsTemp= os.path.join(tmpDir,'logstash.tmp')#tmpDir+"/collectd.tmp"
 		lsfCore= os.path.join(cfgDir,'logstash.conf')
 		#qSCore = db.session.query(dbSCore.hostFQDN).first()
 		qSCore=dbSCore.query.first()# TODO: currently only one LS instance supported
@@ -855,10 +855,12 @@ class LSCoreController(Resource):
 			subprocess.call(['kill','-9', str(qSCore.LSCorePID)])	
 
 		try:
-			template = templateEnv.get_template( esTemp )
+			template = templateEnv.get_template(lsTemp)
 			#print >>sys.stderr, template
-		except:
-			return "Tempalte file unavailable!"
+		except Exception as inst:
+			return "LS Tempalte file unavailable!"
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
 
 		if qSCore.sslCert == 'default':
 			certLoc = os.path.join(credDir,'logstash-forwarder.crt')
