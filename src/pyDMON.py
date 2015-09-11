@@ -362,6 +362,10 @@ class QueryEsCore(Resource):
 		else:
 			metrics = request.json['DMON']['metrics']
 			ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
+			if not ListMetrics:
+				response = jsonify({'Status':'No results found!'})
+				response.status_code = 404
+				return response
 			#repeated from before create function
 			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
