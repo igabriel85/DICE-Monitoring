@@ -1,7 +1,88 @@
-
 #DICE MOnitring Vagrant development env deploy
-#pre-alpha version
+#pre-alpha v0.1
 #TODO Legal Stuff
+
+
+$vagrantBootstrap = <<SCRIPT
+apt-get update
+apt-get install python-dev -y
+apt-get install python-lxml -y
+apt-get install python-pip -y
+apt-get install git -y
+
+cd /opt
+
+git clone https://github.com/igabriel85/IeAT-DICE-Repository.git
+
+pip install -r /opt/IeAT-DICE-Repository/src/requirements.txt
+
+cd /opt/IeAT-DICE-Repository/
+
+echo "Installing kibana...."
+cd ~/
+wget https://download.elasticsearch.org/kibana/kibana/kibana-4.0.1-linux-x64.tar.gz
+tar xvf kibana-4.0.1-linux-x64.tar.gz
+mkdir -p /opt/kibana
+cp -R ~/kibana-4.0.1-linux-x64/* /opt/kibana/
+echo "Registering Kibana as a service ...."
+cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
+chmod +x /etc/init.d/kibana4
+update-rc.d kibana4 defaults 96 9
+
+#Start kibana after install #TODO need better solution
+service kibana4 start
+
+# install Java 8
+echo "Installing Oracle Java 1.8 ...."
+apt-get install python-software-properties -y
+echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+add-apt-repository ppa:webupd8team/java -y
+apt-get update -y
+apt-get install oracle-java8-installer -y
+apt-get install ant -y
+
+# install Elasticsearch 1.4.4
+echo "Installing Elasticsearch ...."
+cd /opt
+wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.4.4.tar.gz
+tar zxf elasticsearch-1.4.4.tar.gz
+ln -sf elasticsearch-1.4.4 elasticsearch
+
+#delete config file
+rm -f /opt/elasticsearch/config/elastcisearch.yml
+#ln -sf /vagrant/elasticsearch.yml /opt/elasticsearch/config/elasticsearch.yml
+
+# install Marvel (posibly obsolete afther further testing)
+echo "Installing Elasticsearch plugin marvel ....."
+/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+
+# install Logstash
+echo "Installing Logstash..."
+cd /opt
+wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
+tar zxf logstash-1.5.4.tar.gz
+ln -sf logstash-1.5.4 logstash
+
+
+echo "Generating certificates for Logstash ..."
+HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
+#backup open ssl
+cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
+sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
+
+#generate certificates
+
+openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.key -out /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.crt
+
+# fix permissions
+echo "Setting permissions ...."
+cd /opt
+chown -R vagrant.vagrant logstash* elasticsearch*
+chown -R vagrant.vagrant /opt
+
+SCRIPT
+
 
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
@@ -9,13 +90,15 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
 
-  config.vm.hostname = "DICE-Monit"
-  config.vm.network :private_network, ip: "10.211.55.185"
-  config.vm.provision :shell, :path => "bootstrap.sh"
+  config.vm.hostname = "D-Mon"
+  config.vm.network :private_network, ip: "10.211.55.195"
   config.vm.network :forwarded_port, host:5601, guest: 5601
   config.vm.network :forwarded_port, host:9200, guest: 9200
+  config.vm.network :forwarded_port, host:5000, guest: 5000
+  config.vm.network :forwarded_port, host:5001, guest: 5001
+  config.vm.provision :shell, :inline => $vagrantBootstrap
   config.vm.provider "virtualbox" do |v|
-    v.name = "vm-clusterTest-monit"
+    v.name = "vm-dmon-dev"
     v.memory = 4096
   end
 end
