@@ -23,9 +23,15 @@ import nmap
 import sys, getopt
 
 
+
+#fix for UNicodeDecoder Error -> ascii codec
+reload(sys) 
+sys.setdefaultencoding('utf8')
+
 #folder locations
 basedir = os.path.abspath(os.path.dirname(__file__))
 confDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
+credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 #monitoring endpoints
 #logstashsip = ''
@@ -45,7 +51,7 @@ def listOutput(out):
 		for line in out[host]['stdout']:
 			print line
 
-def installCollectd(hostlist,userName,uPassword):
+def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	'''
 	Installs and uploads a conf file to selected hosts.
 
@@ -60,23 +66,57 @@ def installCollectd(hostlist,userName,uPassword):
 	try:
 		#Installing Collectd to hosts ...
 		output = client.run_command('apt-get install -y collectd', sudo=True)
-		listOutput(ouput)
+		listOutput(output)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured Installing collectd!"
+	
+	try:	
 		print "Copying collectd conf files ....."
 		client.copy_file(localCopy,"collectd.conf")
-		client.pool.join()
-
-		print "Stopping Collectd...."
-		client.run_command('service collectd stop', sudo=True)
-		client.pool.join()
-		client.run_command('mv /etc/collectd/collectd.conf /etc/collectd/collectd.default', sudo=True)
-		client.run_command('mv collectd.conf /etc/collectd/collectd.conf', sudo=True)
-		client.run_command('service collectd restart', sudo=True)
-		print "Done Collectd"
-
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured!"
+		print "An exception has occured copying collectd.conf!"
+		#client.pool.join()
 
-def installLogstashForwarder(hostlist,userName,uPassword):
+	
+		
+	print "Stopping Collectd...."
+
+	try:	
+		client.run_command('nohup service collectd stop', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured stopping collectd service!"
+	try:
+		client.run_command('mv /etc/collectd/collectd.conf /etc/collectd/collectd.default', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured renaming collectd.conf!"
+	
+	try:		
+		client.run_command('mv collectd.conf /etc/collectd/collectd.conf', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured moving new collectd.conf to /etc!"	
+		#client.pool.join()
+		#print 'collectd -C ' +localCopy
+
+	try:
+		print "Adding Comment to File..."
+		client.run_command('echo >> /etc/collectd/collectd.conf')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while editing collectd.conf!"	
+			
+	print "Starting Collectd ..."
+	try:
+		#out = client.exec_command('collectd',sudo=True,pty=False)
+		out = client.run_command('nohup service collectd restart',sudo=True)
+		listOutput(out)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured starting collectd!"
+		#client.run_command('service collectd start', sudo=True)
+
+	
+	del client
+	print "Done Collectd"	
+	
+def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 	'''
 		Installs and configures logstash-forwarder on all listed hosts.
 		The file logstashforwarder.list contains the string 
@@ -89,48 +129,94 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 		- currently fails if an exception occurs
 		- parsing ouput from listOutput
 	'''
+
+	if not os.path.isdir(confDir):
+		print "Configuration dir not found!"
+
 	print "Install logstash-forwarder"
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	localCopyCrt = os.path.join(confDir,'logstash-forwarder.crt')
+	localCopyCrt = os.path.join(credDir,'logstash-forwarder.crt')
 	localCopyConf = os.path.join(confDir,'logstash-forwarder.conf')
 	localLFList = os.path.join(confDir,'logstashforwarder.list')
 	try:
 		print "Creating folders..."
 		client.run_command('mkdir /opt/certs', sudo=True)
-		
-		print "Copying certificate..."
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured creating /opt/certs!"	
+	
+	print "Copying certificate..."
+	
+	try:	
 		client.copy_file(localCopyCrt,"logstash-forwarder.crt")
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while moving cert!"
+	try:	
 		client.run_command('mv logstash-forwarder.crt /opt/certs',sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while moving cert to /opt/certs"
 
-		print "Adding Logstash forwarder to apt ..."
+	print "Adding Logstash forwarder to apt ..."
 		#output = client.run_command('echo \'deb http://packages.elasticsearch.org/logstashforwarder/debian stable main\' | sudo tee /etc/apt/sources.list.d/logstashforwarder.list',sudo=True)
+	
+	try:	
 		client.copy_file(localLFList,"logstashforwarder.list")
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while uploading lfs list!"
+
+	try:
 		client.run_command('mv logstashforwarder.list /etc/apt/sources.list.d/logstashforwarder.list',sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while adding lsf list to sourcelist!"
+
+	try:	
 		output = client.run_command('wget http://packages.elasticsearch.org/GPG-KEY-elasticsearch')
 		listOutput(output)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while downloading ES GPG Key!"
+
+	try:	
 		output1 = client.run_command('apt-key add GPG-KEY-elasticsearch', sudo=True)
 		listOutput(output1)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while adding GPG-Key to apt!"
 
 		#output2= client.run_command('wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo apt-key add -',sudo=True)
-		print "Installing Logstash-forwarder..."
+	print "Installing Logstash-forwarder..."
+	
+	try:
 		update=client.run_command('apt-get update',sudo=True)
 		listOutput(update)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while apt-get update!"
+	
+	try:	
 		install =client.run_command('apt-get install -y logstash-forwarder',sudo=True)
 		listOutput(install)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while installing LFS!"
+			
+	print "Copying Logstash-forwarder configuration to hosts..."
 
-		print "Copying Logstash-forwarder configuration to hosts..."
+	try:
 		client.copy_file(localCopyConf,"logstash-forwarder.conf")
 		client.run_command('mv logstash-forwarder.conf /etc/logstash-forwarder.conf',sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while uploading lsf conf!"
 
-		print "Starting logstash-forwarder ...."
-		run = client.run_command('service logstash-forwarder restart', sudo=True)
+	print "Starting logstash-forwarder ...."
+	try:
+		run = client.run_command('nohup service logstash-forwarder restart', sudo=True)
 		listOutput(run)
-		client.pool.join()
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured starting LSF"	
+		
 
-		print "All DONE!"
+
+		
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
-
+	del client
+	print "All DONE!"
 # client = ParallelSSHClient(['109.231.126.221','109.231.126.222'], user=userName,password=uPassword)
 # try:
 # 	output = client.run_command('mkdir this_is_a_test_2', sudo=True)
@@ -140,6 +226,18 @@ def installLogstashForwarder(hostlist,userName,uPassword):
 # except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 # 	print "Stff"
 
+def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
+	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	cmdMove = 'mv '+fileName+' '+upLoc
+	try:	
+		client.copy_file(fileLoc,fileName)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while uploading file!"
+	try:	
+		client.run_command(cmdMove,sudo=True)
+		client.run_command('echo >> '+upLoc,sudo=True) #TODO replace ugly fix
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while moving file"
 
 def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
@@ -147,12 +245,11 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 		Only supported commands are start, stop, status
 
 		TODO: 
-		- Some bugs in starting services
 		- return hosts on which services are not running
 
 	'''
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	cmdStr = 'service ' + serviceName +' ' + command
+	cmdStr = 'nohup service ' + serviceName +' ' + command
 	if command not in ['status','stop','start','force-start']:
 		print "Command "+ command +" unsupported!"
 		exit()
@@ -169,13 +266,13 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 					sline = line.split()
 					slineLength = len(sline)
 					print "Service " + serviceName + " is running as process " +str(sline[slineLength-1]) + " on host " + host
-				elif 'started' in line:
+				elif 'started' or 'Starring' in line:
 					print "Service " + serviceName+" has started Runnning on host " + host
 				else:
 					print "Unknown output!"
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
-
+	
 
 def hostsScan(hostlist):
 	'''
@@ -384,10 +481,10 @@ def main(argv):
 			else:
 				print "%-------------------------------------------------------------------------------------------%"
 				print "Starting Collectd deployment on hosts."
-				installCollectd(hostlist,userName,uPassword)
+				installCollectd(hostlist,userName,uPassword,confDir)
 				print ""
 				print "Starting Logstash-Forwarder deployment on hosts."
-				installLogstashForwarder(hostlist,userName,uPassword)
+				installLogstashForwarder(hostlist,userName,uPassword,confDir)
 				print ""
 				print "Deployment DONE!"
 				print "%-------------------------------------------------------------------------------------------%"
@@ -398,14 +495,15 @@ if __name__=='__main__':
 	if len(sys.argv) == 1:
 		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
 		'109.231.126.146','109.231.126.157']
+		hostlist = ['109.231.126.189','109.231.126.177']
 		
-		
-		userName = 'na'
-		uPassword = 'na'
+		userName = 'ubuntu'
+		uPassword = 'rexmundi220'
 		#installCollectd(hostlist,userName,uPassword)
-		#installLogstashForwarder(hostlist,userName,uPassword)
-		#serviceCtrl(hostlist,userName,uPassword,'logstash-forwarder','status')
-		print detectOS(hostlist, 'ubuntu','rexmundi220')
+		#mf(hostlist,userName,uPassword)
+		installLogstashForwarder(hostlist,userName,uPassword,confDir)
+		#serviceCtrl(hostlist,userName,uPassword,'collectd','start')
+		#print detectOS(hostlist, 'ubuntu','rexmundi220')
 		#nmapScan(hostlist)
 		# #----------------------------------------------------
 		# good, bad = hostsScan(hostlist)

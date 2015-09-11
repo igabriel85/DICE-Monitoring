@@ -22,6 +22,7 @@ import signal
 import subprocess
 from datetime import datetime
 import requests
+import os
 
 def portScan(addrs,ports):
 	'''
@@ -68,11 +69,26 @@ def checkPID(pid):
 	else:
 		return True
 
+def startLocalProcess(command):
+	'''
+	Starts a process in the background and writes a pid file.
+    command -> needs to be in the form of a list of basestring
+    	    -> 'yes>/dev/null' becomes ['yes','>','/dev/null']
+
+	Returns integer: PID
+	'''
+	process = subprocess.Popen(command, shell=True)
+	
+
+	return process.pid
+	
+
 
 hosts = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
 		'109.231.126.146','109.231.126.157','109.231.126.38']
 ports = ['22','443','7180','50020','5601']
-portScan(hosts,ports)
+#portScan(hosts,ports)
+
 
 
 

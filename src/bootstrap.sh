@@ -1,25 +1,28 @@
-#DICE MOnitring Vagrant development env deploy
-#pre-alpha v0.1
-#TODO Legal Stuff
+#!/usr/bin/env bash
+# Bootstrap script for DICE Monitoring Core Componets
+#
+#Copyright 2015, Institute e-Austria, Timisoara, Romania
+#    http://www.ieat.ro/
+#Developers:
+# * Gabriel Iuhasz, iuhasz.gabriel@info.uvt.ro
+#
+#Licensed under the Apache License, Version 2.0 (the "License");
+#you may not use this file except in compliance with the License.
+#You may obtain a copy of the License at:
+#    http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
-$vagrantBootstrap = <<SCRIPT
-apt-get update
-apt-get install python-dev -y
-apt-get install python-lxml -y
-apt-get install python-pip -y
-apt-get install git -y
-
-cd /opt
-
-git clone https://github.com/igabriel85/IeAT-DICE-Repository.git
-
-pip install -r /opt/IeAT-DICE-Repository/src/requirements.txt
-
-cd /opt/IeAT-DICE-Repository/
+#get kibana4 and  install
+#TODO Replace wget
 
 echo "Installing kibana...."
-cd ~/
+cd ~/ 
 wget https://download.elasticsearch.org/kibana/kibana/kibana-4.0.1-linux-x64.tar.gz
 tar xvf kibana-4.0.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
@@ -29,9 +32,6 @@ cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15a
 chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
 
-#Start kibana after install #TODO need better solution
-service kibana4 start
-
 # install Java 8
 echo "Installing Oracle Java 1.8 ...."
 apt-get install python-software-properties -y
@@ -40,6 +40,12 @@ add-apt-repository ppa:webupd8team/java -y
 apt-get update -y
 apt-get install oracle-java8-installer -y
 apt-get install ant -y
+
+
+# TODO Replace wget command
+
+#cd /tmp
+#wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
 # install Elasticsearch 1.4.4
 echo "Installing Elasticsearch ...."
@@ -66,39 +72,22 @@ ln -sf logstash-1.5.4 logstash
 
 
 echo "Generating certificates for Logstash ..."
-HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
-#backup open ssl
-cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
+HostIP=ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://'
+
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
 
 #generate certificates
 
-openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.key -out /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.crt
+openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout src/keys/logstash-forwarder.key -out src/keys/logstash-forwarder.crt
 
 # fix permissions
 echo "Setting permissions ...."
 cd /opt
 chown -R vagrant.vagrant logstash* elasticsearch*
-chown -R vagrant.vagrant /opt
 
-SCRIPT
+echo "Finishing touches ....."
+mkdir -p /etc/logstash/conf.d
 
 
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
-VAGRANTFILE_API_VERSION = "2"
+echo "Bootstrapping done!"
 
-Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  config.vm.box = "ubuntu/trusty64"
-
-  config.vm.hostname = "D-Mon"
-  config.vm.network :private_network, ip: "10.211.55.195"
-  config.vm.network :forwarded_port, host:5601, guest: 5601
-  config.vm.network :forwarded_port, host:9200, guest: 9200
-  config.vm.network :forwarded_port, host:5000, guest: 5000
-  config.vm.network :forwarded_port, host:5001, guest: 5001
-  config.vm.provision :shell, :inline => $vagrantBootstrap
-  config.vm.provider "virtualbox" do |v|
-    v.name = "vm-dmon-dev"
-    v.memory = 4096
-  end
-end

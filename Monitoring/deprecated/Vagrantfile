@@ -1,0 +1,21 @@
+
+#DICE MOnitring Vagrant development env deploy
+#pre-alpha version
+#TODO Legal Stuff
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "ubuntu/trusty64"
+
+  config.vm.hostname = "DICE-Monit"
+  config.vm.network :private_network, ip: "10.211.55.185"
+  config.vm.provision :shell, :path => "bootstrap.sh"
+  config.vm.network :forwarded_port, host:5601, guest: 5601
+  config.vm.network :forwarded_port, host:9200, guest: 9200
+  config.vm.provider "virtualbox" do |v|
+    v.name = "vm-clusterTest-monit"
+    v.memory = 4096
+  end
+end

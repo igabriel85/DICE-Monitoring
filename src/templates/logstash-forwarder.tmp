@@ -1,0 +1,42 @@
+{
+  "network": {
+    "servers": [ "{{ESCoreIP}}:{{LSLumberPort}}" ], 
+    "timeout": 15,
+    "ssl ca": "/opt/certs/logstash-forwarder.crt"
+  },
+
+  "files": [
+    {
+     "paths": ["/tmp/nodemanager-metrics.out"],
+     "fields": { "type": "nodemanager-metrics" }
+    },
+    {
+     "paths":["/tmp/namenode-metrics.out"],
+      "fields":{"type":"namenode-metrics"}
+    },
+    {
+      "paths":["/tmp/secondarynamenode-metrics.out"],
+      "fields":{"type":"secondarynamenode-metrics"}
+    },
+    {
+      "paths":["/tmp/datanode-metrics.out"],
+      "fields":{"type":"datanode-metrics"}
+    },
+    {
+      "paths":["/tmp/resourcemanager-metrics.out"],
+      "fields":{"type":"resourcemanager-metrics"}
+    },
+    {
+      "paths":["/tmp/maptask-metrics.out"],
+      "fields":{"type":"maptask-metrics"}
+    },
+    {
+      "paths":["/tmp/reducetask-metrics.out"],
+      "fields":{"type":"reducetask-metrics"}
+    },
+    {
+      "paths":["/tmp/mrappmaster-metrics.out"],
+      "fields":{"type":"mrappmaster-metrics"}
+    }
+    ]
+}
