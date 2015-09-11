@@ -76,7 +76,8 @@ ln -sf logstash-1.5.4 logstash
 
 echo "Generating certificates for Logstash ..."
 HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
-
+#backup open ssl
+cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
 
 #generate certificates
@@ -91,6 +92,8 @@ chown -R ubuntu.ubuntu /opt
 
 echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
+rm -rf /opt/logstash-1.5.4.tar.gz
+rm -rf /opt/elasticsearch-1.4.4.tar.gz
 
 
 echo "Bootstrapping done!"
