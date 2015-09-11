@@ -331,11 +331,11 @@ class QueryEsCore(Resource):
 		#return query
 		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
 			ListMetrics, resJson = queryESCore(query, debug=False) #TODO enclose in Try Catch if es instance unreachable
-			if ListMetrics is None:
+			if not ListMetrics:
 				response = jsonify({'Status':'No results found!'})
 				response.status_code = 404
 				return response
-				
+
 			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
 					fileName = 'output'+'.csv'
