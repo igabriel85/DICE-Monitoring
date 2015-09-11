@@ -39,12 +39,12 @@ def main(argv):
 	port = 5001
 	ip = '0.0.0.0'
 	try:
-		opts, args=getopt.getopt(argv,"hi:p:e:l",["core-install","port","endpoint-ip","local"])
+		opts, args=getopt.getopt(argv,"hi:p:e:l:",["core-install","port","endpoint-ip","local"])
 	except getopt.GetoptError:
 		print "%-------------------------------------------------------------------------------------------%"
 		print "Invalid argument! Arguments must take the form:"
 		print ""
-		print "start.py -i  -p <port> -e <host IP>"
+		print "start.py -i -l <local_ip> -p <port> -e <host IP>"
 		print ""
 		print "%-------------------------------------------------------------------------------------------%"
 		sys.exit(2)
@@ -96,6 +96,8 @@ def main(argv):
 		if opt in ("-l", "--local"):#TODO add the ability to define local IP
 			if os.environ.get("WERKZEUG_RUN_MAIN") == "true":		
 				if opt in ("-l", "--local"):
+					if isinstance(arg,str) is not True:
+						print >> sys.stderr, "Argument must be string!"
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
 					print >> sys.stderr, chkESCoreDB
 					if chkESCoreDB is not None:
@@ -113,7 +115,7 @@ def main(argv):
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkLSCoreDB is not None:
-						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = '109.231.126.166',hostOS='ubuntu',
+						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP = arg,hostOS='ubuntu',
 							outESclusterName='diceMonit', udpPort = 25680, inLumberPort=5000)
 						db.session.add(corePopLS) 
 						try:
