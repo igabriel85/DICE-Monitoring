@@ -17,10 +17,64 @@ It is designed for:
 **TODO**
 
 ##Change Log
-* TODO
+* v0.1.1 - First alpha release
 
 ##Installation
-* TODO
+
+The instalation is largely based on bash scripts. Future versions will most likely be based on chef recepies and/or deb/rpm packages. There are 2 types of instalation procedures currently supported.
+
+### Cloud
+This type of instalation is for client/cloud deployment. It will install all python modules as well as the ELK (ElasticSearch, logstash and kibana 4) stack. Only local  installation is currently supported.
+
+* Download the installation script to the desired host and make it executable
+
+```
+wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.1-install/install-dmon.sh && sudo chmod +x install-dmon.sh
+
+```
+
+    
+
+* After which execute the installation script
+
+```
+sudo ./install-dmon.sh
+``` 
+
+**Note**: This script will clone the D-Mon repository into /opt and change the owner of this directory to _ubuntu.ubuntu_!
+
+* Next co inside the cloned repository and run
+
+```
+sudo ./dmon-start.sh -i -p 5001
+```
+The '-i' flag will install all Core components of the monitoring platform (i.e. ELK) as well as setting the appropriate permisions for all folders and files. The '-p' flag designates the port on which D-Mon will be deployed.
+
+* In order deploy D-Mon localy execute:
+
+```
+./dmon-start.sh -l -p 5001
+``` 
+The '-l' flag signas the service that this is a local deployment of both ElasticSearch and Logstash server. The service will start logging into stdout.
+
+**Note**: Do not execute this command as root! It will corrupt the previously set permissions and the service will be inoperable.
+
+If you do not wish to create a local deployment run the comand
+
+```
+./dmon-start.sh -p 5001
+```
+
+This will only start theservice and not load the local deployment module.
+
+**Note**: By default all the IP is set to _0.0.0.0_. This can be change using the '-e' flag.
+
+
+### Vagrant
+
+### Chef
+* TODO not schedueled for M12
+
 
 ##REST API Structure
 **NOTE:** This is a preliminary structure of the REST API. It may be subject to changes!
