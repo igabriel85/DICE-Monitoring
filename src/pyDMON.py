@@ -60,7 +60,7 @@ lsCDir = '/etc/logstash/conf.d/'
 
 
 app = Flask("D-MON")
-api = Api(app, version='0.1', title='DICE MOnitoring API',
+api = Api(app, version='0.1.1', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
@@ -669,6 +669,42 @@ class ESCoreConfiguration(Resource):
 			response=jsonify({'Updated':'ES config for '+ request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
+
+@dmon.route('/v1/overlord/core/es/<hostFQDN>')
+@api.doc(params={'hostFQDN':'Host FQDN.'})
+class ESCoreRemove(Resource):
+	def delete(self,hostFQDN):
+		qESCorePurge = dbESCore.query.filter_by(hostFQDN = hostFQDN).first()
+		if qESCorePurge is None:
+			response =  jsonify({'Status':'Unknown host '+hostFQDN})
+			response.status_code = 404
+			return response
+
+		os.kill(qESCorePurge.ESCorePID, signal.SIGTERM)
+
+		db.session.delete(qESCorePurge)
+		db.session.commit()
+		response = jsonify ({'Status':'Deleted ES at host '+hostFQDN})
+		response.status_code = 200
+		return response
+
+@dmon.route('/v1/overlord/core/ls/<hostFQDN>')
+@api.doc(params={'hostFQDN':'Host FQDN.'})
+class LSCoreRemove(Resource):
+	def delete(self, hostFQDN):
+		qLSCorePurge = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
+		if qLSCorePurge is None:
+			response = jsonify({'Status':'Unknown host '+ hostFQDN})
+			response.status_code = 404
+			return response
+
+		os.kill(qLSCorePurge.LSCorePID, signal.SIGTERM)
+		db.session.delete(qLSCorePurge)
+		db.session.commit()
+		response = jsonify ({'Status':'Deleted LS at host '+hostFQDN})
+		response.status_code = 200
+		return response
+
 
 @dmon.route('/v1/overlord/core/es')
 class ESCoreController(Resource):
