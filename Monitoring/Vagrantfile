@@ -70,7 +70,7 @@ echo "Setting up logrotate ..."
 
 echo "/opt/logstash/logstash.log{
 size 20M
-create 700 vagrant vagrant
+create 777 vagrant vagrant
 rotate 4
 }" >> /etc/logrotate.conf
 

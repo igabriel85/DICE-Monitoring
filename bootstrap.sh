@@ -78,7 +78,7 @@ echo "Setting up logrotate ..."
 
 echo "/opt/logstash/logstash.log{
 size 20M
-create 700 ubuntu ubuntu
+create 777 ubuntu ubuntu
 rotate 4
 }" >> /etc/logrotate.conf
 
