@@ -102,6 +102,18 @@ The Overlord is structured into two components:
 Returns information regarding the current version of the Monitoring Platform.
 
 
+`PUT` `/v1/overlord/application`
+
+Registers an application with DMON and creates a unique tag for the monitored data.
+
+**NOTE**: Schedueled for future versions!
+
+
+`POST` `/v1/overlord/core`
+
+Deploys all monitoring core components provided they have values preset hosts. If not it deploys all componenets locally with default settings.
+
+**NOTE**: Currently the '-l' flag of the start script _dmon-start.sh_ does the same as the later option.
 
 
 `GET` `/v1/overlord/core/status`
@@ -237,6 +249,12 @@ Input:
 }
 ```
 
+`DELETE` `/v1/overlord/nodes/purge/{nodeFQDN}`
+
+Stops all auxiliary monitoring components associated with a particular node.
+
+**NOTE**: This does not delete the nodes nor the configurations it simply stops collectd and logstash-forwarder on the selected nodes.
+
 
 `GET` `/v1/overlord/core/es`
 
@@ -274,7 +292,18 @@ It is possible to deploy the monitoring platform on different hosts than elastic
 
 Returns the current configuration file of ElasticSearch in the form of a YAML file.
 
-`GET` `/v1/overlord/ls/config`
+
+
+**NOTE**: The first registered ElasticSearch information will be set by default to be the master node.
+
+
+`DELETE` `/v1/overlord/core/es/<hostFQDN>`
+
+Stops the ElasticSearch instance on a given host and removes all condiguration data from DMON.
+
+ 
+
+`GET` `/v1/overlord/core/ls/config`
 
 Returns the current configuration file of Logstash Server.
 
@@ -381,6 +410,23 @@ Changes the configuration/status of collectd or logstashfw and restarts all aux 
 
 -
 ### Observer
+
+`GET` `/v1/observer/applications`
+
+Returns a list of all YARN applications/jobs.
+
+**NOTE**: Schedueled for future release.
+
+
+
+`GET` `/v1/observer/applications/<appID>`
+
+Returns information on a particular YARN application identified by <appID>
+
+
+
+
+
 `GET` `/v1/observer/nodes`
  
  Returns the current monitored nodes list.
