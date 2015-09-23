@@ -41,7 +41,7 @@ wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.1-i
 sudo ./install-dmon.sh
 ``` 
 
-**Note**: This script will clone the D-Mon repository into /opt and change the owner of this directory to _ubuntu.ubuntu_!
+**Note**: This script will clone the D-Mon repository into */opt* and change the owner of this directory to _ubuntu.ubuntu_!
 
 * Next co inside the cloned repository and run
 
@@ -59,7 +59,7 @@ The '-l' flag signas the service that this is a local deployment of both Elastic
 
 **Note**: Do not execute this command as root! It will corrupt the previously set permissions and the service will be inoperable.
 
-If you do not wish to create a local deployment run the comand
+If you do not wish to create a local deployment run the comand.
 
 ```
 ./dmon-start.sh -p 5001
@@ -71,6 +71,8 @@ This will only start theservice and not load the local deployment module.
 
 
 ### Vagrant
+
+* TODO
 
 ### Chef
 * TODO not schedueled for M12

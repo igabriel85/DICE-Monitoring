@@ -933,7 +933,7 @@ class LSCoreController(Resource):
 		response = jsonify({'Status':'Logstash Core PID '+str(lsPid)})
 		response.status_code=200
 		return response
-		#TODO NOW -> use rendered tempalte to load ls Core
+		
 
 
 @dmon.route('/v1/overlord/core/ls/credentials')
@@ -956,27 +956,27 @@ class LSCredControl(Resource):
 		response.status_code=200
 		return response
 
-	def post(self):
-		qLSCore = dbSCore.query.first()
-		if qLSCore is None:
-			response = jsonify({'Status':'No LS Core set!'})
-			response.status_code = 404
-			return response
+	# def post(self):
+	# 	qLSCore = dbSCore.query.first()
+	# 	if qLSCore is None:
+	# 		response = jsonify({'Status':'No LS Core set!'})
+	# 		response.status_code = 404
+	# 		return response
 
-		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
-		templateEnv = jinja2.Environment( loader=templateLoader )
-		oSSLTemp= os.path.join(tmpDir,'openssl.tmp')
-		oSSLLoc = os.path.join(cfgDir,'openssl.cnf')
+	# 	templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+	# 	templateEnv = jinja2.Environment( loader=templateLoader )
+	# 	oSSLTemp= os.path.join(tmpDir,'openssl.tmp')
+	# 	oSSLLoc = os.path.join(cfgDir,'openssl.cnf')
 
-		template = templateEnv.get_template( oSSLTemp )
-		osslPop = {"LSHostIP":qLSCore.hostIP}			
-		oSSLConf = template.render(osslPop)
+	# 	template = templateEnv.get_template( oSSLTemp )
+	# 	osslPop = {"LSHostIP":qLSCore.hostIP}			
+	# 	oSSLConf = template.render(osslPop)
 
-		osslFile = open(lsfCore,"wb")
-		osslFile.write(oSSLLoc)
-		osslFile.close()
+	# 	osslFile = open(lsfCore,"wb")
+	# 	osslFile.write(oSSLLoc)
+	# 	osslFile.close()
 
-		#TODO Finish 
+		#TODO deprecated -> generated via bash startup
 
 
 
@@ -1196,7 +1196,7 @@ class AuxDeploy(Resource):
 		try:
 			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
 		except Exception as inst:#TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
-			print >> sys.stderr, type(inst) #TODO change all exceptions to this for debuging
+			print >> sys.stderr, type(inst) 
 			print >> sys.stderr, inst.args
 			response = jsonify({'Status':'Error Installing collectd!'})
 			response.status_code = 500
