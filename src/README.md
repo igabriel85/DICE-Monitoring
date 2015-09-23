@@ -81,13 +81,13 @@ This will only start theservice and not load the local deployment module.
 
 There are two main componets from this API: 
 
-* First we have the management and deployment/provisioning component called **Overlord**.
+* First we have the management and deployment/provisioning component called **Overlord** (Monitoring Management API).
  * It is responsible for the deployment and management of the Monitoring Core components: ElasticSearch, Logstash Server and Kibana.
  * It is also responsible for the auxiliary component management and deployment. These include: Collectd, Logstash-forwarder
 * Second, we have the interface used by other applications to query the DataWarehouse represented by ElasticSearch. This component is called **Observer**.
  * It is responsible for the returning of monitoring metrics in the form of: CSV, JSON, simple ouput. 
 
-### Overlord
+### Overlord (Monitoring Management API)
 
 The Overlord is structured into two components:
 
