@@ -258,7 +258,7 @@ class ObsApplications(Resource):
 	def get(self):
 		return 'Returns a list of all applications from YARN.'
 
-@dmon.route('/v1/observer/application/<appID>')
+@dmon.route('/v1/observer/applications/<appID>')
 class ObsAppbyID(Resource):
 	def get(self,appID):
 		return 'Returns information on a particular YARN applicaiton identified by '+appID+'!'
