@@ -8,7 +8,7 @@ These components include:
 * kibana
 * collectd
 * logstash-forwarder
-* etc
+
 
 It is designed for:
 
@@ -21,10 +21,10 @@ It is designed for:
 
 ##Installation
 
-The instalation is largely based on bash scripts. Future versions will most likely be based on chef recepies and/or deb/rpm packages. There are 2 types of instalation procedures currently supported.
+The installation is largely based on bash scripts. Future versions will most likely be based on chef recepies and/or deb or rpm packages. There are 2 types of installation procedures currently supported.
 
 ### Cloud
-This type of instalation is for client/cloud deployment. It will install all python modules as well as the ELK (ElasticSearch, logstash and kibana 4) stack. Only local  installation is currently supported.
+This type of installation is for client/cloud deployment. It will install all python modules as well as the ELK (ElasticSearch, logstash and kibana 4) stack. Only local  deployment  is currently supported.
 
 * Download the installation script to the desired host and make it executable
 
@@ -48,7 +48,7 @@ sudo ./install-dmon.sh
 ```
 sudo ./dmon-start.sh -i -p 5001
 ```
-The '-i' flag will install all Core components of the monitoring platform (i.e. ELK) as well as setting the appropriate permisions for all folders and files. The '-p' flag designates the port on which D-Mon will be deployed.
+The '-i' flag will install all Core components of the monitoring platform (i.e. ELK) as well as setting the appropriate permissions for all folders and files. The '-p' flag designates the port on which D-Mon will be deployed.
 
 * In order deploy D-Mon localy execute:
 
@@ -59,35 +59,48 @@ The '-l' flag signas the service that this is a local deployment of both Elastic
 
 **Note**: Do not execute this command as root! It will corrupt the previously set permissions and the service will be inoperable.
 
-If you do not wish to create a local deployment run the comand.
+If you do not wish to create a local deployment run the command.
 
 ```
 ./dmon-start.sh -p 5001
 ```
 
-This will only start theservice and not load the local deployment module.
+This will only start the service and not load the local deployment module.
 
 **Note**: By default all the IP is set to _0.0.0.0_. This can be change using the '-e' flag.
+
+**Observation**: Kibana 4 service is started during the bootstrapping process. You can check the service by running:
+
+```
+sudo service kibana4 status
+```
+
+For starting toping the service replace the _status_ command with _start_, _stop_ or _restart_.
 
 
 ### Vagrant
 
-* TODO
+There are two vagrant files in this repository. The [first](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Vagrant%20CDH%20Cluster) one creates a deployment of 4 VM on which it automatically installs the Cloudera Manager  suite. 
+
+The [second](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Monitoring) script installs D-Mon as well as the ELK stack, essentially taking the place of the '-i' flag in the above mentioned instructions. The procedure for creating a local deployment of D-Mon is the same as before.
 
 ### Chef
-* TODO not schedueled for M12
+* TODO not scheduled for M12
 
 
 ##REST API Structure
 **NOTE:** This is a preliminary structure of the REST API. It may be subject to changes!
 
-There are two main componets from this API: 
+There are two main components from this API: 
 
 * First we have the management and deployment/provisioning component called **Overlord** (Monitoring Management API).
  * It is responsible for the deployment and management of the Monitoring Core components: ElasticSearch, Logstash Server and Kibana.
  * It is also responsible for the auxiliary component management and deployment. These include: Collectd, Logstash-forwarder
 * Second, we have the interface used by other applications to query the DataWarehouse represented by ElasticSearch. This component is called **Observer**.
- * It is responsible for the returning of monitoring metrics in the form of: CSV, JSON, simple ouput. 
+ * It is responsible for the returning of monitoring metrics in the form of: CSV, JSON, simple output. 
+
+
+**NOTE**: Future versions will include authentication for the _Overlord_ resources. 
 
 ### Overlord (Monitoring Management API)
 
@@ -104,18 +117,20 @@ The Overlord is structured into two components:
 Returns information regarding the current version of the Monitoring Platform.
 
 
-`PUT` `/v1/overlord/application`
+`PUT` `/v1/overlord/applications/{appID}`
 
-Registers an application with DMON and creates a unique tag for the monitored data.
+Registers an application with DMON and creates a unique tag for the monitored data. The tag is defined by _appIS_.
 
-**NOTE**: Schedueled for future versions!
+**NOTE**: Scheduled for future versions!
 
 
 `POST` `/v1/overlord/core`
 
-Deploys all monitoring core components provided they have values preset hosts. If not it deploys all componenets locally with default settings.
+Deploys all monitoring core components provided they have values preset hosts. If not it deploys all components locally with default settings.
 
 **NOTE**: Currently the '-l' flag of the start script _dmon-start.sh_ does the same as the later option.
+
+
 
 
 `GET` `/v1/overlord/core/status`
@@ -145,16 +160,20 @@ Returns the current status of the Monitoring platform status.
       "Version":"<VNUMBER>"
     }
 }
-
 ```
 
-`GET` `/v1/overlord/chef`
+**NOTE**: Only works for local deployments. It returns the current state of local ElasticSearch, Logstash server and Kibana status information.
+
+
+
+`GET` `/v1/overlord/core/chef`
 
 Returns the status of the chef-client of the monitoring core services.
 
 **TODO:** json structure.
 
-**NOTE:** This feature will be developed for future versions.
+**FUTURE WORK:** This feature will be developed for future versions.
+
 
 
 `GET` `/v1/overlord/nodes/chef`
@@ -163,12 +182,13 @@ Returns the status of the chef-clients from all monitored nodes.
 
 **TODO:** json structure.
 
-**NOTE:** This feature will be developed for future versions.
+**FUTURE WORK:** This feature will be developed for future versions.
 
+***
 
 `GET` `/v1/overlord/nodes`
  
- Returns the current monitored nodes list.
+ Returns the current monitored nodes list. It is the same as `/v1/observer/chef`.
  
 ```json
 {
@@ -179,11 +199,11 @@ Returns the status of the chef-clients from all monitored nodes.
       ]
   }
 ```
-
+***
 
 `PUT` `/v1/overlord/nodes`
 
-Inludes the given nodes into the monitored node pools.
+Includes the given nodes into the monitored node pools. In essence nodes are represented as a list of dictionaries. Thus, it is possible to register one to many nodes at the same time. It is possible to assign different user names and passwords to each node.
 
 Input:
 
@@ -208,21 +228,26 @@ Input:
     ]
 }
 ```
+**NOTE**: Only username and key authentication is currently supported. There is a facility to use public/private key authentication which is currently undergoing testing.
 
+***
 
 `POST` `/v1/overlord/nodes`
 
-Bootstrap of all non monitored nodes. Installs collectd and logstash-forwarder on them.
+Bootstrap of all non monitored nodes. Installs, configures and start collectd and logstash-forwarder on them. This feature is not recommended for testing, the usage of separate commands is preffered in order to detect network failures.
 
+***
 
 `GET` `/v1/overlord/nodes/{NodeFQDN}`
 
-Returns information of a particular monitored node identified by its NodeFQDN.
+Returns information of a particular monitored node identified by _NodeFQDN_.
+
+Response:
 
 ```json
 {
       "NodeName":"nodeFQDN",
-      "Status":"<online|offline|unstable>",
+      "Status":"<online|offline>",
       "IP":"<NodeIP>",
       "OS":"<Operating_Systen>",
       "key":"<keyName|null>",
@@ -234,9 +259,14 @@ Returns information of a particular monitored node identified by its NodeFQDN.
 }
 ```
 
+**FUTURE Version**: A more fine grained node status will be implemented. Currently it is boolean - online/offline. The last three elements  are not implemented. These are scheduled for future versions.
+
+
+***
+
 `PUT` `/v1/overlord/nodes/{NodeFQDN}`
 
-Changes the current information of a given node. Node FQDN and IP may not change from one version to another.
+Changes the current information of a given node. Node FQDN  may not change from one version to another. 
 
 Input:
 
@@ -251,44 +281,62 @@ Input:
 }
 ```
 
-`DELETE` `/v1/overlord/nodes/purge/{nodeFQDN}`
+***
+
+`POST` `/v1/overlord/nodes/{NodeFQDN}`
+
+Bootstraps specified node. 
+
+**NOTE**: Possible duplication with `../aux/..` branch.
+***
+
+`DELETE` `/v1/overlord/nodes/{nodeFQDN}`
 
 Stops all auxiliary monitoring components associated with a particular node.
 
 **NOTE**: This does not delete the nodes nor the configurations it simply stops collectd and logstash-forwarder on the selected nodes.
 
+***
+`DELETE` `/v1/overlord/nodes/{nodeFQDN}/purge`
 
+This resource deletes auxiliary tools from the given node. It also removes all setting from D-Mon. This process is **irreversible**.
+***
 `GET` `/v1/overlord/core/es`
 
-Return a list of current hosts in comprising the ES cluster core components.
+Return a list of current hosts  comprising the ES cluster core components. The first registered host is set as the default master node. All subsequent nodes are set as workers.
 
 ```json
 {
   "ES Instances": [
     {
-      "ClusterName": "<clustername>",
+      "ESClusterName": "<clustername>",
       "HostFQDN": "<HostFQDN>",
       "IP": "<Host IP>",
       "NodeName": "<NodeName>",
       "NodePort": "<IP:int>",
       "OS": "<host OS>",
       "PID": "<ES component PID>",
-      "Status": "<ES Status>"
+      "Status": "<ES Status>",
+      "Master":"<true|false>"
     },
     ..................
   ]
 }
 
 ```
-
+***
 `POST` `/v1/overlord/core/es` 
 
-Generates and applies the new configuration options of the ES Core components.
+Generates and applies the new configuration options of the ES Core components. During this request the new configuration will be generated.
 
 **NOTE**: If configuration is unchanged ES Core will not be restarted!
-It is possible to deploy the monitoring platform on different hosts than elasticsearch. 
+It is possible to deploy the monitoring platform on different hosts than elasticsearch provided that the FQDN or IP is provided.
 
 
+
+**FUTURE Work**: This process needs more streamlining. It is recommended to use only local deployments for this version.
+
+***
 
 `GET` `/v1/overlord/core/es/config`
 
@@ -298,26 +346,7 @@ Returns the current configuration file of ElasticSearch in the form of a YAML fi
 
 **NOTE**: The first registered ElasticSearch information will be set by default to be the master node.
 
-
-`DELETE` `/v1/overlord/core/es/<hostFQDN>`
-
-Stops the ElasticSearch instance on a given host and removes all condiguration data from DMON.
-
- 
-
-`GET` `/v1/overlord/core/ls/config`
-
-Returns the current configuration file of Logstash Server.
-
-
-
-`GET` `/v1/overlord/core/kb/config`
-
-Returns the current configuration file for Kibana.
-
-**NOTE:** Marked as obsolete!
-
-
+***
 
 `PUT` `/v1/overlord/core/es/config`
 
@@ -337,16 +366,64 @@ Input:
 
 ```
 
+**NOTE**: The new configuration will **not** be generated at this step. 
+***
+
+`DELETE` `/v1/overlord/core/es/<hostFQDN>`
+
+Stops the ElasticSearch instance on a given host and removes all configuration data from DMON.
+
+***
+ 
+`GET` `/v1/overlord/core/ls`
+
+Returns the current status of all logstash server instances registered with D-Mon.
+
+Response:
+
+```json
+{
+	"LS Instances":[
+	  {
+	  	  "ESClusterName":<name>,
+	  	  "HostFQDN":"<Host FQDN>",
+	  	  "IP":"<Host IP>",
+	  	  "LPort":"<port>",
+	  	  "OS":"<Operating_System>",
+	  	  "Status":"<status>",
+	  	  "udpPort":"<UDP Collectd port>"
+	  	  
+	  },
+	  ............
+	]
+}
+```
+***
+
+`POST` `/v1/overlord/core/ls`
+
+Starts the logstash server based on the configuration information. During this step the configuration file is first generated.
+
+**FUTURE Work**: Better support for distributed deployment of logstash core service instances.
+
+***
+
+`GET` `/v1/overlord/core/ls/config`
+
+Returns the current configuration file of Logstash Server.
+
+***
+
 `PUT` `/v1/overlord/ls/config`
 
-Changes the current configuration of LogstashServer.
+Changes the current configuration of Logstash Server.
 
 Input:
 
 ```json
 {
-  "HostFQDN":"<nodeFQDN>",
-  "IP":"<NodeIP>",
+  "HostFQDN":"<Host FQDN>",
+  "IP":"<Host IP>",
   "OS":"<Operating_Systen>",
   "LPort":"<Lumberjack Port>",
   "udpPort":"<UDP Collectd port>",
@@ -354,6 +431,87 @@ Input:
 }
 
 ```
+**Future Work**: Only for local deployment of logstash server core service. Future versions will include distributed deployment.
+ 
+***
+
+`GET` `/v1/overlord/core/ls/credentials`
+
+Returns the current credentials for logstash server core service.
+
+Response:
+
+```json
+{
+  "Credentials": [
+  	{
+  		"Certificate":"<certificate name>",
+  		"Key":"<key name>",
+  		"LS Host":"<host fqdn>"
+  	}
+  ]
+}
+
+```
+
+**NOTE**: Logstash server and the logstash forwarder need a private/public key in order to establish secure communications. During local deployment ('-l' flag) a default public private key-pair is created.
+
+***
+
+`GET` `/v1/overlord/core/ls/cert/{certName}`
+
+Returns the host using a specified certificate. The certificate is identified by it _name_.
+
+Response:
+
+```json
+{
+	"Host":"<LS host name>",
+	"Certificate":"<certificate name>"
+}
+
+```
+
+***
+
+`PUT` `/v1/overlord/core/ls/cert/{certName}/{hostFQDN}`
+
+Uploads a certificate with the name given by _certName_ and associates it with the given host identified by _hostFQDN_.
+
+**NOTE**: The submitted certificate must use the **application/x-pem-file** Content-Type.
+
+***
+
+`GET` `/v1/overlord/core/ls/key/{keyName}`
+
+Retruns the host associated with the given key identified by _keyName_ parameter.
+
+Response:
+
+```json
+{
+	"Host":"<LS host name>",
+	"Key":"<key name>"
+}
+
+```
+***
+
+`PUT` `/v1/overlord/core/ls/key/{keyName}/{hostFQDN}`
+
+Uploads a private key with the name given by _keyName_ and associates it with the given host identified by _hostFQDN_.
+
+**NOTE**: The submitted private key must use the **application/x-pem-file** Content-Type.
+
+***
+
+`GET` `/v1/overlord/core/kb/config`
+
+Returns the current configuration file for Kibana.
+
+**NOTE:** Marked as obsolete!
+
+***
 
 `PUT` `/v1/overlord/core/kb/config`
 
@@ -362,12 +520,23 @@ Changes the current configuration for Kibana
 
 **NOTE:** Marked as obsolete!
 
+
+
 -
 #### Monitoring auxiliary
 
+
+`GET` `/v1/overlord/aux`
+
+Returns basic information about auxiliary components.
+
+**FUTURE Work**: Information will basically be a kind of Readme.
+
+***
+
 `GET` `/v1/overlord/aux/deploy`
 
-Returns monitoring status of all nodes.
+Returns monitoring component status of all nodes. 
 
 ```json
 {
@@ -382,56 +551,71 @@ Returns monitoring status of all nodes.
 }
 
 ```
-
+***
 
 `POST` `/v1/overlord/aux/deploy`
 
 Deploys all auxiliary monitoring components on registered nodes and configures them.
 
+**NOTE**: There are three statuses associated with each auxiliary component. 
 
+* __None__ -> There is no aux component on the registered node
+* __Running__ -> There is the aux component on the registered node an it is currently running
+* __Stopped__ -> There is the aux component on the registered node and it is currently stopped
+
+If the status is _None_ than this resource will install and configure the monitoring components. However if the status is _Running_ nothing will be done. The services with status _Stopped_ will be restarted.
+
+All nodes can be restarted independent from their current state using the **--redeploy-all** parameter.
+
+***
 
 `POST` `/v1/overlord/aux/deploy/{collectd|logstashfw}/{NodeName}`
 
-Deploys either collectd or logstash-forwarder to the specified node. It is
+Deploys either collectd or logstash-forwarder to the specified node. In order to reload the configuration file the **--redeploy** parameter has to be set. If the  current node status is _None_ than the defined component (collectd or lsf) will be installed.
 
+***
 
 `GET` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
-Returns the current collectd or logstashfw configuration
+Returns the current collectd or logstashfw configuration file.
 
-**TODO** json structure.
+***
 
 `PUT` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
 Changes the configuration/status of collectd or logstashfw and restarts all aux components.
  
- Input:
-**TODO** json structure.
 
-**NOTE**: Currently configurations of both collectd and logstash-forwarder are global and can't be changed on a node by node basis. 
+**FUTURE Work**: Currently configurations of both collectd and logstash-forwarder are global and can't be changed on a node by node basis.
 
 -
 ### Observer
 
+
 `GET` `/v1/observer/applications`
 
-Returns a list of all YARN applications/jobs.
+Returns a list of all YARN applications/jobs on the current monitored big data cluster.
 
-**NOTE**: Schedueled for future release.
+**NOTE**: Scheduled for future release.
+
+***
+
+`GET` `/v1/observer/applications/{appID}`
+
+Returns information on a particular YARN application identified by _{appID}_.
+**NOTE**: The information will not contain monitoring data only a general overview. Similar to YARN History Server.
 
 
 
-`GET` `/v1/observer/applications/<appID>`
-
-Returns information on a particular YARN application identified by <appID>
-
-
-
-
+***
 
 `GET` `/v1/observer/nodes`
  
- Returns the current monitored nodes list.
+ Returns the current monitored nodes list. Listing is only limited to node FQDN and current node IP.
+ 
+ **NOTE**: Some cloud providers assign the UP dynamically at VM startup. Because of this D-Mon treats the FQDN as a form of UUID. In future versions this might change, the FQDN being replaced/augmented with a hash.
+ 
+ Response:
  
 ```json
 {
@@ -442,10 +626,12 @@ Returns information on a particular YARN application identified by <appID>
       ]
   }
 ```
-
+***
 `GET` `/v1/observer/nodes/{NodeFQDN}`
 
-Returns information of a particular monitored node.
+Returns information of a particular monitored node. No information is limited to non confidential information, no authentication credentials are returned.
+
+Response:
 
 ```json
 {
@@ -457,10 +643,15 @@ Returns information of a particular monitored node.
     }
 }
 ```
-
+***
 `GET` `/v1/observer/nodes/{NodeFQDN}/services`
 
 Returns information on the services running on a given node.
+
+**NOTE:** This feature will be developed for future versions.
+
+Response:
+
 
 ```json
 {
@@ -477,8 +668,8 @@ Returns information on the services running on a given node.
       ]
 }
 ```
-
-`POST` `/v1/observer/query/{CSV/JSON/Plain}`
+***
+`POST` `/v1/observer/query/{csv/json/plain}`
 
 Returns the required metrics in csv, json or plain format.
 
@@ -497,8 +688,8 @@ Input:
   }
 }
 ```
-Output depends on the option selected by the user: csv, json or Plain. 
+Output depends on the option selected by the user: csv, json or plain. 
 
-NOTE: The metrics must be in the form of a list.
+**NOTE**: The filter metrics must be in the form of a list. Also, filtering currently works only for CSV and plain output. Future versions will include the ability to export metrics in the form of RDF+XML in concordance with the OSLC Performance Monitoring 2.0 standard. It is important to note that we will export in this format only system metrics. No Big Data framework specific metrics.
 
 

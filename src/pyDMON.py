@@ -222,7 +222,7 @@ esCore = api.model('Submit ES conf',{
 	'OS':fields.String(required=False,default='unknown',description='Host OS'),
 	'NodeName':fields.String(required=True,description='ES Host Name'),
 	'NodePort':fields.Integer(required=False, default=9200,description='ES Port'),
-	'ClusterName':fields.String(required=True,description='ES Host Name')
+	'ESClusterName':fields.String(required=True,description='ES Host Name')
 	})
 
 
@@ -435,7 +435,7 @@ class OverlordCoreStatus(Resource):
 		response.status_code = 200
 		return response
 
-@dmon.route('/v1/overlord/chef')
+@dmon.route('/v1/overlord/core/chef')
 class ChefClientStatus(Resource):
 	def get(self):
 		return "Monitoring Core Chef Client status"
@@ -572,7 +572,7 @@ class MonitoredNodeInfo(Resource):
 
 
 
-@dmon.route('/v1/overlord/nodes/purge/<nodeFQDN>')
+@dmon.route('/v1/overlord/nodes/<nodeFQDN>/purge')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class PurgeNode(Resource):
 	def delete(self,nodeFQDN):
@@ -631,7 +631,7 @@ class ESCoreConfiguration(Resource):
 
 	@api.expect(esCore)	
 	def put(self):
-		requiredKeys=['ClusterName','HostFQDN','IP','NodeName','NodePort']
+		requiredKeys=['ESClusterName','HostFQDN','IP','NodeName','NodePort']
 		if not request.json:
 			abort(400)
 		for key in requiredKeys:
@@ -653,7 +653,7 @@ class ESCoreConfiguration(Resource):
 
 		if qESCore is None:
 			upES = dbESCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os, nodeName = request.json["NodeName"],
-			 clusterName=request.json["ClusterName"], conf = 'none', nodePort=request.json['NodePort'], MasterNode=master)
+			 clusterName=request.json["ESClusterName"], conf = 'none', nodePort=request.json['NodePort'], MasterNode=master)
 			db.session.add(upES) 
 			db.session.commit()
 			response = jsonify({'Added':'ES Config for '+ request.json["HostFQDN"]})
@@ -663,7 +663,7 @@ class ESCoreConfiguration(Resource):
 			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
 			qESCore.hostOS = os
 			qESCore.nodename = request.json['NodeName']
-			qESCore.clusterName=request.json['ClusterName']
+			qESCore.clusterName=request.json['ESClusterName']
 			qESCore.nodePort=request.json['NodePort']
 			db.session.commit()
 			response=jsonify({'Updated':'ES config for '+ request.json["HostFQDN"]})
@@ -719,7 +719,7 @@ class ESCoreController(Resource):
 			confDict['OS']=hosts[2]
 			confDict['NodeName']=hosts[3]
 			confDict['NodePort']=hosts[4]
-			confDict['ClusterName']=hosts[5]
+			confDict['ESClusterName']=hosts[5]
 			confDict['Status']=hosts[6]
 			confDict['PID']=hosts[7]
 			confDict['Master']=hosts[8]
@@ -867,7 +867,7 @@ class LSCoreController(Resource):
 			confDict['OS']=hosts[2]
 			confDict['LPort']=hosts[3]
 			confDict['udpPort']=hosts[6]
-			confDict['ClusterName']=hosts[7]
+			confDict['ESClusterName']=hosts[7]
 			confDict['Status']=hosts[8]
 			resList.append(confDict)
 		response = jsonify({'LS Instances':resList})
@@ -982,7 +982,7 @@ class LSCredControl(Resource):
 
 @dmon.route('/v1/overlord/core/ls/cert/<certName>')
 @api.doc(params={'certName': 'Name of the certificate'})
-class LSCertQuery(Resource):
+class LSCertQuery(Resource): # TODO find all hosts using the same certificate
 	def get(self,certName):
 		if certName == 'default':
 			response = jsonify({'Certificate':'default'})
@@ -1033,6 +1033,7 @@ class LSCertControl(Resource):
 		return response
 
 @dmon.route('/v1/overlord/core/ls/key/<keyName>')
+@api.doc(params={'keyName': 'Name of the private key.'})
 class LSKeyQuery(Resource):
 	def get(self, keyName):
 		if keyName == 'default':
@@ -1045,11 +1046,12 @@ class LSKeyQuery(Resource):
 			response.status_code = 404
 			return response
 
-		response=jsonify({'Host':qSCoreKey.hostFQDN, 'Certificate':qSCoreKey.sslKey})
+		response=jsonify({'Host':qSCoreKey.hostFQDN, 'Key':qSCoreKey.sslKey})
 		response.status_code = 200
 		return response
 		
 @dmon.route('/v1/overlord/core/ls/key/<keyName>/<hostFQDN>')
+@api.doc(params={'keyName': 'Name of the private key.','hostFQDN':'Host FQDN'})
 class LSKeyControl(Resource):
 	def put(self,keyName, hostFQDN):
 		if request.headers['Content-Type'] == 'application/x-pem-file':
@@ -1105,7 +1107,7 @@ class AuxDeploy(Resource):
 		response.status_code=200
 		return response
 
-	@api.doc(parser=dmonAuxAll)
+	@api.doc(parser=dmonAuxAll)#TODO Status handling (Running, Stopped, None )Needs Checking 
 	def post(self): #TODO currently works only if the same username and password is used for all Nodes
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
