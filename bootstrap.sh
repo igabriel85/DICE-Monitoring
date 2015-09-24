@@ -50,12 +50,12 @@ apt-get install ant -y
 #cd /tmp
 #wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
-# install Elasticsearch 1.4.4
+# install Elasticsearch 1.7.1
 echo "Installing Elasticsearch ...."
 cd /opt
-wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.4.4.tar.gz
-tar zxf elasticsearch-1.4.4.tar.gz
-ln -sf elasticsearch-1.4.4 elasticsearch
+wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.1.tar.gz
+tar zxf elasticsearch-1.7.1.tar.gz
+ln -sf elasticsearch-1.7.1 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
@@ -72,6 +72,18 @@ cd /opt
 wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
 tar zxf logstash-1.5.4.tar.gz
 ln -sf logstash-1.5.4 logstash
+
+#setup logrotate
+echo "Setting up logrotate ..."
+
+echo "/opt/logstash/logstash.log{
+size 20M
+create 777 ubuntu ubuntu
+rotate 4
+}" >> /etc/logrotate.conf
+
+cd /etc
+logrotate -s /var/log/logstatus logrotate.conf
 
 
 echo "Generating certificates for Logstash ..."

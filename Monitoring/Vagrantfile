@@ -65,6 +65,19 @@ tar zxf logstash-1.5.4.tar.gz
 ln -sf logstash-1.5.4 logstash
 
 
+#setup logrotate
+echo "Setting up logrotate ..."
+
+echo "/opt/logstash/logstash.log{
+size 20M
+create 777 vagrant vagrant
+rotate 4
+}" >> /etc/logrotate.conf
+
+cd /etc
+logrotate -s /var/log/logstatus logrotate.conf
+
+
 echo "Generating certificates for Logstash ..."
 HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
 #backup open ssl
