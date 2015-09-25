@@ -19,6 +19,6 @@ if [ $# -eq 0 ]; then
 	. $DIR/dmonEnv/bin/activate
         python $DIR/src/start.py
 else
-	. $DIR/dmonEnv/bin/activate
+   #. $DIR/dmonEnv/bin/activate
 	python $DIR/src/start.py $1 $2 $3 > dmon.log 2>&1 &
 fi
