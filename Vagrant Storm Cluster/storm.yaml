@@ -1,0 +1,4 @@
+storm.zookeeper.servers:
+    - "10.211.56.100"
+
+nimbus.host: "10.211.56.100"
