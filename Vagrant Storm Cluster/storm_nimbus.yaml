@@ -1,0 +1,7 @@
+storm.zookeeper.servers:
+    - "10.211.56.100"
+
+nimbus.host: "10.211.56.100"
+nimbus.childopts: "-verbose:gc -XX:+PrintGCTimeStamps -XX:+PrintGCDetails -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=12345 -Xmx256m -Djava.net.preferIPv4Stack=true"
+
+ui.childopts: "-Xmx256m -Djava.net.preferIPv4Stack=true"

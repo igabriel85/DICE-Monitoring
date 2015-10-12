@@ -10,6 +10,11 @@ apt-get install zookeeperd -y
 cp /vagrant/nimbus.conf /etc/init/nimbus.conf
 cp /vagrant/ui.conf /etc/init/ui.conf
 
+#Configuration file setup
+mv /home/vagrant/apache-storm-0.9.5/conf/storm.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.backup
+#ln -sf /vagrant/storm_nimbus.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.yaml
+cp /vagrant/storm_nimbus.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.yaml
+
 start zookeeper
 start nimbus
 start ui
@@ -17,6 +22,11 @@ SCRIPT
 
 $supervisor_script = <<SCRIPT
 #!/bin/bash
+
+#Configuration file setup
+mv /home/vagrant/apache-storm-0.9.5/conf/storm.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.backup
+#ln -sf /vagrant/storm_supervisor.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.yaml
+cp /vagrant/storm_supervisor.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.yaml
 
 cp /vagrant/supervisor.conf /etc/init/supervisor.conf
 start supervisor
@@ -57,10 +67,13 @@ cd /home/vagrant
 wget http://www.eu.apache.org/dist/storm/apache-storm-0.9.5/apache-storm-0.9.5.tar.gz
 tar xvf apache-storm-0.9.5.tar.gz
 
-#Configuration file setup
-mv /home/vagrant/apache-storm-0.9.5/conf/storm.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.backup
-#ln -sf /vagrant/storm.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.yaml
-cp /vagrant/storm.yaml /home/vagrant/apache-storm-0.9.5/conf/storm.yaml
+
+#Fix owner
+chown -R vagrant.vagrant apache-storm-0.9.5/
+
+#upload ganglia conf
+mv /etc/ganglia/gmond.conf /etc/ganglia/gmond.backup
+cp /vagrant/gmond.conf /etc/ganglia/gmond.conf
 
 cat > /etc/hosts <<EOF
 127.0.0.1       localhost
@@ -94,6 +107,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     master.vm.network :private_network, ip: "10.211.56.100"
     master.vm.hostname = "vm-cluster-storm1"
     master.vm.network :forwarded_port, host:8080, guest: 8080
+    master.vm.network :forwarded_port, host:12345, guest: 12345
     master.vm.provision :shell, :inline => $hosts_script
     master.vm.provision :hostmanager
     master.vm.provision :shell, :inline => $master_script
@@ -107,6 +121,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     slave1.vm.network :private_network, ip: "10.211.56.101"
     slave1.vm.hostname = "vm-cluster-storm2"
+    slave1.vm.network :forwarded_port, host:12346, guest: 12346
     slave1.vm.provision :shell, :inline => $hosts_script
     slave1.vm.provision :hostmanager
     slave1.vm.provision :shell, :inline => $supervisor_script
@@ -121,6 +136,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     slave2.vm.network :private_network, ip: "10.211.56.102"
     slave2.vm.hostname = "vm-cluster-storm3"
+    slave2.vm.network :forwarded_port, host:12346, guest: 12347
     slave2.vm.provision :shell, :inline => $hosts_script
     slave2.vm.provision :shell, :inline => $supervisor_script
     slave2.vm.provision :hostmanager
@@ -134,6 +150,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
     slave3.vm.network :private_network, ip: "10.211.56.103"
     slave3.vm.hostname = "vm-cluster-storm4"
+    slave3.vm.network :forwarded_port, host:12346, guest: 12348
     slave3.vm.provision :shell, :inline => $hosts_script
     slave3.vm.provision :shell, :inline => $supervisor_script
     slave3.vm.provision :hostmanager
