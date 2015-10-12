@@ -18,6 +18,9 @@ It is designed for:
 
 ##Change Log
 * v0.1.1 - First alpha release
+* v0.1.2 - Minor alpha release
+	* added support for Spark monitoring
+	* modified logstash conf generation to include graphite input 	 	
 
 ##Installation
 
