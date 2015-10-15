@@ -21,6 +21,13 @@ type => "graphite"
 }
 
 filter{
+if [type]=="graphite"{
+ grok{
+  break_on_match => false
+  #spark metrics
+  match=>["message","\A%{WORD:appID}.%{NOTSPACE:sparkMetric} %{NUMBER:Value} %{NUMBER:timestamp}"]
+}
+}
 if [type]=="nodemanager-metrics"{ #same as set in logstash-forwarder configuration json
   grok{
     break_on_match => false
