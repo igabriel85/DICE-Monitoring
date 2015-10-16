@@ -60,7 +60,7 @@ lsCDir = '/etc/logstash/conf.d/'
 
 
 app = Flask("D-MON")
-api = Api(app, version='0.1.1', title='DICE MOnitoring API',
+api = Api(app, version='0.1.2', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
@@ -1397,6 +1397,7 @@ class AuxConfigSelective(Resource):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/start')
+@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
 class AuxStartSelective(Resource):
  	def post(self, auxComp, nodeFQDN):
  		auxList = ['collectd','lsf']
@@ -1450,6 +1451,7 @@ class AuxStartSelective(Resource):
 				return response
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/stop')
+@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
 class AuxStopSelective(Resource):
 	def post(self, auxComp, nodeFQDN):
 		auxList = ['collectd','lsf']
