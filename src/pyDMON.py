@@ -234,11 +234,15 @@ nodeUpdate = api.model('Update Node Model Info',{
 	'Password':fields.String(required=False, description="Node Password")
 	})
 
+nodeRoles = api.model('Update Node Role Model Info',{
+	'Roles':fields.List(fields.String(required=False, default = 'yarn', description = 'Node Roles'))
+	})
+
 lsCore=api.model('Submit LS conf',{
 	'HostFQDN':fields.String(required=True, description='Host FQDN'),
 	'IP':fields.String(required=True, description='Host IP'),
 	'OS':fields.String(required=False, description='Host OS'),
-	'LPort':fields.Integer(required=True, description='Lumberhack port'),
+	'LPort':fields.Integer(required=True, description='Lumberjack port'),
 	'udpPort':fields.String(required=True,default= 25826 ,description='UDP Collectd Port'),
 	'ESClusterName':fields.String(required=True, description='ES cluster name') # TODO: use as foreign key same as ClusterName in esCore
 	})
@@ -249,7 +253,7 @@ lsCore=api.model('Submit LS conf',{
 # 	'FQDN' : field
 # 	})#[{'FQDN':'IP'}]
 
-certModel = api.model('Update',{
+certModel = api.model('Update Cert',{
 	'Certificate':fields.String(required=False, description='Certificate')
 	})
 
@@ -302,16 +306,20 @@ class NodeStatus(Resource):
 		return response
 
 
-@dmon.route('/v1/observer/nodes/<nodeFQDN>/services')
+@dmon.route('/v1/observer/nodes/<nodeFQDN>/roles')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatusServices(Resource):
 	def get(self,nodeFQDN):
-		return "Node " + nodeFQDN +" status of services!"		
-
-
-
-
-
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode.nRoles == 'unknown':
+			response=jsonify({'Status':'No known service on '+nodeFQDN})
+			response.status_code = 200
+			return response
+		else:
+			roleList = qNode.nRoles
+			response = jsonify({'Roles':roleList.split()})
+			response.status_code = 200
+			return response		
 
 @dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
@@ -571,6 +579,22 @@ class MonitoredNodeInfo(Resource):
 		return response
 
 
+
+@dmon.route('/v1/overlord/nodes/<nodeFQDN>/roles')
+class ClusterNodeRoles(Resource):
+	@api.expect(nodeRoles)	
+	def put(self, nodeFQDN):
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qNode is None:
+			response = jsonify({'Status':'Node '+nodeFQDN+' not found'})
+			response.status_code = 404
+			return response	
+		else:
+			listRoles = request.json['Roles']
+			qNode.nRoles = ', '.join(map(str, listRoles))
+			response=jsonify({'Status':'Node '+ nodeFQDN+' roles updated!'})
+			response.status_code = 201
+			return response
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/purge')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
@@ -1146,7 +1170,7 @@ class AuxDeploy(Resource):
 
 		args = dmonAuxAll.parse_args()
 
-		if args == 'redeploy-all': #TODO check of conf files exist if not catch error
+		if args == 'redeploy-all': #TODO check if conf files exist if not catch error
 			uploadFile(allNodes,credentials['User'],credentials['Pass'],collectdConfLoc,'collectd.conf', '/etc/collectd/collectd.conf')
 			uploadFile(allNodes,credentials['User'],credentials['Pass'],lsfConfLoc,'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
 			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'collectd', 'restart')

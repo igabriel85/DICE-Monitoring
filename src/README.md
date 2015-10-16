@@ -8,6 +8,7 @@ These components include:
 * kibana
 * collectd
 * logstash-forwarder
+* jmxtrans
 
 
 It is designed for:
@@ -388,7 +389,7 @@ Response:
 {
 	"LS Instances":[
 	  {
-	  	  "ESClusterName":<name>,
+	  	  "ESClusterName":"<name>",
 	  	  "HostFQDN":"<Host FQDN>",
 	  	  "IP":"<Host IP>",
 	  	  "LPort":"<port>",
@@ -641,7 +642,7 @@ Response:
     "<NodeFQDN>":{
       "Status":"<online|offline>",
       "IP":"<NodeIP>",
-      "Monitored":"<true|false>"
+      "Monitored":"<true|false>",
       "OS":"Operating_Systen"
     }
 }
