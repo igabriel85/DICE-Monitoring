@@ -69,12 +69,14 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		listOutput(output)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured Installing collectd!"
+		raise
 	
 	try:	
 		print "Copying collectd conf files ....."
 		client.copy_file(localCopy,"collectd.conf")
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured copying collectd.conf!"
+		raise
 		#client.pool.join()
 
 	
@@ -85,15 +87,19 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		client.run_command('nohup service collectd stop', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured stopping collectd service!"
+		raise
+
 	try:
 		client.run_command('mv /etc/collectd/collectd.conf /etc/collectd/collectd.default', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured renaming collectd.conf!"
+		raise
 	
 	try:		
 		client.run_command('mv collectd.conf /etc/collectd/collectd.conf', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured moving new collectd.conf to /etc!"	
+		raise
 		#client.pool.join()
 		#print 'collectd -C ' +localCopy
 
@@ -101,7 +107,8 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		print "Adding Comment to File..."
 		client.run_command('echo >> /etc/collectd/collectd.conf')
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured while editing collectd.conf!"	
+		print "An exception has occured while editing collectd.conf!"
+		raise	
 			
 	print "Starting Collectd ..."
 	try:
@@ -110,6 +117,7 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 		listOutput(out)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting collectd!"
+		raise
 		#client.run_command('service collectd start', sudo=True)
 	del client
 	print "Done Collectd"
@@ -131,12 +139,14 @@ def installJmxtrans(hostlist,userName,uPassword,confDir,confName):
 		client.run_command('wget http://jmxtrans.googlecode.com/files/jmxtrans_250-1_all.deb')
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while downloading jmxtrans!"
+		raise
 
 	try:
 		install = client.run_comand('dpkg -i jmxtrans_250-1_all.deb', sudo=True)
 		listOutput(install)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while installing jmxtrans!"
+		raise
 
 
 
@@ -170,7 +180,8 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		print "Creating folders..."
 		client.run_command('mkdir /opt/certs', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured creating /opt/certs!"	
+		print "An exception has occured creating /opt/certs!"
+		raise	
 	
 	print "Copying certificate..."
 	
@@ -178,10 +189,13 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		client.copy_file(localCopyCrt,"logstash-forwarder.crt")
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while moving cert!"
+		raise
+
 	try:	
 		client.run_command('mv logstash-forwarder.crt /opt/certs',sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while moving cert to /opt/certs"
+		raise
 
 	print "Adding Logstash forwarder to apt ..."
 		#output = client.run_command('echo \'deb http://packages.elasticsearch.org/logstashforwarder/debian stable main\' | sudo tee /etc/apt/sources.list.d/logstashforwarder.list',sudo=True)
@@ -190,23 +204,27 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		client.copy_file(localLFList,"logstashforwarder.list")
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while uploading lfs list!"
+		raise
 
 	try:
 		client.run_command('mv logstashforwarder.list /etc/apt/sources.list.d/logstashforwarder.list',sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while adding lsf list to sourcelist!"
+		raise
 
 	try:	
 		output = client.run_command('wget http://packages.elasticsearch.org/GPG-KEY-elasticsearch')
 		listOutput(output)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while downloading ES GPG Key!"
+		raise
 
 	try:	
 		output1 = client.run_command('apt-key add GPG-KEY-elasticsearch', sudo=True)
 		listOutput(output1)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while adding GPG-Key to apt!"
+		raise
 
 		#output2= client.run_command('wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo apt-key add -',sudo=True)
 	print "Installing Logstash-forwarder..."
@@ -216,12 +234,14 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		listOutput(update)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while apt-get update!"
+		raise
 	
 	try:	
 		install =client.run_command('apt-get install -y logstash-forwarder',sudo=True)
 		listOutput(install)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while installing LFS!"
+		raise
 			
 	print "Copying Logstash-forwarder configuration to hosts..."
 
@@ -230,13 +250,15 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		client.run_command('mv logstash-forwarder.conf /etc/logstash-forwarder.conf',sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while uploading lsf conf!"
+		raise
 
 	print "Starting logstash-forwarder ...."
 	try:
 		run = client.run_command('nohup service logstash-forwarder restart', sudo=True)
 		listOutput(run)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured starting LSF"	
+		print "An exception has occured starting LSF"
+		raise	
 		
 
 
@@ -266,6 +288,7 @@ def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
 		client.run_command('echo >> '+upLoc,sudo=True) #TODO replace ugly fix
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while moving file"
+		raise
 
 def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
@@ -276,12 +299,13 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 		- return hosts on which services are not running
 
 	'''
-	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	cmdStr = 'nohup service ' + serviceName +' ' + command
+	
 	if command not in ['status','stop','start','force-start']:
 		print "Command "+ command +" unsupported!"
 		exit()
 	try:
+		client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+		cmdStr = 'nohup service ' + serviceName +' ' + command
 		output = client.run_command(cmdStr, sudo=True)
 		for host in output:
 			for line in output[host]['stdout']:
@@ -300,6 +324,10 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 					print "Unknown output!"
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
+		raise
+		#response = jsonify({'Status':'Error stopping LSF on '+ nodeFQDN +'!'})
+        #response.status_code = 500
+        #return response
 	
 
 def hostsScan(hostlist):
@@ -397,6 +425,7 @@ def detectOS(hostlist, userName, uPassword):
 					hostOS.update({host:'Unknown'})
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
+		raise
 	return hostOS
 
 

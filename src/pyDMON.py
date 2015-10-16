@@ -1000,7 +1000,6 @@ class LSCredControl(Resource):
 	# 	osslFile.write(oSSLLoc)
 	# 	osslFile.close()
 
-		#TODO deprecated -> generated via bash startup
 
 
 
@@ -1261,7 +1260,8 @@ class AuxDeploy(Resource):
 		response.status_code = 201		
 		return response			
 
-@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>')#TODO add parameter -force to redeploy config 
+
+@dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>')#TODO add parameter -force to redeploy config 
 @api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	@api.doc(parser=dmonAux)
@@ -1395,6 +1395,115 @@ class AuxConfigSelective(Resource):
 
 	def put(self,auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
+
+@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/start')
+class AuxStartSelective(Resource):
+ 	def post(self, auxComp, nodeFQDN):
+ 		auxList = ['collectd','lsf']
+ 		if auxComp not in auxList:
+			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response.status_code = 400
+			return response
+
+		qAux =  dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qAux is None:
+			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
+			response.status_code=404
+			return response
+
+		node = []
+		node.append(qAux.nodeIP)		
+		if auxComp == 'collectd':
+			if qAux.nCollectdState != 'None': 
+				try:
+					serviceCtrl(node,qAux.nUser,qAux.nPass,'collectd', 'restart')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error restarting collectd on '+ nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				response = jsonify({'Status':'Collectd restarted on '+nodeFQDN})
+				response.status_code = 200
+				return response
+			else:
+				response=jsonify({'Status':'Need to deploy collectd first!'})
+				response.status_code=403
+				return response
+
+		if auxComp == 'lsf':
+			if qAux.nLogstashForwState != 'None': 
+				try:
+					serviceCtrl(node,qAux.nUser,qAux.nPass,'logstash-forwarder', 'restart')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error restarting LSF on '+ nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				response = jsonify({'Status':'LSF restarted on '+nodeFQDN})
+				response.status_code = 200
+				return response
+			else:
+				response=jsonify({'Status':'Need to deploy LSF first!'})
+				response.status_code=403
+				return response
+
+@dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/stop')
+class AuxStopSelective(Resource):
+	def post(self, auxComp, nodeFQDN):
+		auxList = ['collectd','lsf']
+ 		if auxComp not in auxList:
+			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response.status_code = 400
+			return response
+
+		qAux =  dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		if qAux is None:
+			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
+			response.status_code=404
+			return response
+
+		node = []
+		node.append(qAux.nodeIP)		
+		if auxComp == 'collectd':
+			if qAux.nCollectdState == 'Running': 
+				try:
+					serviceCtrl(node,qAux.nUser,qAux.nPass,'collectd', 'stop')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error stopping collectd on '+ nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				qAux.nCollectdState = 'Stopped'
+				response = jsonify({'Status':'Collectd stopped on '+nodeFQDN})
+				response.status_code = 200
+				return response
+			else:
+				response=jsonify({'Status':'No running Collectd instance found!'})
+				response.status_code=403
+				return response
+
+		if auxComp == 'lsf':
+			if qAux.nLogstashForwState == 'Running': 
+				try:
+					serviceCtrl(node,qAux.nUser,qAux.nPass,'logstash-forwarder', 'stop')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error stopping LSF on '+ nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+
+				qAux.nCollectdState = 'Stopped'
+				response = jsonify({'Status':'LSF stopped on '+nodeFQDN})
+				response.status_code = 200
+				return response
+			else:
+				response=jsonify({'Status':'No running LSF instance found!'})
+				response.status_code=403
+				return response
 
 """
 Custom errot Handling
