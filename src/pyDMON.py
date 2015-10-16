@@ -512,7 +512,7 @@ class MonitoredNodeInfo(Resource):
 				'User':qNode.nUser,
 				'ChefClient':"TODO",
 				'CDH':'TODO',
-				'Roles':'TODO'})
+				'Roles':qNode.nRoles})
 			response.status_code = 200	
 			return response
 

@@ -111,10 +111,38 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting collectd!"
 		#client.run_command('service collectd start', sudo=True)
-
-	
 	del client
-	print "Done Collectd"	
+	print "Done Collectd"
+
+def installJmxtrans(hostlist,userName,uPassword,confDir,confName):
+	'''
+	Installs and configures jmxtrans for both storm and spark 
+	JVM metrics collection.
+
+	confName -> name of the configuration to be uploaded
+	'''
+	if not os.path.isdir(confDir):
+		print >> sys.stderr, "Configuration dir not found!"
+	
+	print "Installing jmxtrans ..."	
+	localCopyConf = os.path.join(confDir,confName)
+	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	try:
+		client.run_command('wget http://jmxtrans.googlecode.com/files/jmxtrans_250-1_all.deb')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while downloading jmxtrans!"
+
+	try:
+		install = client.run_comand('dpkg -i jmxtrans_250-1_all.deb', sudo=True)
+		listOutput(install)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while installing jmxtrans!"
+
+
+
+
+
+	#http://jmxtrans.googlecode.com/files/jmxtrans_250-1_all.deb
 	
 def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 	'''
