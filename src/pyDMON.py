@@ -404,7 +404,7 @@ class OverlordInfo(Resource):
 		message = 'Message goes Here and is not application/json (TODO)!'
 		return message
 
-@dmon.route('/v1/overlord/applicaiton')
+@dmon.route('/v1/overlord/applicaiton/<appID>')
 class OverlordAppSubmit(Resource):
 	def put(self):
 		return 'Registers an applicaiton with DMON and creates a unique tag!'
@@ -572,8 +572,8 @@ class MonitoredNodeInfo(Resource):
 			response.status_code = 500
 			return response
 		dNode.nMonitored = 0
-		dNode.nCollectdState = 'None'
-		dNode.nLogstashForwState = 'None'
+		dNode.nCollectdState = 'Stopped'
+		dNode.nLogstashForwState = 'Stopped'
 		response =jsonify({'Status':'Node '+ nodeFQDN+' monitoring stopped!'})
 		response.status_code = 200
 		return response
@@ -583,7 +583,7 @@ class MonitoredNodeInfo(Resource):
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/roles')
 class ClusterNodeRoles(Resource):
 	@api.expect(nodeRoles)	
-	def put(self, nodeFQDN):
+	def put(self, nodeFQDN):#TODO validate role names
 		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
 		if qNode is None:
 			response = jsonify({'Status':'Node '+nodeFQDN+' not found'})
@@ -1005,21 +1005,21 @@ class LSCredControl(Resource):
 
 @dmon.route('/v1/overlord/core/ls/cert/<certName>')
 @api.doc(params={'certName': 'Name of the certificate'})
-class LSCertQuery(Resource): # TODO find all hosts using the same certificate
+class LSCertQuery(Resource):
 	def get(self,certName):
-		if certName == 'default':
-			response = jsonify({'Certificate':'default'})
-			response.status_code=200
-			return response
-		qSCoreCert = dbSCore.query.filter_by(sslCert = certName).first()
-		if qSCoreCert is None:
+		qSCoreCert = dbSCore.query.filter_by(sslCert = certName).all()
+		certList = []
+		for i in qSCoreCert:
+			certList.append(i.hostFQDN)
+
+		if not certList:
 			response = jsonify({'Status':certName+' not found!'})
 			response.status_code = 404
 			return response
-
-		response=jsonify({'Host':qSCoreCert.hostFQDN, 'Certificate':qSCoreCert.sslCert})
-		response.status_code = 200
-		return response
+		else:
+			response = jsonify({'Hosts':certList})
+			response.status_code =200
+			return response
 
 @dmon.route('/v1/overlord/core/ls/cert/<certName>/<hostFQDN>')
 @api.doc(params={'certName': 'Name of the certificate',

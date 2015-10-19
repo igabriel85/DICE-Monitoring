@@ -111,7 +111,7 @@ There are two main components from this API:
 The Overlord is structured into two components:
 
 * **Monitoring Core** represented by: ElasticSearch, LogstashServer and Kibana
-* **Monitoring Auxiliary** represented by: Collectd, logstash-forwarder
+* **Monitoring Auxiliary** represented by: Collectd, Logstash-Forwarder
 
 -
 #### Monitoring Core
@@ -121,9 +121,9 @@ The Overlord is structured into two components:
 Returns information regarding the current version of the Monitoring Platform.
 
 
-`PUT` `/v1/overlord/applications/{appID}`
+`PUT` `/v1/overlord/application/{appID}`
 
-Registers an application with DMON and creates a unique tag for the monitored data. The tag is defined by _appIS_.
+Registers an application with DMON and creates a unique tag for the monitored data. The tag is defined by _appID_.
 
 **NOTE**: Scheduled for future versions!
 
@@ -240,11 +240,12 @@ Input:
 
 Bootstrap of all non monitored nodes. Installs, configures and start collectd and logstash-forwarder on them. This feature is not recommended for testing, the usage of separate commands is preffered in order to detect network failures.
 
+**NOTE**: Duplicate from _../aux/.._ branch!
 ***
 
-`GET` `/v1/overlord/nodes/{NodeFQDN}`
+`GET` `/v1/overlord/nodes/{nodeFQDN}`
 
-Returns information of a particular monitored node identified by _NodeFQDN_.
+Returns information of a particular monitored node identified by _nodeFQDN_.
 
 Response:
 
@@ -259,7 +260,8 @@ Response:
       "password":"<pass|null>",
       "chefclient":"<True|False>",
       "CDH":"<active|inactive|unknown>",
-      "CDHVersion":"<version>"
+      "CDHVersion":"<version>",
+      "Roles":"[listofroles]"
 }
 ```
 
@@ -299,6 +301,19 @@ Bootstraps specified node.
 Stops all auxiliary monitoring components associated with a particular node.
 
 **NOTE**: This does not delete the nodes nor the configurations it simply stops collectd and logstash-forwarder on the selected nodes.
+
+
+`PUT` `/v1/overlord/nodes/{nodeFQDN}/roles`
+
+Defines the roles each node has inside the cluster.
+
+Input:
+
+```json
+{
+	"Roles":"[listofroles]"
+}
+```
 
 ***
 `DELETE` `/v1/overlord/nodes/{nodeFQDN}/purge`
@@ -412,6 +427,11 @@ Starts the logstash server based on the configuration information. During this s
 
 ***
 
+`DELETE` `/v1/overlord/core/ls/{hostFQDN}`
+
+Stops the logstash server instance on a given host and removes all configuration data from DMON.
+
+
 `GET` `/v1/overlord/core/ls/config`
 
 Returns the current configuration file of Logstash Server.
@@ -464,17 +484,18 @@ Response:
 
 `GET` `/v1/overlord/core/ls/cert/{certName}`
 
-Returns the host using a specified certificate. The certificate is identified by it _name_.
+Returns the hosts using a specified certificate. The certificate is identified by its _certName_.
 
 Response:
 
 ```json
 {
-	"Host":"<LS host name>",
-	"Certificate":"<certificate name>"
+	"Host":"[listofhosts]",
 }
 
 ```
+
+**Note**: By default all Nodes use the default certificate created during D-Mon initialization. This request returns a list of hosts using the specified certificate. 
 
 ***
 
@@ -607,9 +628,9 @@ Returns a list of all YARN applications/jobs on the current monitored big data c
 `GET` `/v1/observer/applications/{appID}`
 
 Returns information on a particular YARN application identified by _{appID}_.
-**NOTE**: The information will not contain monitoring data only a general overview. Similar to YARN History Server.
+The information will not contain monitoring data only a general overview. Similar to YARN History Server.
 
-
+**NOTE**: Scheduled for future release.
 
 ***
 
@@ -631,7 +652,7 @@ Returns information on a particular YARN application identified by _{appID}_.
   }
 ```
 ***
-`GET` `/v1/observer/nodes/{NodeFQDN}`
+`GET` `/v1/observer/nodes/{nodeFQDN}`
 
 Returns information of a particular monitored node. No information is limited to non confidential information, no authentication credentials are returned.
 
@@ -639,7 +660,7 @@ Response:
 
 ```json
 {
-    "<NodeFQDN>":{
+    "<nodeFQDN>":{
       "Status":"<online|offline>",
       "IP":"<NodeIP>",
       "Monitored":"<true|false>",
@@ -648,30 +669,21 @@ Response:
 }
 ```
 ***
-`GET` `/v1/observer/nodes/{NodeFQDN}/services`
+`GET` `/v1/observer/nodes/{nodeFQDN}/roles`
 
-Returns information on the services running on a given node.
-
-**NOTE:** This feature will be developed for future versions.
+Returns roles the node identified by _'nodeFQDN'_.
 
 Response:
 
-
 ```json
 {
-    "<NodeFQDN>":[
-      {
-        "ServiceName":"<ServiceName>",
-        "ServiceStatus":"<ServiceStatus>"
-      },
-      ............................,
-      {
-        "ServiceName":"<ServiceName>",
-        "ServiceStatus":"<ServiceStatus>"
-      }
-      ]
+	'Roles':['yarn','spark','storm']
 }
 ```
+
+
+**NOTE:** Roles are returned as a list. Some elements represent in fact more than one service, for example _'yarn'_ represents both _'HDFS'_ and _'Yarn'_.
+
 ***
 `POST` `/v1/observer/query/{csv/json/plain}`
 
