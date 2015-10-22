@@ -23,14 +23,17 @@
 
 echo "Installing kibana...."
 cd ~/ 
-wget https://download.elasticsearch.org/kibana/kibana/kibana-4.0.1-linux-x64.tar.gz
-tar xvf kibana-4.0.1-linux-x64.tar.gz
+wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
+tar xvf kibana-4.1.2-linux-x64.tar.gz
 mkdir -p /opt/kibana
-cp -R ~/kibana-4.0.1-linux-x64/* /opt/kibana/
+cp -R ~/kibana-4.1.2-linux-x64/* /opt/kibana/
 echo "Registering Kibana as a service ...."
 cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
 chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
+
+#Start kibana after install #TODO need better solution
+service kibana4 start
 
 # install Java 8
 echo "Installing Oracle Java 1.8 ...."
@@ -47,12 +50,12 @@ apt-get install ant -y
 #cd /tmp
 #wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
-# install Elasticsearch 1.4.4
+# install Elasticsearch 1.7.1
 echo "Installing Elasticsearch ...."
 cd /opt
-wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.4.4.tar.gz
-tar zxf elasticsearch-1.4.4.tar.gz
-ln -sf elasticsearch-1.4.4 elasticsearch
+wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.1.tar.gz
+tar zxf elasticsearch-1.7.1.tar.gz
+ln -sf elasticsearch-1.7.1 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
@@ -70,23 +73,39 @@ wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
 tar zxf logstash-1.5.4.tar.gz
 ln -sf logstash-1.5.4 logstash
 
+#setup logrotate
+echo "Setting up logrotate ..."
+
+echo "/opt/logstash/logstash.log{
+size 20M
+create 777 ubuntu ubuntu
+rotate 4
+}" >> /etc/logrotate.conf
+
+cd /etc
+logrotate -s /var/log/logstatus logrotate.conf
+
 
 echo "Generating certificates for Logstash ..."
-HostIP=ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://'
-
+HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
+#backup open ssl
+cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
 
 #generate certificates
 
-openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout src/keys/logstash-forwarder.key -out src/keys/logstash-forwarder.crt
+openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.key -out /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.crt
 
 # fix permissions
 echo "Setting permissions ...."
 cd /opt
-chown -R vagrant.vagrant logstash* elasticsearch*
+chown -R ubuntu.ubuntu logstash* elasticsearch*
+chown -R ubuntu.ubuntu /opt
 
 echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
+rm -rf /opt/logstash-1.5.4.tar.gz
+rm -rf /opt/elasticsearch-1.4.4.tar.gz
 
 
 echo "Bootstrapping done!"
