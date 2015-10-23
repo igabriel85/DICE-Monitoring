@@ -1,0 +1,22 @@
+[
+  {
+    "_id": "W1-CPU",
+    "_type": "search",
+    "_source": {
+      "title": "W1 CPU",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "_source"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"logstash-*\",\"highlight\":{\"pre_tags\":[\"@kibana-highlighted-field@\"],\"post_tags\":[\"@/kibana-highlighted-field@\"],\"fields\":{\"*\":{}}},\"filter\":[],\"query\":{\"query_string\":{\"query\":\"host:\\\"dice.cdh5.w1.internal\\\" AND plugin:\\\"cpu\\\"\",\"analyze_wildcard\":true}}}"
+      }
+    }
+  }
+]

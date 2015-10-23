@@ -24,6 +24,7 @@ from datetime import datetime
 import requests
 import os
 
+
 def portScan(addrs,ports):
 	'''
 		Check if a range of ports are open or not
@@ -83,12 +84,26 @@ def startLocalProcess(command):
 	return process.pid
 	
 
+def checkUnique(nodeList):
+	'''
+	Checks for unique values in a dictionary.
+	'''
+	seen={}
+	result =set()
+	sameCredentials = []
+	ipNode = []
+	for d in nodeList:
+		for k,v in d.iteritems():
+			if v in seen:
+				ipNode.append(k)
+				sameCredentials.append(v)
+				result.discard(seen[v])
+			else:
+				seen[v] = k
+				result.add(k)
+	return list(result), sameCredentials, ipNode
 
-hosts = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
-		'109.231.126.146','109.231.126.157','109.231.126.38']
-ports = ['22','443','7180','50020','5601']
-#portScan(hosts,ports)
 
 
-
-
+#print {v['nPass']:v for v in test}.values()
+#print checkUnique(test)

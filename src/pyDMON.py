@@ -800,7 +800,21 @@ class ESCoreController(Resource):
 @dmon.route('/v1/overlord/core/kb/config')
 class KBCoreConfiguration(Resource):
 	def get(self):
-		return "Retruns Kibana current configuration"
+		if not os.path.isdir(cfgDir):
+			response = jsonify({'Error':'Config dir not found !'})
+			response.status_code = 404
+			return response
+		if not os.path.isfile(os.path.join(cfgDir,'kibana.yaml')):
+			response = jsonify({'Error':'Config file not found !'})
+			response.status_code = 404
+			return response
+		try:
+			lsCfgfile=open(os.path.join(cfgDir,'kibana.yaml'),'r')
+		except EnvironmentError:
+			response = jsonify({'EnvError':'file not found'})
+			response.status_code = 500
+			return response
+		return send_file(lsCfgfile,mimetype = 'text/yaml',as_attachment = True)
 
 	def put(self):
 		return "Changes configuration of Kibana"
@@ -1395,6 +1409,146 @@ class AuxConfigSelective(Resource):
 
 	def put(self,auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
+
+@dmon.route('/v1/overlord/aux/<auxComp>/start')
+@api.doc(params={'auxComp':'Aux Component'})
+class AuxStartAll(Resource):
+	def post(self, auxComp): #TODO create function that can be reused for both start and stop of all components
+		auxList = ['collectd','lsf']
+		if auxComp not in auxList:
+			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response.status_code = 400
+			return response
+
+		if auxComp == "collectd":
+			qNCollectd = dbNodes.query.filter_by(nCollectdState = 'Stopped').all()
+			
+			if qNCollectd is None:
+				response = jsonify({'Status':'No nodes in state Stopped!'})
+				response.status_code = 404
+				return response
+
+			nodeCollectdStopped = []
+			for i in qNCollectd:
+				node = []
+				node.append(i.nodeIP)
+				try:
+					serviceCtrl(node,i.nUser,i.nPass,'collectd', 'start')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					#response = jsonify({'Status':'Error Starting collectd on '+ i.nodeFQDN +'!'})
+					#response.status_code = 500
+					#return response
+
+				CollectdNodes = {}
+				CollectdNodes['Node'] = i.nodeFQDN
+				CollectdNodes['IP'] = i.nodeIP
+				nodeCollectdStopped.append(CollectdNodes)
+				i.nCollectdState = 'Running'
+			response = jsonify({'Status':'Collectd started','Nodes':nodeCollectdStopped})
+			response.status_code = 200
+			return response
+
+		if auxComp == "lsf":
+			qNLsf = dbNodes.query.filter_by(nLogstashForwState = 'Stopped').all()
+			if qNLsf is None:
+				response = jsonify({'Status':'No nodes in state Stopped!'})
+				response.status_code = 404
+				return response
+
+			nodeLsfStopped = []
+			for i in qNLsf:
+				node = []
+				node.append(i.nodeIP)
+				try:
+					serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', 'start')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error Starting LSF on '+ i.nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+
+				LsfNodes = {}
+				LsfNodes['Node'] = i.nodeFQDN
+				LsfNodes['IP'] = i.nodeIP
+				nodeLsfStopped.append(LsfNodes)
+				i.nLogstashForwState = 'Running'
+			response = jsonify({'Status':'LSF started','Nodes':nodeLsfStopped})
+			response.status_code = 200
+			return response	
+			#return nodeCollectdStopped
+
+@dmon.route('/v1/overlord/aux/<auxComp>/stop')#auxCtrl(auxComp,'stop') #TODO revise from pysshCore and make it work!
+@api.doc(params={'auxComp':'Aux Component'})
+class AuxStopAll(Resource):
+	def post(self,auxComp):
+		auxList = ['collectd','lsf']
+		if auxComp not in auxList:
+			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response.status_code = 400
+			return response
+
+		if auxComp == "collectd":
+			qNCollectd = dbNodes.query.filter_by(nCollectdState = 'Running').all()
+			
+			if qNCollectd is None:
+				response = jsonify({'Status':'No nodes in state Running!'})
+				response.status_code = 404
+				return response
+
+			nodeCollectdRunning = []
+			for i in qNCollectd:
+				node = []
+				node.append(i.nodeIP)
+				try:
+					serviceCtrl(node,i.nUser,i.nPass,'collectd', 'stop')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error Stopping collectd on '+ i.nodeFQDN +'!'})
+					response.status_code = 500
+					return response
+				CollectdNodes = {}
+				CollectdNodes['Node'] = i.nodeFQDN
+				CollectdNodes['IP'] = i.nodeIP
+				nodeCollectdRunning.append(CollectdNodes)
+				i.nCollectdState = 'Stopped'
+			response = jsonify({'Status':'Collectd stopped','Nodes':nodeCollectdRunning})
+			response.status_code = 200
+			return response
+
+			if auxComp == "lsf":
+				qNLsf = dbNodes.query.filter_by(nLogstashForwState = 'Running').all()
+				if qNLsf is None:
+					response = jsonify({'Status':'No nodes in state Running!'})
+					response.status_code = 404
+					return response
+
+				nodeLsfRunning = []
+				for i in qNLsf:
+					node = []
+					node.append(i.nodeIP)
+					try:
+						serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', 'stop')
+					except Exception as inst:
+						print >> sys.stderr, type(inst)
+						print >> sys.stderr, inst.args
+						response = jsonify({'Status':'Error Stopping LSF on '+ i.nodeFQDN +'!'})
+						response.status_code = 500
+						return response
+
+					LsfNodes = {}
+					LsfNodes['Node'] = i.nodeFQDN
+					LsfNodes['IP'] = i.nodeIP
+					nodeLsfRunning.append(LsfNodes)
+					i.nLogstashForwState = 'Stopped'
+				response = jsonify({'Status':'LSF stopped','Nodes':nodeLsfRunning})
+				response.status_code = 200
+				return response
+
+
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/start')
 @api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
