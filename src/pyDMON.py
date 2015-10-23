@@ -1519,34 +1519,34 @@ class AuxStopAll(Resource):
 			response.status_code = 200
 			return response
 
-			if auxComp == "lsf":
-				qNLsf = dbNodes.query.filter_by(nLogstashForwState = 'Running').all()
-				if qNLsf is None:
-					response = jsonify({'Status':'No nodes in state Running!'})
-					response.status_code = 404
+		if auxComp == "lsf":
+			qNLsf = dbNodes.query.filter_by(nLogstashForwState = 'Running').all()
+			if qNLsf is None:
+				response = jsonify({'Status':'No nodes in state Running!'})
+				response.status_code = 404
+				return response
+
+			nodeLsfRunning = []
+			for i in qNLsf:
+				node = []
+				node.append(i.nodeIP)
+				try:
+					serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', 'stop')
+				except Exception as inst:
+					print >> sys.stderr, type(inst)
+					print >> sys.stderr, inst.args
+					response = jsonify({'Status':'Error Stopping LSF on '+ i.nodeFQDN +'!'})
+					response.status_code = 500
 					return response
 
-				nodeLsfRunning = []
-				for i in qNLsf:
-					node = []
-					node.append(i.nodeIP)
-					try:
-						serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', 'stop')
-					except Exception as inst:
-						print >> sys.stderr, type(inst)
-						print >> sys.stderr, inst.args
-						response = jsonify({'Status':'Error Stopping LSF on '+ i.nodeFQDN +'!'})
-						response.status_code = 500
-						return response
-
-					LsfNodes = {}
-					LsfNodes['Node'] = i.nodeFQDN
-					LsfNodes['IP'] = i.nodeIP
-					nodeLsfRunning.append(LsfNodes)
-					i.nLogstashForwState = 'Stopped'
-				response = jsonify({'Status':'LSF stopped','Nodes':nodeLsfRunning})
-				response.status_code = 200
-				return response
+				LsfNodes = {}
+				LsfNodes['Node'] = i.nodeFQDN
+				LsfNodes['IP'] = i.nodeIP
+				nodeLsfRunning.append(LsfNodes)
+				i.nLogstashForwState = 'Stopped'
+			response = jsonify({'Status':'LSF stopped','Nodes':nodeLsfRunning})
+			response.status_code = 200
+			return response
 
 
 
