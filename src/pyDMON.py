@@ -763,7 +763,7 @@ class ESCoreController(Resource):
 			response.status_code = 500
 			return response
 
-		if checkPID(int(qESCore.ESCorePID)) is True:
+		if checkPID(qESCore.ESCorePID) is True:
 			subprocess.call(["kill", "-9", str(qESCore.ESCorePID)])
 
 		try:
