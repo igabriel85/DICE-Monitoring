@@ -763,7 +763,7 @@ class ESCoreController(Resource):
 			response.status_code = 500
 			return response
 
-		if checkPID(qESCore.ESCorePID) is True:
+		if checkPID(int(qESCore.ESCorePID)) is True:
 			subprocess.call(["kill", "-9", str(qESCore.ESCorePID)])
 
 		try:
@@ -1275,7 +1275,7 @@ class AuxDeploy(Resource):
 		return response			
 
 
-@dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>')#TODO add parameter -force to redeploy config 
+@dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>')#TODO check parameter redeploy functionality 
 @api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	@api.doc(parser=dmonAux)

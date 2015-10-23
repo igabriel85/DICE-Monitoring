@@ -64,7 +64,7 @@ def checkPID(pid):
 	if pid == 0:	#If PID newly created return False
 		return False
 	try:
-		os.kill(int(pid), 0)
+		os.kill(pid, 0)
 	except OSError:
 		return False
 	else:
