@@ -1,0 +1,112 @@
+#DICE Cassandra Cluster Vagrant development env deploy
+#pre-alpha v0.1
+#TODO Legal Stuff
+
+
+
+
+
+$hosts_script = <<SCRIPT
+apt-get update
+apt-get install wget -y
+apt-get install unzip -y
+apt-get install htop -y
+
+
+# Install Java 8
+echo "Installing Oracle Java 1.8 ...."
+apt-get install python-software-properties -y
+echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+add-apt-repository ppa:webupd8team/java -y
+apt-get update -y
+apt-get install oracle-java8-installer -y
+apt-get install ant -y
+
+# Download Cassandra
+wget http://mirrors.hostingromania.ro/apache.org/cassandra/2.2.3/apache-cassandra-2.2.3-bin.tar.gz
+
+tar xvf apache-cassandra-2.2.3-bin.tar.gz
+
+
+
+#Fix owner
+chown -R vagrant.vagrant apache-cassandra-0.9.5/
+
+cat > /etc/hosts <<EOF
+127.0.0.1       localhost
+# The following lines are desirable for IPv6 capable hosts
+::1     ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+EOF
+SCRIPT
+
+
+# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = "ubuntu/trusty64"
+
+  # Manage /etc/hosts on host and VMs
+  config.hostmanager.enabled = false
+  config.hostmanager.manage_host = true
+  config.hostmanager.include_offline = true
+  config.hostmanager.ignore_private_ip = false
+
+  config.vm.define :master do |master|
+    master.vm.provider :virtualbox do |v|
+      v.name = "vm-cluster-cassandra1"
+      v.customize ["modifyvm", :id, "--memory", "4096"]
+    end
+    master.vm.network :private_network, ip: "10.211.56.100"
+    master.vm.hostname = "vm-cluster-cassandra1"
+    master.vm.network :forwarded_port, host:8080, guest: 8080
+    master.vm.network :forwarded_port, host:12345, guest: 12345
+    master.vm.provision :shell, :inline => $hosts_script
+    master.vm.provision :hostmanager
+  end
+
+  config.vm.define :slave1 do |slave1|
+    slave1.vm.box = "ubuntu/trusty64"
+    slave1.vm.provider :virtualbox do |v|
+      v.name = "vm-cluster-strom2"
+      v.customize ["modifyvm", :id, "--memory", "4096"]
+    end
+    slave1.vm.network :private_network, ip: "10.211.56.101"
+    slave1.vm.hostname = "vm-cluster-cassandra2"
+    slave1.vm.network :forwarded_port, host:12346, guest: 12346
+    slave1.vm.provision :shell, :inline => $hosts_script
+    slave1.vm.provision :hostmanager
+    
+  end
+
+  config.vm.define :slave2 do |slave2|
+    slave2.vm.box = "ubuntu/trusty64"
+    slave2.vm.provider :virtualbox do |v|
+      v.name = "vm-cluster-cassandra3"
+      v.customize ["modifyvm", :id, "--memory", "4096"]
+    end
+    slave2.vm.network :private_network, ip: "10.211.56.102"
+    slave2.vm.hostname = "vm-cluster-cassandra3"
+    slave2.vm.network :forwarded_port, host:12346, guest: 12347
+    slave2.vm.provision :shell, :inline => $hosts_script
+    slave2.vm.provision :hostmanager
+  end
+
+  config.vm.define :slave3 do |slave3|
+    slave3.vm.box = "ubuntu/trusty64"
+    slave3.vm.provider :virtualbox do |v|
+      v.name = "vm-cluster-cassandra4"
+      v.customize ["modifyvm", :id, "--memory", "4096"]
+    end
+    slave3.vm.network :private_network, ip: "10.211.56.103"
+    slave3.vm.hostname = "vm-cluster-cassandra4"
+    slave3.vm.network :forwarded_port, host:12346, guest: 12348
+    slave3.vm.provision :shell, :inline => $hosts_script
+    slave3.vm.provision :hostmanager
+  end
+
+end
