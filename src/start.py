@@ -126,6 +126,20 @@ def main(argv):
 							print >> sys.stderr, inst.args
 							pass
 
+					chkKBCoreDB = db.session.query(dbKBCore.hostFQDN).all()
+					print >> sys.stderr, chkLSCoreDB
+					if chkKBCoreDB is not None:
+						corePopKB - dbKBCore(hostFQDN=socket.getfqdn(),hostIP = hostIP = socket.gethostbyname(socket.gethostname()), hostOS='ubuntu', kbPort = 5601)
+						db.session.add(corePopKB) 
+						try:
+							db.session.commit() 
+						except Exception as inst:
+							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
+							print >> sys.stderr, type(inst)
+							print >> sys.stderr, inst.args
+							pass
+
+
 	app.run(host = ip,port=port,debug=True)
 
 if __name__=='__main__':

@@ -29,10 +29,10 @@ cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15a
 chmod +x /etc/init.d/kibana4
 update-rc.d kibana4 defaults 96 9
 
-#Start kibana after install #TODO need better solution
-service kibana4 start
+#Start kibana after install 
+#service kibana4 start # Deprecated, now starts from REST API
 
-# install Java 8
+# Install Java 8
 echo "Installing Oracle Java 1.8 ...."
 apt-get install python-software-properties -y
 echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
@@ -41,7 +41,7 @@ apt-get update -y
 apt-get install oracle-java8-installer -y
 apt-get install ant -y
 
-# install Elasticsearch 1.4.4
+# Install Elasticsearch 1.7.3
 echo "Installing Elasticsearch ...."
 cd /opt
 wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.3.tar.gz
@@ -58,7 +58,7 @@ echo "Installing Elasticsearch plugin marvel ....."
 /opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
 
 
-# install Logstash
+# Install Logstash
 echo "Installing Logstash..."
 cd /opt
 wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz

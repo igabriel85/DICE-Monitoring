@@ -136,8 +136,9 @@ class dbKBCore(db.Model):
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
     kbPort = db.Column(db.Integer, index=True, unique=False,default = 5601)
+    KBCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
     conf = db.Column(db.String(140), index=True, unique=False)
-    KBCoreStatus = db.Column(db.String(64), index=True, unique=False)#Running, Pending, Stopped, None
+    KBCoreStatus = db.Column(db.String(64), index=True,default='unknown', unique=False)#Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -225,6 +226,12 @@ esCore = api.model('Submit ES conf',{
 	'ESClusterName':fields.String(required=True,description='ES Host Name')
 	})
 
+kbCore = api.model('Submit KB conf',{
+	'HostFQDN':fields.String(required=True, description='Host FQDN'),
+	'IP':fields.String(required=True, description='Host IP'),
+	'OS':fields.String(required=False,default='unknown',description='Host OS'),
+	'KBPort':fields.Integer(required=False, default=5601,description='KB Port'),
+	})
 
 nodeUpdate = api.model('Update Node Model Info',{
 	'IP':fields.String(required=True, description="Node IP"),
@@ -815,15 +822,99 @@ class KBCoreConfiguration(Resource):
 			response.status_code = 500
 			return response
 		return send_file(lsCfgfile,mimetype = 'text/yaml',as_attachment = True)
-
+	@api.expect(kbCore)#TODO same for all 3 core services create one class for all
 	def put(self):
-		return "Changes configuration of Kibana"
+		requiredKeys=['HostFQDN','IP']
+		if not request.json:
+			abort(400)
+		for key in requiredKeys:
+			if key not in request.json:
+				response = jsonify({'Error':'malformed request, missing key(s)'})
+				response.status_code = 400
+				return response 
+				
+		qKBCore = dbKBCore.query.filter_by(hostIP = request.json['IP']).first()
+		if request.json["OS"] is None:
+			os = "unknown"
+		else:
+			os=request.json["OS"]
+
+		if qKBCore is None:
+			upKB = dbKBCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os, kbPort = request.json["KBPort"],KBCoreStatus = 'Stopped')
+			db.session.add(upKB) 
+			db.session.commit()
+			response = jsonify({'Added':'KB Config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
+		else:
+			qKBCore.hostOS = os
+			qKBCore.kbPort=request.json['KBPort']
+			db.session.commit()
+			response=jsonify({'Updated':'KB config for '+ request.json["HostFQDN"]})
+			response.status_code = 201
+			return response
 
 @dmon.route('/v1/overlord/core/kb')
 class KKCoreController(Resource):
+	def get(self):
+		KBhostsAll=db.session.query(dbKBCore.hostFQDN,dbKBCore.hostIP,dbKBCore.hostOS,dbKBCore.kbPort,dbKBCore.KBCorePID,
+			dbKBCore.KBCoreStatus).all()
+		resList=[]
+		for hosts in KBhostsAll:
+			confDict={}
+			confDict['HostFQDN']=hosts[0]
+			confDict['IP']=hosts[1]
+			confDict['OS']=hosts[2]
+			confDict['KBPort']=hosts[3]
+			confDict['PID']=hosts[4]
+			confDict['KBStatus']=hosts[5]
+			resList.append(confDict)
+		response = jsonify({'KB Instances':resList})
+		response.status_code = 200
+		return response
 	def post(self):
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		kbTemp= os.path.join(tmpDir,'kibana.tmp')#tmpDir+"/collectd.tmp"
+		kbfConf = os.path.join(cfgDir,'kibana.yml')
+		qKBCore=dbKBCore.query.first() # TODO: only one instance is supported
+		if qKBCore is None:
+			response = jsonify({"Status":"No KB instance found!"})
+			response.status_code = 500
+			return response
 
-		return "Deploys (Start/Stop/Restart/Reload args not json payload) configuration of Kibana"
+		if checkPID(qKBCore.KBCorePID) is True:
+			subprocess.call(["kill", "-9", str(qESCore.ESCorePID)])
+
+		try:
+			template = templateEnv.get_template( kbTemp )
+			#print >>sys.stderr, template
+		except:
+			return "Tempalte file unavailable!"
+
+		infoKBCore = {"kbPort":qKBCore.kbPort}			
+		kbConf = template.render(infoKBCore)
+		qKBCore.conf = kbConf
+		#print >>sys.stderr, esConf
+		db.session.commit()
+		kbCoreConf = open(kbfConf,"w+")
+		kbCoreConf.write(kbConf)
+		kbCoreConf.close()
+
+		#TODO find better solution
+		os.system('rm -rf /opt/kibana/config/kibana.yml')
+		os.system('cp '+kbfConf+' /opt/kibana/config/kibana.yml ')
+		
+		kbPid = 0
+		try:
+			kbPid = subprocess.Popen('/opt/kibana/bin/kibana',stdout=subprocess.PIPE).pid 
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+		qkbCore.KBCorePID = kbPid
+		response = jsonify({'Status':'Kibana Core  PID '+str(kbPid)})
+		response.status_code = 200
+		return response
 
 @dmon.route('/v1/overlord/core/ls/config')
 class LSCoreConfiguration(Resource):
