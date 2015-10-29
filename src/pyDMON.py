@@ -911,7 +911,7 @@ class KKCoreController(Resource):
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-		qkbCore.KBCorePID = kbPid
+		qKBCore.KBCorePID = kbPid
 		response = jsonify({'Status':'Kibana Core  PID '+str(kbPid)})
 		response.status_code = 200
 		return response
