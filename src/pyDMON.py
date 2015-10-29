@@ -780,7 +780,7 @@ class ESCoreController(Resource):
 		except:
 			return "Tempalte file unavailable!"
 
-		infoESCore = {"clusterName":qESCore.clusterName,"nodeName":qESCore.nodeName}			
+		infoESCore = {"clusterName":qESCore.clusterName,"nodeName":qESCore.nodeName, "esLogDir":logDir}			
 		esConf = template.render(infoESCore)
 		qESCore.conf = esConf
 		#print >>sys.stderr, esConf
@@ -793,9 +793,11 @@ class ESCoreController(Resource):
 		os.system('rm -rf /opt/elasticsearch/config/elasticsearch.yml')
 		os.system('cp '+esfConf+' /opt/elasticsearch/config/elasticsearch.yml ')
 		
+		#ES core pid location
+		pidESLoc = os.path.join(pidDir,'elasticsearch.pid')
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',stdout=subprocess.PIPE).pid 
+			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch -d -p '+pidESLoc,stdout=subprocess.PIPE).pid 
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
@@ -893,7 +895,12 @@ class KKCoreController(Resource):
 		except:
 			return "Tempalte file unavailable!"
 
-		infoKBCore = {"kbPort":qKBCore.kbPort}			
+		#Log and PID location for kibana
+		
+		kbPID = os.path.join(pidDir,'kibana.pid')
+		kbLog = os.path.join(logDir,'kibana.log')
+
+		infoKBCore = {"kbPort":qKBCore.kbPort, "kibanaPID":kbPID,"kibanaLog":kbLog}			
 		kbConf = template.render(infoKBCore)
 		qKBCore.conf = kbConf
 		#print >>sys.stderr, esConf
@@ -1058,9 +1065,18 @@ class LSCoreController(Resource):
 			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f '+lsfCore+ ' -l '+lsLogfile, shell= True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
-			print >> sys.stderr, inst.args
-
+			print >> sys.stderr, inst.args		
 		qSCore.LSCorePID=lsPid
+		lsPIDFileLoc = os.path.join(pidDir,'logstash.pid')
+		try:
+			lsPIDFile = open(lsPIDFileLoc,'w+')
+			lsPIDFile.write(lspid)
+			lsPIDFile.close()
+		except IOError:
+			response = jsonify({'Error':'File I/O!'})
+			response.status_code = 500
+			return response	
+
 		response = jsonify({'Status':'Logstash Core PID '+str(lsPid)})
 		response.status_code=200
 		return response

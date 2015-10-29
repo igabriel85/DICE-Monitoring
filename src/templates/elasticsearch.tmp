@@ -160,7 +160,7 @@ node.name: {{nodeName}}
 
 # Path to log files:
 #
-#path.logs: /path/to/logs
+path.logs: {{esLogDir}}
 
 # Path to where plugins are installed:
 #
