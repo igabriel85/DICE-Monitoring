@@ -804,7 +804,7 @@ class ESCoreController(Resource):
 		pidESLoc = os.path.join(pidDir,'elasticsearch.pid')
 		try:
 			esPIDFile = open(pidESLoc,'w+')
-			esPIDFile.write(esPid)
+			esPIDFile.write(str(esPid))
 			esPIDFile.close()
 		except IOError:
 			response = jsonify({'Error':'File I/O!'})
@@ -1078,7 +1078,7 @@ class LSCoreController(Resource):
 		lsPIDFileLoc = os.path.join(pidDir,'logstash.pid')
 		try:
 			lsPIDFile = open(lsPIDFileLoc,'w+')
-			lsPIDFile.write(lspid)
+			lsPIDFile.write(str(lspid))
 			lsPIDFile.close()
 		except IOError:
 			response = jsonify({'Error':'File I/O!'})
