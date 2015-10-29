@@ -1078,7 +1078,7 @@ class LSCoreController(Resource):
 		lsPIDFileLoc = os.path.join(pidDir,'logstash.pid')
 		try:
 			lsPIDFile = open(lsPIDFileLoc,'w+')
-			lsPIDFile.write(str(lspid))
+			lsPIDFile.write(str(lsPid))
 			lsPIDFile.close()
 		except IOError:
 			response = jsonify({'Error':'File I/O!'})
