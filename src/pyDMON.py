@@ -907,7 +907,7 @@ class KKCoreController(Resource):
 		
 		kbPid = 0
 		try:
-			kbPid = subprocess.Popen('/opt/kibana/bin/kibana',stdout=subprocess.PIPE).pid 
+			kbPid = subprocess.Popen('/opt/kibana/bin/kibana',stdout=FNULL, stderr=subprocess.STDOUT).pid 
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
