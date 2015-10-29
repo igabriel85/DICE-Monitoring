@@ -895,7 +895,7 @@ class KKCoreController(Resource):
 			return response
 
 		if checkPID(qKBCore.KBCorePID) is True:
-			subprocess.call(["kill", "-9", str(qESCore.ESCorePID)])
+			subprocess.call(["kill", "-9", str(qKBCore.KBCorePID)])
 
 		try:
 			template = templateEnv.get_template( kbTemp )
