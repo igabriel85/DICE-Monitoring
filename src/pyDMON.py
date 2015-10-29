@@ -906,6 +906,7 @@ class KKCoreController(Resource):
 		os.system('cp '+kbfConf+' /opt/kibana/config/kibana.yml ')
 		
 		kbPid = 0
+		FNULL = open(os.devnull,'w')
 		try:
 			kbPid = subprocess.Popen('/opt/kibana/bin/kibana',stdout=FNULL, stderr=subprocess.STDOUT).pid 
 		except Exception as inst:
