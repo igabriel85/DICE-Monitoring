@@ -52,6 +52,7 @@ tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'logs')
 credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 #TODO: only provisory for testing
@@ -1051,10 +1052,10 @@ class LSCoreController(Resource):
 
 		#TODO find better solution
 		#subprocess.call(['cp',lsfCore,lsCDir+'/logstash.conf'])
-
+		lsLogfile = os.path.join(logDir,'logstash.log')
 		lsPid = 0
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f '+lsfCore+ ' -l /opt/logstash/logstash.log', shell= True).pid
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f '+lsfCore+ ' -l '+lsLogfile, shell= True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args

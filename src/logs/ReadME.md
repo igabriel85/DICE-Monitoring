@@ -1,0 +1,1 @@
+Folder for Core service logs.
