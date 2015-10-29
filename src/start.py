@@ -129,7 +129,7 @@ def main(argv):
 					chkKBCoreDB = db.session.query(dbKBCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkKBCoreDB is not None:
-						corePopKB - dbKBCore(hostFQDN=socket.getfqdn(),hostIP = hostIP = socket.gethostbyname(socket.gethostname()), hostOS='ubuntu', kbPort = 5601)
+						corePopKB = dbKBCore(hostFQDN=socket.getfqdn(),hostIP = socket.gethostbyname(socket.gethostname()), hostOS='ubuntu', kbPort = 5601)
 						db.session.add(corePopKB) 
 						try:
 							db.session.commit() 
