@@ -57,7 +57,7 @@ verify_ssl: true
 # ssl_cert_file: /path/to/your/server.crt
 
 # Set the path to where you would like the process id file to be created.
-pid_file: /var/run/kibana.pid
+pid_file: /opt/kibana/kibana.pid
 
 # If you would like to send the log output to a file you can set the path below.
 # This will also turn off the STDOUT log output.
