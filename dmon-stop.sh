@@ -1,6 +1,7 @@
 #!/bin/bash
-
+ARCH=`uname -s`
 DIR=
+
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`
 elif [ $ARCH == "Darwin" ]; then
@@ -9,11 +10,11 @@ elif [ $ARCH == "Darwin" ]; then
 fi
 
 echo "Stopping Kibana ..."
-kill -9  $(cat $DIR/src/pid/kibana.pid)
+kill -9  `cat $DIR/src/pid/kibana.pid`
 echo "Stopping Logstash Server ..."
-kill -9  $(cat $DIR/src/pid/logstash.pid)
+kill -9  `cat $DIR/src/pid/logstash.pid`
 echo "Stopping ElasticSearch ..."
-kill -9  $(cat $DIR/src/pid/elasticsearch.pid)
+kill -9  `cat $DIR/src/pid/elasticsearch.pid`
 
 echo "Stopping D-Mon"
 killall -9 python #TODO need more elegant solution
