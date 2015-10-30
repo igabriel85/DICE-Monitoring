@@ -23,6 +23,7 @@ import csv
 import unicodedata
 import os
 import sys, getopt
+from addict import Dict
 
 
 #ouptu dir location
@@ -38,13 +39,15 @@ es = Elasticsearch()
 #     self.
 
 
-def queryConstructor(tstart, tstop, queryString, size=500,ordering="desc"):
+def queryConstructor(tstart, queryString,tstop = 'None',  size=500,ordering="desc"):
   '''
       Function generates a query string reprezented by a dictionary/json.
       It has the following arguments:
 
       tstart      -> unix time representation of required period start
+                  -> can use type "now-10s" definition 
       tstop       -> unix time representation of required period stop
+                  -> be default it is set to None and will be ommited
       queryString -> represents the query from the user
       size        -> repreents how many records should be in the output
                   -> default is 500
@@ -52,49 +55,68 @@ def queryConstructor(tstart, tstop, queryString, size=500,ordering="desc"):
                   -> default is "desc"
 
       Function returns a dictionary of the query body required for elasticsearch.
-
-      TODO:
-      - Need more elegant solution, constructor for queryString
   '''
-  queryBody= {
-  "size": size,
-  "sort": {
-    "@timestamp": ordering
-  },
-  "query": {
-    "filtered": {
-      "query": {
-        "query_string": {
-          "query": queryString,
-          "analyze_wildcard": True
-        }
-      },
-      "filter": {
-        "bool": {
-          "must": [
-            {
-              "range": {
-                "@timestamp": {
-                  "gte": tstart,
-                  "lte": tstop
-                }
-              }
-            }
-          ],
-          "must_not": []
-        }
-      }
-    }
-  },
-  "fields": [
-    "*",
-    "_source"
-  ],
-  "script_fields": {},
-  "fielddata_fields": [
-    "@timestamp"
-  ]
-}
+#   queryBody= {
+#   "size": size,
+#   "sort": {
+#     "@timestamp": ordering
+#   },
+#   "query": {
+#     "filtered": {
+#       "query": {
+#         "query_string": {
+#           "query": queryString,
+#           "analyze_wildcard": True
+#         }
+#       },
+#       "filter": {
+#         "bool": {
+#           "must": [
+#             {
+#               "range": {
+#                 "@timestamp": {
+#                   "gte": tstart,
+#                   "lte": tstop
+#                 }
+#               }
+#             }
+#           ],
+#           "must_not": []
+#         }
+#       }
+#     }
+#   },
+#   "fields": [
+#     "*",
+#     "_source"
+#   ],
+#   "script_fields": {},
+#   "fielddata_fields": [
+#     "@timestamp"
+#   ]
+# }
+  queryBody = Dict()
+  nestedBody = Dict()
+  queryBody.size = size
+  queryBody.sort = {'@timestamp':ordering}
+  #queryBody.sort.timestamp = 'desc'
+
+
+
+  queryBody.query.filterd.query.query_string.query = queryString
+  queryBody.query.filterd.query.query_string.analyze_wildcard = True
+
+  if tstop == 'None':
+    nestedBody.range = {'@timestamp':{'gte':tstart}}
+  else:
+    nestedBody.range = {'@timestamp':{'gte':tstart,'lte':tstop}}
+  
+  queryBody.query.filterd.filter.bool.must = [nestedBody]
+  queryBody.query.filterd.filter.bool.must_not = []
+  queryBody.fields = ['*','_source']
+  queryBody.script_fields
+  queryBody.fielddata_fields = ["@timestamp"]
+
   return queryBody
 
 
