@@ -191,7 +191,7 @@ queryES = api.model('query details Model', {
     'ordering': fields.String(required=True,default='desc', description='Ordering of records'),
     'queryString': fields.String(required=True,default = "hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\""
     	,description='ElasticSearc Query'),
-    'tstart': fields.Integer(required=True,default="now - 1d",description='Start Date'),
+    'tstart': fields.Integer(required=True,default="now-1d",description='Start Date'),
     'tstop': fields.Integer(required=False,default="None",description='Stop Date'),
     'metrics': fields.List(fields.String(required=False, default = ' ', description = 'Desired Metrics'))
 
@@ -343,13 +343,13 @@ class QueryEsCore(Resource):
 			response.status_code = 415
 			return response
 
-		if request.json['DMON']['tstop'] is 'None':
+		if 'tstop'not in request.json['DMON']:
 			query = queryConstructor(tstart=request.json['DMON']['tstart'], queryString=request.json['DMON']['queryString'],
 				size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
 		else:
 			query = queryConstructor(tstart=request.json['DMON']['tstart'],tstop=request.json['DMON']['tstop'],
 				queryString=request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
-		#return query
+		
 		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
 			ListMetrics, resJson = queryESCore(query, debug=False) #TODO enclose in Try Catch if es instance unreachable
 			if not ListMetrics:

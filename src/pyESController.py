@@ -23,7 +23,7 @@ import csv
 import unicodedata
 import os
 import sys, getopt
-from addict import Dict
+#from addict import Dict
 
 
 #ouptu dir location
@@ -56,67 +56,47 @@ def queryConstructor(tstart, queryString,tstop = 'None',  size=500,ordering="des
 
       Function returns a dictionary of the query body required for elasticsearch.
   '''
-#   queryBody= {
-#   "size": size,
-#   "sort": {
-#     "@timestamp": ordering
-#   },
-#   "query": {
-#     "filtered": {
-#       "query": {
-#         "query_string": {
-#           "query": queryString,
-#           "analyze_wildcard": True
-#         }
-#       },
-#       "filter": {
-#         "bool": {
-#           "must": [
-#             {
-#               "range": {
-#                 "@timestamp": {
-#                   "gte": tstart,
-#                   "lte": tstop
-#                 }
-#               }
-#             }
-#           ],
-#           "must_not": []
-#         }
-#       }
-#     }
-#   },
-#   "fields": [
-#     "*",
-#     "_source"
-#   ],
-#   "script_fields": {},
-#   "fielddata_fields": [
-#     "@timestamp"
-#   ]
-# }
-  queryBody = Dict()
-  nestedBody = Dict()
-  queryBody.size = size
-  queryBody.sort = {'@timestamp':ordering}
-  #queryBody.sort.timestamp = 'desc'
-
-
-
-  queryBody.query.filterd.query.query_string.query = queryString
-  queryBody.query.filterd.query.query_string.analyze_wildcard = True
-
   if tstop == 'None':
-    nestedBody.range = {'@timestamp':{'gte':tstart}}
+    nestedBody = {'gte':tstart}
   else:
-    nestedBody.range = {'@timestamp':{'gte':tstart,'lte':tstop}}
-  
-  queryBody.query.filterd.filter.bool.must = [nestedBody]
-  queryBody.query.filterd.filter.bool.must_not = []
-  queryBody.fields = ['*','_source']
-  queryBody.script_fields
-  queryBody.fielddata_fields = ["@timestamp"]
+    nestedBody = {'gte':tstart,'lte':tstop}
 
+  queryBody= {
+  "size": size,
+  "sort": {
+    "@timestamp": ordering
+  },
+  "query": {
+    "filtered": {
+      "query": {
+        "query_string": {
+          "query": queryString,
+          "analyze_wildcard": True
+        }
+      },
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "range": {
+                "@timestamp": nestedBody
+              }
+            }
+          ],
+          "must_not": []
+        }
+      }
+    }
+  },
+  "fields": [
+    "*",
+    "_source"
+  ],
+  "script_fields": {},
+  "fielddata_fields": [
+    "@timestamp"
+  ]
+}
   return queryBody
 
 
@@ -237,7 +217,7 @@ def defineESCore(IP):
   return es
 if __name__=='__main__':
   #ElasticSearch object that defines the endpoint
-  es = Elasticsearch('109.231.126.38')
+  es = Elasticsearch('194.102.63.78')
   if len(sys.argv) == 1: # only for development
     testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
     metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
