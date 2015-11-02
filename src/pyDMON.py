@@ -59,6 +59,8 @@ credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 esDir = '/opt/elasticsearch' 
 lsCDir = '/etc/logstash/conf.d/'
 
+#D-Mon Supported frameworks
+lFrameworks = ['hdfs','yarn','spark','storm']
 
 app = Flask("D-MON")
 api = Api(app, version='0.1.2', title='DICE MOnitoring API',
@@ -243,7 +245,7 @@ nodeUpdate = api.model('Update Node Model Info',{
 	})
 
 nodeRoles = api.model('Update Node Role Model Info',{
-	'Roles':fields.List(fields.String(required=False, default = 'yarn', description = 'Node Roles'))
+	'Roles':fields.List(fields.String(required=True, default = 'yarn', description = 'Node Roles'))
 	})
 
 lsCore=api.model('Submit LS conf',{
@@ -417,6 +419,60 @@ class OverlordInfo(Resource):
 		message = 'Message goes Here and is not application/json (TODO)!'
 		return message
 
+@dmon.route('/v1/overlord/framework')
+class OverlordFrameworkInfo(Resource):
+	def get(self):
+		response = jsonify({'Supported Frameworks':lFrameworks})
+		response.status_code = 200
+		return response
+
+@dmon.route('/v1/overlord/framework/<fwork>')
+class OverlordFrameworkProperties(Resource):
+	def get(self, fwork):
+		if fwork not in lFrameworks:
+			response = jsonify({'Status':'Malformed URI','Message':'Unknown framework '+fwork})
+			response.status_code = 404
+			return response
+		if fwork =='hdfs' or fwork=='yarn':
+			propFile = os.path.join(tmpDir,'metrics/hadoop-metrics2.tmp')
+			try:
+				propCfg = open(propFile,'r')
+			except EnvironmentError:
+				response = jsonify({'Status':'Environment Error!','Message':'File not Found!'})
+				response.status_code = 500
+				return response 
+			return send_file(propCfg,mimetype = 'text/x-java-properties',as_attachment = True)
+
+		if fwork == 'spark':
+			templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+			templateEnv = jinja2.Environment( loader=templateLoader )
+			propSparkTemp= os.path.join(tmpDir,'metrics/spark-metrics.tmp')
+			propSparkFile = os.path.join(cfgDir,'metrics.properties')
+			try:
+				template = templateEnv.get_template(propSparkTemp)
+			except:
+				reponse = jsonify({'Status':'I/O Error','Message':'Template file missing!'})
+				response.status_code = 500
+				return response
+
+			qLSCore = dbSCore.query.first() #TODO: Only works for single deployment
+			if qLSCore is None:
+				response = jsonify({'Status':'Missing Instance','Message':'No Logstash Instance Configured'})
+				response.status_code = 404
+				return response
+			infoSpark = {'logstashserverip':qLSCore.hostIP,'logstashportgraphite':'5002','period':'10'}
+			propSparkInfo=template.render(infoSpark)
+			propSparkConf = open(propSparkFile,"w+")
+			propSparkConf.write(propSparkInfo)
+			propSparkConf.close()
+
+			rSparkProp = open(propSparkFile,'r')
+			return send_file(rSparkProp,mimetype = 'text/x-java-properties',as_attachment = True) #TODO: Swagger returns same content each time, however sent file is correct
+			
+		
+
+
+
 @dmon.route('/v1/overlord/applicaiton/<appID>')
 class OverlordAppSubmit(Resource):
 	def put(self):
@@ -510,6 +566,75 @@ class MonitoredNodes(Resource):
 
 	def post(self):
 		return "Bootstrap monitoring"
+
+@dmon.route('/v1/overlord/nodes/roles')
+class ClusterRoles(Resource):
+	def get(self):
+		nodeList = []
+		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nRoles).all()
+		if nodesAll is None:
+			response = jsonify({'Status':'No monitored nodes found'})
+			response.status_code = 404
+			return response
+		for nl in nodesAll:
+			nodeDict= {}
+			print >>sys.stderr, nl[0]
+			nodeDict.update({nl[0]:nl[1].split(',')})
+			nodeList.append(nodeDict)
+		response = jsonify({'Nodes':nodeList})
+		response.status_code=200
+		return response
+
+	def put(self):
+		return 'Modify roles of nodes node list'
+
+	def post(self):
+		nodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP,dbNodes.nUser,dbNodes.nPass,dbNodes.nRoles).all()
+		if nodes is None:
+			response = jsonify({'Status':'No monitored nodes found'})
+			response.status_code = 404
+			return response
+
+		yarnList = []
+		sparkList = []
+		stormList = []
+		unknownList = []	
+		for node in nodes:
+			roleList = node[4].split(',')
+			if 'yarn' in roleList or 'hdfs' in roleList:
+				nl = []
+				nl.append(node[1])
+				#uploadFile(nl,node[2],node[3],fileLoc,fileName, upLoc)
+				yarnList.append(node[0])
+			if 'spark' in roleList:
+				nl = []
+				nl.append(node[1])
+				#uploadFile(nl,node[2],node[3],fileLoc,fileName, upLoc)
+				sparkList.append(node[0])
+			if 'storm' in roleList:
+				stormList.append(node[0])
+			
+			if 'unknown' in roleList:
+				#response = jsonify({'Status':'DB Entry Fault','Message':'Unknown framework type.'})
+				#response.status_code = 400
+				#return response
+				unknownList.append(node[0])
+
+		response = jsonify({'yarn':yarnList,'spark':sparkList,'storm':stormList,'unknown':unknownList})
+		response.status_code = 200
+		return response
+
+
+
+		return str(roleList)
+
+		# 	nl = []
+		# 	nl.append(node[1])
+		# 	uploadFile(nl,node[2],node[3],fileLoc,fileName, upLoc)
+
+		# return "Deploy all config's for the asigned roles"
+
+
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
@@ -608,6 +733,9 @@ class ClusterNodeRoles(Resource):
 			response=jsonify({'Status':'Node '+ nodeFQDN+' roles updated!'})
 			response.status_code = 201
 			return response
+
+	def post(self,nodeFQDN):
+		return 'Redeploy configuration for node '+ nodeFQDN+'!'
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/purge')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
