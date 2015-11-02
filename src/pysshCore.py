@@ -21,7 +21,7 @@ import os.path
 import os
 import nmap
 import sys, getopt
-
+from flask import Flask, jsonify, Response
 
 
 #fix for UNicodeDecoder Error -> ascii codec
@@ -277,6 +277,17 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 # 	print "Stff"
 
 def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
+	'''
+		Uploads a specified file to target servers via ssh.
+
+		hostlist -> list of hosts to connect to 
+		userName -> username for the hosts
+		password -> password of the hosts
+		fileLoc  -> absolute path to the file that needs to be updated
+		fileName -> name of the file to be uploaded
+		upLoc    -> absolute path where the file needs to be saved in the target host
+
+	'''
 	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
 	cmdMove = 'mv '+fileName+' '+upLoc
 	try:	
@@ -446,21 +457,88 @@ def startOryx2():
 	oryx2Deployment = {speedLayer:"",batchLayer:"",servingLayer:""}
 	print "Oryx2 Start"
 
-def tests(hostlist):
-	client = ParallelSSHClient(hostlist, user='ubuntu',password='rexmundi220')
-	#create path to file
-	localCopyConf = os.path.join(confDir,'logstash-forwarder.conf')
-	#copy to home dire after connection
-	try:
-		output = client.copy_file(localCopyConf,"logstash-forwarder.conf")
-		client.run_command('rm -rf /etc/logstash-forwarder.conf', sudo=True)
-		client.run_command('mv logstash-forwarder.conf /etc/logstash-forwarder.conf')
-		output = client.run_command('service logstash-forwarder restart', sudo=True)
-		listOutput(output)
-		#used to block and wait for all parallel commands to finish
-		#client.pool.join()
-	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "Stff"
+
+
+def auxCtrl(auxComp,command):
+	'''
+	Function used to start and stop all auxiliary components.
+
+	Parameters:
+	----------
+
+	auxComp -> A string that represents the name of the auxiliary component.
+			   Can be collectd and lsf.
+    command -> Command to be executed on the auxiliary components.
+    		   Can be start or stop
+	'''
+	auxList = ['collectd','lsf']
+	cState = ''
+	if auxComp not in auxList:
+		response = jsonify({'Status':'No such such aux component '+ auxComp})
+		response.status_code = 400
+		return response
+
+	if command == 'start':
+		cState = 'Stopped'
+	elif command == 'stop':
+		cState = 'Running'
+	else:
+		print "Unknown command! Only Start and Stop is supported"
+
+	if auxComp == "collectd":
+		qNCollectd = dbNodes.query.filter_by(nCollectdState = cState).all()
+		if qNCollectd is None:
+			response = jsonify({'Status':'No nodes in state '+cState+' !'})
+			response.status_code = 404
+			return response
+
+		nodeCollectdStopped = []
+		for i in qNCollectd:
+			node = []
+			node.append(i.nodeIP)
+			try:
+				serviceCtrl(node,i.nUser,i.nPass,'collectd', command)
+			except Exception as inst:
+				print >> sys.stderr, type(inst)
+				print >> sys.stderr, inst.args
+				response = jsonify({'Status':'Error exec '+command+' on collectd. Node '+ i.nodeFQDN +'!'})
+				response.status_code = 500
+				return response
+			CollectdNodes = {}
+			CollectdNodes['Node'] = i.nodeFQDN
+			CollectdNodes['IP'] = i.nodeIP
+			nodeCollectdStopped.append(CollectdNodes)
+			response = jsonify({'Status':'Collectd '+command+' successfull','Nodes':nodeCollectdStopped})
+			response.status_code = 200
+			return response
+
+	if auxComp == "lsf":
+		qNLsf = dbNodes.query.filter_by(nLogstashForwState = cState).all()
+		if qNLsf is None:
+			response = jsonify({'Status':'No nodes in state '+cState+'!'})
+			response.status_code = 404
+			return response
+
+		nodeLsfStopped = []
+		for i in qNLsf:
+			node = []
+			node.append(i.nodeIP)
+			try:
+				serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', command)
+			except Exception as inst:
+				print >> sys.stderr, type(inst)
+				print >> sys.stderr, inst.args
+				response = jsonify({'Status':'Error exec '+command+' on LSF. Node '+ i.nodeFQDN +'!'})
+				response.status_code = 500
+				return response
+
+			LsfNodes = {}
+			LsfNodes['Node'] = i.nodeFQDN
+			LsfNodes['IP'] = i.nodeIP
+			nodeLsfStopped.append(LsfNodes)
+			response = jsonify({'Status':'LSF '+command+' sucessfull','Nodes':nodeLsfdStopped})
+			response.status_code = 200
+			return response
 
 def main(argv):
 	'''

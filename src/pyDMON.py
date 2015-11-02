@@ -602,40 +602,49 @@ class ClusterRoles(Resource):
 		for node in nodes:
 			roleList = node[4].split(',')
 			if 'yarn' in roleList or 'hdfs' in roleList:
+				yarnPropertiesLoc = os.path.join(tmpDir,'hadoop-metrics2.tmp')
 				nl = []
 				nl.append(node[1])
-				#uploadFile(nl,node[2],node[3],fileLoc,fileName, upLoc)
+				uploadFile(nl,node[2],node[3],yarnPropertiesLoc,'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties') #TODO better solution
+				uploadFile(nl,node[2],node[3],yarnPropertiesLoc,'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties') #TODO better solution
+				uploadFile(nl,node[2],node[3],yarnPropertiesLoc,'hadoop-metrics2.tmp', '/etc/hadoop/conf/hadoop-metrics2.properties') #TODO better solution
 				yarnList.append(node[0])
-			if 'spark' in roleList:
+			if 'spark' in roleList: #TODO Same as /v1/overlord/framework/<fwork>, needs unification
+				templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+				templateEnv = jinja2.Environment( loader=templateLoader )
+				propSparkTemp= os.path.join(tmpDir,'metrics/spark-metrics.tmp')
+				propSparkFile = os.path.join(cfgDir,'metrics.properties')
+				try:
+					template = templateEnv.get_template(propSparkTemp)
+				except:
+					reponse = jsonify({'Status':'I/O Error','Message':'Template file missing!'})
+					response.status_code = 500
+					return response
+
+				qLSCore = dbSCore.query.first() #TODO: Only works for single deployment
+				if qLSCore is None:
+					response = jsonify({'Status':'Missing Instance','Message':'No Logstash Instance Configured'})
+					response.status_code = 404
+					return response
+				infoSpark = {'logstashserverip':qLSCore.hostIP,'logstashportgraphite':'5002','period':'10'}
+				propSparkInfo=template.render(infoSpark)
+				propSparkConf = open(propSparkFile,"w+")
+				propSparkConf.write(propSparkInfo)
+				propSparkConf.close()
+
 				nl = []
 				nl.append(node[1])
-				#uploadFile(nl,node[2],node[3],fileLoc,fileName, upLoc)
+				uploadFile(nl,node[2],node[3],propSparkFile,'metrics.properties', '/etc/spark/conf/metrics.properties') #TODO better solution
 				sparkList.append(node[0])
 			if 'storm' in roleList:
-				stormList.append(node[0])
+				stormList.append(node[0]) #TODO
 			
 			if 'unknown' in roleList:
-				#response = jsonify({'Status':'DB Entry Fault','Message':'Unknown framework type.'})
-				#response.status_code = 400
-				#return response
 				unknownList.append(node[0])
 
-		response = jsonify({'yarn':yarnList,'spark':sparkList,'storm':stormList,'unknown':unknownList})
+		response = jsonify({'Status':{'yarn':yarnList,'spark':sparkList,'storm':stormList,'unknown':unknownList}})
 		response.status_code = 200
 		return response
-
-
-
-		return str(roleList)
-
-		# 	nl = []
-		# 	nl.append(node[1])
-		# 	uploadFile(nl,node[2],node[3],fileLoc,fileName, upLoc)
-
-		# return "Deploy all config's for the asigned roles"
-
-
-
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
