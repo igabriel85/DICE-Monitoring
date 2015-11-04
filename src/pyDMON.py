@@ -1968,8 +1968,6 @@ def bad_mediatype(e):
 
 
 
-#109.231.126.38
-
 if __name__ == '__main__':
 	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True

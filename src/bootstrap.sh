@@ -76,7 +76,7 @@ ln -sf logstash-1.5.4 logstash
 #Setup Logrotate
 echo "Setting up logrotate ..."
 
-echo "/opt/logstash/logstash.log{
+echo "/opt/IeAT-DICE-Repository/src/logs/logstash.log{
 size 20M
 create 777 ubuntu ubuntu
 rotate 4
