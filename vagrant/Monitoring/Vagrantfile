@@ -83,7 +83,7 @@ echo "Generating certificates for Logstash ..."
 HostIP=$(ifconfig eth1 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
 #backup open ssl
 cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
-sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
+sed -i "/# Extensions for a typical CA/ a\ subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
 
 #generate certificates
 
