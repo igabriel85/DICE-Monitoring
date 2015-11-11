@@ -63,7 +63,7 @@ lsCDir = '/etc/logstash/conf.d/'
 lFrameworks = ['hdfs','yarn','spark','storm']
 
 app = Flask("D-MON")
-api = Api(app, version='0.1.2', title='DICE MOnitoring API',
+api = Api(app, version='0.1.3', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
@@ -1869,7 +1869,7 @@ class AuxStopSelective(Resource):
 	def post(self, auxComp, nodeFQDN):
 		auxList = ['collectd','lsf']
  		if auxComp not in auxList:
-			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response = jsonify({'Status':'No such  aux component '+ auxComp})
 			response.status_code = 400
 			return response
 
