@@ -37,7 +37,7 @@ collectdlog = '/var/log/collectd.log'
 collectdpid = os.path.join(pidDir, 'collectd.pid')
 lsflog = '/var/log/logstash-fowarder/logstash-fowarder.log'
 lsferr = 'var/log/logstash-fowarder/logstash-fowarder.err'
-collectdConf = '/etc/collecd/collectd.conf'
+collectdConf = '/etc/collectd/collectd.conf'
 lsfConf = '/etc/logstash-forwarder.conf'
 lsfList = os.path.join(tmpDir, 'logstashforwarder.list')
 lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
@@ -79,58 +79,50 @@ class NodeInfo(Resource):
 @agent.route('/v1/deploy')
 class NodeDeploy(Resource):
     @api.expect(nodeRoles)
-    def post(self):  # TODO: Install components based on the rolls assigned for each VM.
+    def post(self):
         rolesList = request.json['roles']
-        aComp = aux.install(rolesList)
-        return aComp
-        # test = []
-        # if 'yarn' or 'hdfs' in request.json['roles']:
-        #     test.append('yarn or hdfs')
-        # if 'spark' in request.json['roles']:
-        #     test.append('spark')
-        # if 'kafka' in request.json['roles']:
-        #     test.append('kafka')
-        # if 'storm' in request.json['roles']:
-        #     test.append('storm')
-
-        # return str(test)
-        # try:
-        #     subprocess.Popen('sudo apt-get install -y collectd', shell=True)
-        # except Exception as inst:
-        #     print >> sys.stderr, type(inst)
-        #     print >> sys.stderr, inst.args
-        #     response = jsonify({'Status': 'subprocess error',
-        #                         'Message': 'Collectd installation failed!'})
-        #     response.status_code = 500
-        #     return response
-        #
-        # response = jsonify({'Status': 'Done',
-        #                    'Message': 'Collectd Installation Complete!'})
-        # response.status_code = 201
-        # return response
+        try:
+            aComp = aux.install(rolesList)
+        except Exception as inst:
+            print >> sys.stderr, type(inst)
+            print >> sys.stderr, inst.args
+            response = jsonify({'Status': 'System Error',
+                               'Message': 'Error while installing components'})
+            response.status_code = 500
+            return response
+        response = jsonify({'Status': 'Done',
+                            'Components': aComp})
+        response.status_code = 201
+        return response
 
 
 @agent.route('/v1/deploy/<auxComp>')
 class NodeDeploySelective(Resource):
-    def get(self, auxComp):
-        return 'Same as node/deploy but for a component ' + auxComp
+    def post(self, auxComp):
+        return 'Reconfigure and restart' + auxComp  # TODO: recondifuration and restart
 
 
 @agent.route('/v1/start')
 class NodeMonitStartAll(Resource):
     def post(self):
         try:
-            subprocess.Popen('sudo service collectd start', shell=True)
+            aux.controll('collectd', 'start')
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
-
+            response = jsonify({'Status': type(inst),
+                               'Message': inst.args})
+            response.status_code = 500
+            return response
         try:
-            subprocess.Popen('sudo service logstash-forwarder start', shell=True)
+            aux.controll('logstash-forwarder', 'start')
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
-
+            response = jsonify({'Status': type(inst),
+                               'Message': inst.args})
+            response.status_code = 500
+            return response
         response = jsonify({'Status': 'Started',
                             'Message': 'Auxiliary components started!'})
         response.status_code = 200
@@ -141,17 +133,23 @@ class NodeMonitStartAll(Resource):
 class NodeMonitStopAll(Resource):
     def post(self):
         try:
-            subprocess.Popen('sudo service collectd stop', shell=True)
+            aux.controll('collectd', 'stop')
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
-
+            response = jsonify({'Status': type(inst),
+                               'Message': inst.args})
+            response.status_code = 500
+            return response
         try:
-            subprocess.Popen('sudo service logstash-forwarder stop', shell=True)
+            aux.controll('logstash-forwarder', 'stop')
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
-
+            response = jsonify({'Status': type(inst),
+                               'Message': inst.args})
+            response.status_code = 500
+            return response
         response = jsonify({'Status': 'Stopped',
                             'Message': 'Auxiliary components stopped!'})
         response.status_code = 200
@@ -176,24 +174,6 @@ class NodeMonitStartSelective(Resource):
                                'Message': inst.args})
             response.status_code = 500
             return response
-
-        # if auxComp == 'collectd':
-        #     try:
-        #         subprocess.Popen('sudo service collectd start', shell=True)
-        #     except Exception as inst:
-        #         print >> sys.stderr, type(inst)
-        #         print >> sys.stderr, inst.args
-        #
-        # if auxComp == 'lsf':
-        #     try:
-        #         subprocess.Popen('sudo service logstash-forwarder start', shell=True)
-        #     except Exception as inst:
-        #         print >> sys.stderr, type(inst)
-        #         print >> sys.stderr, inst.args
-        #
-        # if auxComp == 'jmx':  # TODO: jmxtrans handeling
-        #     return 'jmx'
-
         response = jsonify({'Status': 'Done',
                             'Message': 'Component '+auxComp+' started!'})
         response.status_code = 200
@@ -209,23 +189,15 @@ class NodeMonitStopSelective(Resource):
             response.status_code = 404
             return response
 
-        if auxComp == 'collectd':
-            try:
-                subprocess.Popen('sudo service collectd stop', shell=True)
-            except Exception as inst:
-                print >> sys.stderr, type(inst)
-                print >> sys.stderr, inst.args
-
-        if auxComp == 'lsf':
-            try:
-                subprocess.Popen('sudo service logstash-forwarder stop', shell=True)
-            except Exception as inst:
-                print >> sys.stderr, type(inst)
-                print >> sys.stderr, inst.args
-
-        if auxComp == 'jmx':  # TODO: jmxtrans handeling
-            return 'jmx'
-
+        try:
+            aux.controll(auxComp, 'stop')
+        except Exception as inst:
+            print >> sys.stderr, type(inst)
+            print >> sys.stderr, inst.args
+            response = jsonify({'Status': type(inst),
+                               'Message': inst.args})
+            response.status_code = 500
+            return response
         response = jsonify({'Status': 'Done',
                             'Message': 'Component '+auxComp+' stopped!'})
         response.status_code = 200
@@ -260,14 +232,14 @@ class NodeMonitConf(Resource):
             return response
         if auxComp == 'collectd':
             try:
-                cConf = open(collectdConf, '+w')
+                cConf = open(collectdConf, 'r')
             except Exception as inst:
                 print >> sys.stderr, type(inst)
                 print >> sys.stderr, inst.args
             return send_file(cConf, mimetype='text/plain', as_attachment=True)
         if auxComp == 'lsf':
             try:
-                lConf = open(lsfConf, '+w')
+                lConf = open(lsfConf, 'r')
             except Exception as inst:
                 print >> sys.stderr, type(inst)
                 print >> sys.stderr, inst.args

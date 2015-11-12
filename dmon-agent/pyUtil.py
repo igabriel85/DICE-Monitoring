@@ -17,7 +17,8 @@ def installCollectd():
         print >>sys.stderr, "Collectd already installed!"
     else:
         try:
-            subprocess.Popen('sudo apt-get install -y collectd', shell=True)
+            p1 = subprocess.Popen('sudo apt-get install -y collectd', shell=True)
+            p1.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
@@ -33,25 +34,36 @@ def installLsf(listLocation, lsfGPG):
         print >>sys.stderr, "Logstash-forwarder already installed!"
     else:
         try:
-            subprocess.Popen('sudo mv '+listLocation+' /etc/apt/source.list.d/logstashforwarder.list', shell=True)
+            p1 = subprocess.Popen('sudo mv '+listLocation+' /etc/apt/source.list.d/logstashforwarder.list', shell=True)
+            p1.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
             raise
         try:
-            subprocess.Popen('sudo apt-key add '+lsfGPG, shell=True)
+            pro = subprocess.Popen('wget http://packages.elasticsearch.org/GPG-KEY-elasticsearch -O '+ lsfGPG, shell=True)
+            pro.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
             raise
         try:
-            subprocess.Popen('sudo apt-get update', shell=True)
+            p2 = subprocess.Popen('sudo apt-key add '+lsfGPG, shell=True)
+            p2.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
             raise
         try:
-            subprocess.Popen('sudo apt-get install -y logstash-forwarder', shell=True)
+            p3 = subprocess.Popen('sudo apt-get update', shell=True)
+            p3.wait()
+        except Exception as inst:
+            print >> sys.stderr, type(inst)
+            print >> sys.stderr, inst.args
+            raise
+        try:
+            p4 = subprocess.Popen('sudo apt-get install -y logstash-forwarder', shell=True)
+            p4.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
@@ -87,7 +99,7 @@ class AuxComponent():
             if 'lsf' in compInstalled:
                 pass
             else:
-                installLsf(AuxComponent.listLocation, AuxComponent.lsfGPG)
+                installLsf(self.listLocation, self.GPGLocation)
                 compInstalled.append('lsf')
             if 'collectd' in compInstalled:
                 pass
@@ -128,3 +140,12 @@ class AuxComponent():
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
+
+    def configureCollectd(self, settingsDict):  # TODO
+        return "Genereted collectd Config"
+
+    def configureLsf(self, settingsDict):  # TODO
+        return "Generated lsf Config"
+
+    def configureJMX(self, settingsDict):  # TODO
+        return "Generated jmxtrans Config"
