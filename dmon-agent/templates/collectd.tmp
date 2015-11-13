@@ -1,6 +1,6 @@
 FQDNLookup true
 
-#PIDFile "{{collectd_pid_file}}"
+PIDFile "{{collectd_pid_file}}"
 
 LoadPlugin logfile
 <Plugin "logfile">

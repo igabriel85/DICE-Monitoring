@@ -1,4 +1,4 @@
-'''
+"""
 
 Copyright 2015, Institute e-Austria, Timisoara, Romania
     http://www.ieat.ro/
@@ -15,7 +15,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-'''
+"""
 #!flask/bin/python
 
 
@@ -55,11 +55,11 @@ pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'logs')
 credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
-#TODO: only provisory for testing
+# TODO: only provisory for testing
 esDir = '/opt/elasticsearch' 
 lsCDir = '/etc/logstash/conf.d/'
 
-#D-Mon Supported frameworks
+# D-Mon Supported frameworks
 lFrameworks = ['hdfs','yarn','spark','storm']
 
 app = Flask("D-MON")
@@ -68,7 +68,7 @@ api = Api(app, version='0.1.3', title='DICE MOnitoring API',
 )
 
 db = SQLAlchemy(app)
-#%--------------------------------------------------------------------%
+# %--------------------------------------------------------------------%
 class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
@@ -78,15 +78,15 @@ class dbNodes(db.Model):
     nUser = db.Column(db.String(64), index=True, unique=False)
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
-    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') #hadoop roles running on server
+    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') # hadoop roles running on server
     nStatus = db.Column(db.Boolean,index=True, unique=False, default='0')
     nMonitored = db.Column(db.Boolean,index=True, unique=False, default='0')
-    nCollectdState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
-    nLogstashForwState = db.Column(db.String(64), index=True, unique=False,default='None') #Running, Pending, Stopped, None
+    nCollectdState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    #ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
+    # ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
-    #TODO: Create init function/method to populate db.Model
+    # TODO: Create init function/method to populate db.Model
 
     def __repr__(self):
         return '<dbNodes %r>' % (self.nickname)
@@ -101,9 +101,9 @@ class dbESCore(db.Model):
     nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
     conf = db.Column(db.LargeBinary, index=True, unique=False)
-    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)#Running, Pending, Stopped, unknown
-    ESCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
-    MasterNode = db.Column(db.Boolean,index=True, unique=False) # which node is master
+    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)  # Running, Pending, Stopped, unknown
+    ESCorePID = db.Column(db.Integer, index=True, default=0, unique=False)  # pid of current running process
+    MasterNode = db.Column(db.Boolean,index=True, unique=False)  # which node is master
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
    
 
@@ -112,26 +112,28 @@ class dbESCore(db.Model):
     def __repr__(self):
         return '<dbESCore %r>' % (self.body)
 
+
 class dbSCore(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     hostFQDN = db.Column(db.String(64), index=True, unique=True)
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
-    inLumberPort = db.Column(db.Integer, index=True, unique=False,default = 5000)
-    sslCert = db.Column(db.String(120), index=True, unique=False,default = 'default')
-    sslKey = db.Column(db.String(120), index=True, unique=False,default = 'default')
-    udpPort = db.Column(db.Integer, index=True, unique=False,default = 25826) #collectd port same as collectd conf
-    outESclusterName = db.Column(db.String(64), index=True, unique=False )# same as ESCore clusterName
-    outKafka = db.Column(db.String(64), index=True, unique=False,default = 'unknown') # output kafka details
-    outKafkaPort = db.Column(db.Integer, index=True, unique=False,default = 'unknown')
+    inLumberPort = db.Column(db.Integer, index=True, unique=False,default=5000)
+    sslCert = db.Column(db.String(120), index=True, unique=False,default='default')
+    sslKey = db.Column(db.String(120), index=True, unique=False,default='default')
+    udpPort = db.Column(db.Integer, index=True, unique=False,default=25826)  # collectd port same as collectd conf
+    outESclusterName = db.Column(db.String(64), index=True, unique=False)  # same as ESCore clusterName
+    outKafka = db.Column(db.String(64), index=True, unique=False,default ='unknown') # output kafka details
+    outKafkaPort = db.Column(db.Integer, index=True, unique=False,default='unknown')
     conf = db.Column(db.String(140), index=True, unique=False)
-    LSCoreStatus = db.Column(db.String(64), index=True, unique=False,default = 'unknown')#Running, Pending, Stopped, None
+    LSCoreStatus = db.Column(db.String(64), index=True, unique=False, default='unknown')#Running, Pending, Stopped, None
     LSCorePID = db.Column(db.Integer, index=True,  unique=False, default=0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
         return '<dbLSCore %r>' % (self.body)
+
 
 class dbKBCore(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -266,6 +268,10 @@ lsCore=api.model('Submit LS conf',{
 certModel = api.model('Update Cert',{
 	'Certificate':fields.String(required=False, description='Certificate')
 	})
+
+app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+db.create_all()
 
 @dmon.route('/v1/observer/applications')
 class ObsApplications(Resource):
@@ -451,7 +457,7 @@ class OverlordFrameworkProperties(Resource):
 			try:
 				template = templateEnv.get_template(propSparkTemp)
 			except:
-				reponse = jsonify({'Status':'I/O Error','Message':'Template file missing!'})
+				response = jsonify({'Status':'I/O Error','Message':'Template file missing!'})
 				response.status_code = 500
 				return response
 
@@ -602,22 +608,22 @@ class ClusterRoles(Resource):
 		for node in nodes:
 			roleList = node[4].split(',')
 			if 'yarn' in roleList or 'hdfs' in roleList:
-				yarnPropertiesLoc = os.path.join(tmpDir,'hadoop-metrics2.tmp')
+				yarnPropertiesLoc = os.path.join(tmpDir, 'hadoop-metrics2.tmp')
 				nl = []
 				nl.append(node[1])
-				uploadFile(nl,node[2],node[3],yarnPropertiesLoc,'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties') #TODO better solution
-				uploadFile(nl,node[2],node[3],yarnPropertiesLoc,'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties') #TODO better solution
-				uploadFile(nl,node[2],node[3],yarnPropertiesLoc,'hadoop-metrics2.tmp', '/etc/hadoop/conf/hadoop-metrics2.properties') #TODO better solution
+				uploadFile(nl,node[2],node[3],yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties')  # TODO better solution
+				uploadFile(nl,node[2],node[3],yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties')  # TODO better solution
+				uploadFile(nl,node[2],node[3],yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf/hadoop-metrics2.properties')  # TODO better solution
 				yarnList.append(node[0])
-			if 'spark' in roleList: #TODO Same as /v1/overlord/framework/<fwork>, needs unification
-				templateLoader = jinja2.FileSystemLoader( searchpath="/" )
-				templateEnv = jinja2.Environment( loader=templateLoader )
-				propSparkTemp= os.path.join(tmpDir,'metrics/spark-metrics.tmp')
-				propSparkFile = os.path.join(cfgDir,'metrics.properties')
+			if 'spark' in roleList:  # TODO Same as /v1/overlord/framework/<fwork>, needs unification
+				templateLoader = jinja2.FileSystemLoader( searchpath="/")
+				templateEnv = jinja2.Environment(loader=templateLoader)
+				propSparkTemp= os.path.join(tmpDir, 'metrics/spark-metrics.tmp')
+				propSparkFile = os.path.join(cfgDir, 'metrics.properties')
 				try:
 					template = templateEnv.get_template(propSparkTemp)
 				except:
-					reponse = jsonify({'Status':'I/O Error','Message':'Template file missing!'})
+					response = jsonify({'Status':'I/O Error', 'Message': 'Template file missing!'})
 					response.status_code = 500
 					return response
 
@@ -626,7 +632,7 @@ class ClusterRoles(Resource):
 					response = jsonify({'Status':'Missing Instance','Message':'No Logstash Instance Configured'})
 					response.status_code = 404
 					return response
-				infoSpark = {'logstashserverip':qLSCore.hostIP,'logstashportgraphite':'5002','period':'10'}
+				infoSpark = {'logstashserverip':qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
 				propSparkInfo=template.render(infoSpark)
 				propSparkConf = open(propSparkFile,"w+")
 				propSparkConf.write(propSparkInfo)
@@ -634,17 +640,18 @@ class ClusterRoles(Resource):
 
 				nl = []
 				nl.append(node[1])
-				uploadFile(nl,node[2],node[3],propSparkFile,'metrics.properties', '/etc/spark/conf/metrics.properties') #TODO better solution
+				uploadFile(nl,node[2],node[3],propSparkFile, 'metrics.properties', '/etc/spark/conf/metrics.properties')  # TODO better solution
 				sparkList.append(node[0])
 			if 'storm' in roleList:
-				stormList.append(node[0]) #TODO
+				stormList.append(node[0]) # TODO
 			
 			if 'unknown' in roleList:
 				unknownList.append(node[0])
 
-		response = jsonify({'Status':{'yarn':yarnList,'spark':sparkList,'storm':stormList,'unknown':unknownList}})
+		response = jsonify({'Status': {'yarn': yarnList, 'spark': sparkList, 'storm': stormList, 'unknown': unknownList}})
 		response.status_code = 200
 		return response
+
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
@@ -975,6 +982,7 @@ class KBCoreConfiguration(Resource):
 			response.status_code = 500
 			return response
 		return send_file(lsCfgfile,mimetype = 'text/yaml',as_attachment = True)
+
 	@api.expect(kbCore)#TODO same for all 3 core services create one class for all
 	def put(self):
 		requiredKeys=['HostFQDN','IP']
@@ -1025,6 +1033,7 @@ class KKCoreController(Resource):
 		response = jsonify({'KB Instances':resList})
 		response.status_code = 200
 		return response
+
 	def post(self):
 		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
 		templateEnv = jinja2.Environment( loader=templateLoader )
@@ -1521,7 +1530,7 @@ class AuxDeploy(Resource):
 			updateNodesLSF =  dbNodes.query.filter_by(nodeIP = l).first()
 			if updateNodesLSF is None:
 				response = jsonify({'Error':'DB error, IP ' + l + ' not found!'})
-				reponse.status_code=500
+				response.status_code=500
 				return response
 			updateNodesLSF.nLogstashForwState='Running'	
 
@@ -1969,9 +1978,9 @@ def bad_mediatype(e):
 
 
 if __name__ == '__main__':
-	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
-	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-	db.create_all()
+	# app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
+	# app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+	# db.create_all()
 
 	#print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
 	# testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")

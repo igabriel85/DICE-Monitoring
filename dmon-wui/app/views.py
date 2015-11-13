@@ -53,3 +53,7 @@ def icons():
 @app.route('/grid.html')
 def grid():
     return render_template('pages/grid.html', title="Grid", header="Grid", nav="Grid Page")
+
+@app.route('/nodes.html')
+def nodes():
+    return render_template('pages/nodes.html', title="Monitored Nodes", header='Nodes', nav="Grid page")

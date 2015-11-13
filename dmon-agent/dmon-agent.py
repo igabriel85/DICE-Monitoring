@@ -43,7 +43,7 @@ lsfList = os.path.join(tmpDir, 'logstashforwarder.list')
 lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
 
 # supported aux components
-auxList = ['collectd', 'lsf', 'jmx']
+# auxList = ['collectd', 'lsf', 'jmx']
 
 app = Flask("dmon-agent")
 api = Api(app, version='0.0.1', title='DICE Monitoring Agent API',
@@ -58,6 +58,19 @@ nodeRoles = api.model('query details Model', {
     'roles': fields.List(fields.String(required=False, default='hdfs',
                                        description='Roles assigned to this node!'))
 })
+
+
+collectdConfModel = api.model('configuration details Model for collectd', {
+    'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
+    'UDPPort': fields.String(required=True, default='25826', description='Port of UDP plugin from Logstash Server'),
+})
+
+lsfConfModel = api.model('configuration details Model for LSF', {
+    'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
+    'LumberjackPort': fields.String(required=True, default='5000', description='Logstash Lumberjack input port')
+})
+
+
 
 # Instance of AuxComponent Class
 aux = AuxComponent(lsfList, lsfGPG)
@@ -99,7 +112,12 @@ class NodeDeploy(Resource):
 @agent.route('/v1/deploy/<auxComp>')
 class NodeDeploySelective(Resource):
     def post(self, auxComp):
-        return 'Reconfigure and restart' + auxComp  # TODO: recondifuration and restart
+        if not aux.check(auxComp):
+            response = jsonify({'Status': 'Parameter error',
+                                'Message': 'Unsupported Parameter' + auxComp})
+            response.status_code = 400
+            return response
+        return 'Reconfigure and restart' + auxComp  # TODO: reconfiguration and restart
 
 
 @agent.route('/v1/start')
@@ -159,10 +177,10 @@ class NodeMonitStopAll(Resource):
 @agent.route('/v1/start/<auxComp>')
 class NodeMonitStartSelective(Resource):
     def post(self, auxComp):
-        if auxComp not in auxList:
-            response = jsonify({'Status': 'parameter error',
-                                'Message': 'Component '+auxComp+' not supported!'})
-            response.status_code = 404
+        if not aux.check(auxComp):
+            response = jsonify({'Status': 'Parameter error',
+                                'Message': 'Unsupported Parameter' + auxComp})
+            response.status_code = 400
             return response
 
         try:
@@ -183,10 +201,10 @@ class NodeMonitStartSelective(Resource):
 @agent.route('/v1/stop/<auxComp>')
 class NodeMonitStopSelective(Resource):
     def post(self, auxComp):
-        if auxComp not in auxList:
-            response = jsonify({'Status': 'parameter error',
-                                'Message': 'Component '+auxComp+' not supported!'})
-            response.status_code = 404
+        if not aux.check(auxComp):
+            response = jsonify({'Status': 'Parameter error',
+                                'Message': 'Unsupported Parameter' + auxComp})
+            response.status_code = 400
             return response
 
         try:
@@ -207,10 +225,10 @@ class NodeMonitStopSelective(Resource):
 @agent.route('/v1/logs/<auxComp>')
 class NodeMonitLogs(Resource):
     def get(self, auxComp):
-        if auxComp not in auxList:
-            response = jsonify({'Status': 'parameter error',
-                                'Message': 'Component '+auxComp+' not supported!'})
-            response.status_code = 404
+        if not aux.check(auxComp):
+            response = jsonify({'Status': 'Parameter error',
+                                'Message': 'Unsupported Parameter' + auxComp})
+            response.status_code = 400
             return response
         if auxComp == 'collectd':
             try:
@@ -225,10 +243,10 @@ class NodeMonitLogs(Resource):
 @agent.route('/v1/conf/<auxComp>')
 class NodeMonitConf(Resource):
     def get(self, auxComp):
-        if auxComp not in auxList:
-            response = jsonify({'Status': 'parameter error',
-                                'Message': 'Component '+auxComp+' not supported!'})
-            response.status_code = 404
+        if not aux.check(auxComp):
+            response = jsonify({'Status': 'Parameter error',
+                                'Message': 'Unsupported Parameter' + auxComp})
+            response.status_code = 400
             return response
         if auxComp == 'collectd':
             try:

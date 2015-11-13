@@ -3,6 +3,7 @@ import sys
 import os
 import datetime
 import time
+import jinja2
 
 
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
@@ -90,8 +91,10 @@ class AuxComponent():
         self.GPGLocation = GPGLocation
 
     def check(self, component):
-        if not component in AuxComponent.supported:
+        if component not in AuxComponent.supported:
             return 0
+        else:
+            return 1
 
     def install(self, component):
         compInstalled = []
@@ -140,12 +143,25 @@ class AuxComponent():
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
+            raise
 
-    def configureCollectd(self, settingsDict):  # TODO
-        return "Genereted collectd Config"
+    def configureComponent(self, settingsDict, tmpPath, filePath):
+        '''
+        :param settingsDict: dictionary containing the template information
+        :param tmpPath:  path to template file
+        :param filePath: path to save config file
+        :return:
+        '''
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        try:
+            template = templateEnv.get_template(tmpPath)
+        except:
+            return "response"
+        confInfo=template.render(settingsDict)
+        confFile = open(filePath, "w+")
+        confFile.write(confInfo)
+        confFile.close()
 
-    def configureLsf(self, settingsDict):  # TODO
-        return "Generated lsf Config"
-
-    def configureJMX(self, settingsDict):  # TODO
-        return "Generated jmxtrans Config"
+    def getRoles(self):
+        return 'check vm roles using JPS!'

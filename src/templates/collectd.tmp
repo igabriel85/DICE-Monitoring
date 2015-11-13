@@ -1,5 +1,7 @@
 FQDNLookup true
 
+#PIDFile "{{collectd_pid_file}}"
+#LogFile "{{collectd_log_file}}"
 
 LoadPlugin cpu
 
