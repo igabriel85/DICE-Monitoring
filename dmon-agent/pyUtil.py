@@ -5,7 +5,6 @@ import datetime
 import time
 import jinja2
 
-
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
 
 
@@ -15,7 +14,7 @@ def installCollectd():
     '''
     collectdLock = os.path.join(lockDir, 'collectd.lock')
     if os.path.isfile(collectdLock) is True:
-        print >>sys.stderr, "Collectd already installed!"
+        print >> sys.stderr, "Collectd already installed!"
     else:
         try:
             p1 = subprocess.Popen('sudo apt-get install -y collectd', shell=True)
@@ -32,24 +31,26 @@ def installCollectd():
 def installLsf(listLocation, lsfGPG):
     lsfLock = os.path.join(lockDir, 'lsf.lock')
     if os.path.isfile(lsfLock) is True:
-        print >>sys.stderr, "Logstash-forwarder already installed!"
+        print >> sys.stderr, "Logstash-forwarder already installed!"
     else:
         try:
-            p1 = subprocess.Popen('sudo mv '+listLocation+' /etc/apt/source.list.d/logstashforwarder.list', shell=True)
+            p1 = subprocess.Popen('sudo mv ' + listLocation + ' /etc/apt/source.list.d/logstashforwarder.list',
+                                  shell=True)
             p1.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
             raise
         try:
-            pro = subprocess.Popen('wget http://packages.elasticsearch.org/GPG-KEY-elasticsearch -O '+ lsfGPG, shell=True)
+            pro = subprocess.Popen('wget http://packages.elasticsearch.org/GPG-KEY-elasticsearch -O ' + lsfGPG,
+                                   shell=True)
             pro.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
             raise
         try:
-            p2 = subprocess.Popen('sudo apt-key add '+lsfGPG, shell=True)
+            p2 = subprocess.Popen('sudo apt-key add ' + lsfGPG, shell=True)
             p2.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
@@ -74,7 +75,7 @@ def installLsf(listLocation, lsfGPG):
         lock.close()
 
 
-def installJmxTrans():  # TODO: create jmxtrans instalation
+def installJmxTrans():  # TODO: create jmxtrans installation
     return "Install jmxtrans"
 
 
@@ -115,7 +116,7 @@ class AuxComponent():
             else:
                 installCollectd()
                 compInstalled.append('collectd')
-        if 'kafka'in component:
+        if 'kafka' in component:
             if 'collectd' in compInstalled:
                 pass
             else:
@@ -131,7 +132,7 @@ class AuxComponent():
             else:
                 installCollectd()
                 compInstalled.append('collectd')
-            if 'jmx'in compInstalled:
+            if 'jmx' in compInstalled:
                 pass
             else:
                 compInstalled.append('jmx')
@@ -158,10 +159,10 @@ class AuxComponent():
             template = templateEnv.get_template(tmpPath)
         except:
             return "response"
-        confInfo=template.render(settingsDict)
+        confInfo = template.render(settingsDict)
         confFile = open(filePath, "w+")
         confFile.write(confInfo)
         confFile.close()
 
-    def getRoles(self):
+    def getRoles(self):  # TODO:  implement role identification based on JPS and possibly pid files in /var/run
         return 'check vm roles using JPS!'

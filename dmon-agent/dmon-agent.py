@@ -46,7 +46,7 @@ lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
 # auxList = ['collectd', 'lsf', 'jmx']
 
 app = Flask("dmon-agent")
-api = Api(app, version='0.0.1', title='DICE Monitoring Agent API',
+api = Api(app, version='0.0.2', title='DICE Monitoring Agent API',
           description="RESTful API for the DICE Monitoring Platform  Agent (dmon-agent)",
           )
 
@@ -109,15 +109,39 @@ class NodeDeploy(Resource):
         return response
 
 
-@agent.route('/v1/deploy/<auxComp>')
-class NodeDeploySelective(Resource):
-    def post(self, auxComp):
-        if not aux.check(auxComp):
-            response = jsonify({'Status': 'Parameter error',
-                                'Message': 'Unsupported Parameter' + auxComp})
-            response.status_code = 400
-            return response
-        return 'Reconfigure and restart' + auxComp  # TODO: reconfiguration and restart
+@agent.route('/v1/collectd')
+class NodeDeployCollectd(Resource):
+    @api.expect(collectdConfModel)
+    def post(self):
+        collectdTemp = os.path.join(tmpDir, 'collectd.tmp')
+        settingsDict={'logstash_server_ip': request.json['LogstashIP'], 'logstash_server_port': request.json['UDPPort']
+                      , 'collectd_pid_file': '/var/run/collectd.pid'}
+        aux.configureComponent(settingsDict, collectdTemp, collectdConf)
+        aux.controll('collectd', 'restart')
+        response = jsonify({'Status': 'Done',
+                            'Message': 'Collectd Started'})
+        response.status_code = 200
+        return response
+
+
+@agent.route('/v1/lsf')
+class NodeDeployLSF(Resource):
+    @api.expect(lsfConfModel)
+    def post(self):
+        lsfTemp= os.path.join(tmpDir, 'logstash-forwarder.tmp')
+        settingsDict={'ESCoreIP': request.json['LogstashIP'], 'LSLumberPort': request.json['LumberjackPort']}
+        aux.configureComponent(settingsDict, lsfTemp)
+        aux.controll('logstash-forwarder', 'restart')
+        response = jsonify({'Status': 'Done',
+                            'Message': 'LSF Stated'})
+        response.status_code=200
+        return response
+
+
+@agent.route('/v1/jmx')
+class NodeDeployJMX(Resource):
+    def post(self):
+        return "JMX redeploy"
 
 
 @agent.route('/v1/start')
@@ -265,6 +289,10 @@ class NodeMonitConf(Resource):
         if auxComp == 'jmx':  # TODO: jmxtrans handeling
             return 'jmx'
 
+@agent.route('/v1/check')
+class NodeCheck(Resource):  # TODO: implement check functionality
+    def get(self):
+        return "Current status of aux componenets"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
