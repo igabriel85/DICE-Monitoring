@@ -292,7 +292,13 @@ class NodeMonitConf(Resource):
 @agent.route('/v1/check')
 class NodeCheck(Resource):  # TODO: implement check functionality
     def get(self):
-        return "Current status of aux componenets"
+        rCollectd = aux.checkAux('collectd')
+        rLSF = aux.checkAux('logstash-forwarder')
+        response = jsonify({'Collectd': rCollectd,
+                            'LSF': rLSF})
+        response.status_code = 200
+        return response
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0')
