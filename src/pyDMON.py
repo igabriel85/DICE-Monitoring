@@ -38,7 +38,7 @@ from datetime import datetime
 import jinja2
 import requests
 import shutil
-from werkzeug import secure_filename #unused
+#from werkzeug import secure_filename #unused
 #DICE Imports
 from pyESController import *
 from pysshCore import *
@@ -1382,7 +1382,7 @@ class LSKeyControl(Resource):
 				response.status_code = 500
 				return response	
 
-		qSCorekey.sslKey = keyName
+		qSCoreKey.sslKey = keyName
 		response = jsonify({'Status':'updated key!'})
 		response.status_code=201
 		return response
@@ -1522,7 +1522,7 @@ class AuxDeploy(Resource):
 			updateNodesCollectd =  dbNodes.query.filter_by(nodeIP = c).first()
 			if updateNodesCollectd is None:
 				response = jsonify({'Error':'DB error, IP ' + c + ' not found!'})
-				reponse.status_code=500
+				response.status_code=500
 				return response
 			updateNodesCollectd.nCollectdState='Running'
 
@@ -1939,7 +1939,7 @@ Custom errot Handling
 def forbidden(e):
     response = jsonify({'error': 'forbidden'})
     response.status_code = 403
-    return respons
+    return response
 
 
 @app.errorhandler(404)
