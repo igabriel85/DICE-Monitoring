@@ -146,6 +146,22 @@ class AuxComponent():
             print >> sys.stderr, inst.args
             raise
 
+    def checkAux(self, component):
+        try:
+            p = subprocess.Popen(['service', component, 'status'], stdout=subprocess.PIPE)
+            pOut = p.communicate()[0]
+        except Exception as inst:
+            print >> sys.stderr, type(inst)
+            print >> sys.stderr, inst.args
+            raise
+
+        if 'running' in pOut:
+            return 1
+        elif 'unrecognized' in pOut:
+            return 'unknown'
+        else:
+            return 0
+
     def configureComponent(self, settingsDict, tmpPath, filePath):
         '''
         :param settingsDict: dictionary containing the template information
