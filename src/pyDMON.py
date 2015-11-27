@@ -710,57 +710,57 @@ class MonitoredNodeInfo(Resource):
 		return "Bootstrap specified node!"	
 
 	def delete(self, nodeFQDN):
-		dNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		dNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if dNode is None:
-			response = jsonify({'Status':'Node '+nodeFQDN+' not found'})
+			response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found'})
 			response.status_code = 404
 			return response
 		dlist = []
 		dlist.append(dNode.nodeIP)
 		try:
-			serviceCtrl(dlist,dNode.nUser,dNode.nPass,'collectd', 'stop')
+			serviceCtrl(dlist, dNode.nUser, dNode.nPass, 'collectd', 'stop')
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-			response = jsonify({'Error':'Collectd stopping error!'})
+			response = jsonify({'Error': 'Collectd stopping error!'})
 			response.status_code = 500
 			return response
 
 		try:
-			serviceCtrl(dlist,dNode.nUser,dNode.nPass,'logstash-forwarder', 'stop')
+			serviceCtrl(dlist, dNode.nUser, dNode.nPass, 'logstash-forwarder', 'stop')
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-			response = jsonify({'Error':'LSF stopping error!'})
+			response = jsonify({'Error': 'LSF stopping error!'})
 			response.status_code = 500
 			return response
 		dNode.nMonitored = 0
 		dNode.nCollectdState = 'Stopped'
 		dNode.nLogstashForwState = 'Stopped'
-		response =jsonify({'Status':'Node '+ nodeFQDN+' monitoring stopped!'})
+		response =jsonify({'Status': 'Node ' + nodeFQDN + ' monitoring stopped!'})
 		response.status_code = 200
 		return response
-
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/roles')
 class ClusterNodeRoles(Resource):
 	@api.expect(nodeRoles)	
-	def put(self, nodeFQDN):#TODO validate role names
-		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+	def put(self, nodeFQDN):  # TODO validate role names
+		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qNode is None:
-			response = jsonify({'Status':'Node '+nodeFQDN+' not found'})
+			response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found'})
 			response.status_code = 404
 			return response	
 		else:
 			listRoles = request.json['Roles']
 			qNode.nRoles = ', '.join(map(str, listRoles))
-			response=jsonify({'Status':'Node '+ nodeFQDN+' roles updated!'})
+			response = jsonify({'Status': 'Node ' + nodeFQDN + ' roles updated!'})
 			response.status_code = 201
 			return response
 
 	def post(self,nodeFQDN):
-		return 'Redeploy configuration for node '+ nodeFQDN+'!'
+		return 'Redeploy configuration for node ' + nodeFQDN + '!'
+
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/purge')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
@@ -1597,9 +1597,21 @@ class AuxDeployCheckThread(Resource):
 
 		for i in nodeRes:
 			nodeIP = urlparse(i['Node'])
-			print nodeIP.hostname
+			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
 
-		dmon.resetGet()
+			if i['Data']['LSF'] == 1:
+				qNode.nLogstashForwState = "Running"
+			elif i['Data']['LSF'] == 0:
+				qNode.nLogstashForwState = "Stopped"
+
+
+			if i['Data']['Collectd'] == 1:
+				qNode.nCollectdState = "Running"
+			elif i['Data']['Collectd'] == 0:
+				qNode.nCollectdState = "Stopped"
+
+
+		dmon.reset()
 
 		return nodeRes
 
