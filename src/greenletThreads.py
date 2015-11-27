@@ -42,6 +42,9 @@ class GreenletRequests():
 
         return GreenletRequests.NodeResponsesPost
 
+    def resetGet(self):
+        GreenletRequests.NodeResponsesGet = []
+
 
 
 def randomT(queue, name):
@@ -110,14 +113,14 @@ def postRequest(queue, payload=None):
         GreenletRequests.np+=1
         gevent.sleep(0)
 
-resourceList = ['http://109.231.121.135:5000/agent/v1/check', 'http://109.231.121.194:5000/agent/v1/check']
-test = GreenletRequests(resourceList)
-
-testG = test.parallelGet()
-testP = test.parallelPost(None)
-
-print testG
-print testP
+# resourceList = ['http://109.231.121.135:5000/agent/v1/check', 'http://109.231.121.194:5000/agent/v1/check']
+# test = GreenletRequests(resourceList)
+#
+# testG = test.parallelGet()
+# testP = test.parallelPost(None)
+#
+# print testG
+# print testP
 
 
 
