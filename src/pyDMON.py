@@ -1595,25 +1595,41 @@ class AuxDeployCheckThread(Resource):
 		dmon = GreenletRequests(resourceList)
 		nodeRes = dmon.parallelGet()
 
+		failedNodes = []
 		for i in nodeRes:
 			nodeIP = urlparse(i['Node'])
 			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
 
-			if i['Data']['LSF'] == 1:
-				qNode.nLogstashForwState = "Running"
-			elif i['Data']['LSF'] == 0:
-				qNode.nLogstashForwState = "Stopped"
+			if i['Data'] != 'n/a':
+				if i['Data']['LSF'] == 1:
+					qNode.nLogstashForwState = "Running"
+				elif i['Data']['LSF'] == 0:
+					qNode.nLogstashForwState = "Stopped"
+				else:
+					qNode.nLogstashForwState = "None"
 
+				if i['Data']['Collectd'] == 1:
+					qNode.nCollectdState = "Running"
+				elif i['Data']['Collectd'] == 0:
+					qNode.nCollectdState = "Stopped"
+				else:
+					qNode.nCollectdState = "None"
+			else:
+				qNode.nLogstashForwState = "None"
+				qNode.nCollectdState = "None"
 
-			if i['Data']['Collectd'] == 1:
-				qNode.nCollectdState = "Running"
-			elif i['Data']['Collectd'] == 0:
-				qNode.nCollectdState = "Stopped"
+			if i['StatusCode'] != 200:
+				failedNodes.append({'NodeIP': str(nodeIP.hostname),
+									'Code': i['StatusCode']})
 
+		response=jsonify({'Status': 'Update',
+						  'Message': 'Nodes updated!',
+						  'Failed':failedNodes})
+		response.status_code = 200
 
 		dmon.reset()
 
-		return nodeRes
+		return response
 
 
 @dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>')#TODO check parameter redeploy functionality 
