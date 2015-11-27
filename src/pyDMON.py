@@ -30,6 +30,7 @@ from flask import render_template
 from flask import Response
 from flask import send_file
 from flask import send_from_directory
+from flask import copy_current_request_context
 import os
 import sys
 import signal
@@ -44,6 +45,11 @@ from pyESController import *
 from pysshCore import *
 #from dbModel import *
 from pyUtil import *
+# from threadRequest import *
+from greenletThreads import *
+# import Queue
+# from threading import Thread
+import requests
 
 
 #directory Location
@@ -62,10 +68,12 @@ lsCDir = '/etc/logstash/conf.d/'
 # D-Mon Supported frameworks
 lFrameworks = ['hdfs','yarn','spark','storm']
 
+
 app = Flask("D-MON")
 api = Api(app, version='0.1.3', title='DICE MOnitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
+
 
 db = SQLAlchemy(app)
 # %--------------------------------------------------------------------%
@@ -1543,8 +1551,99 @@ class AuxDeploy(Resource):
 		return response			
 
 
+@dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
+class AuxDeployThread(Resource):
+    def get(self):
+		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP,dbNodes.nMonitored,
+			dbNodes.nCollectdState,dbNodes.nLogstashForwState).all()
+		mnList = []
+		for nm in qNodes:
+			mNode = {}
+			mNode['NodeFQDN']=nm[0]
+			mNode['NodeIP']=nm[1]
+			mNode['Monitored']=nm[2]
+			mNode['Collectd']=nm[3]
+			mNode['LSF']=nm[4]
+			mnList.append(mNode)
+			#print >> sys.stderr, nm
+		response = jsonify({'Aux Status':mnList})
+		response.status_code=200
+		return response
+
+
+    def post(self):
+        return "same as v1 except using dmon-agent"
+
+
+@dmon.route('/v2/overlord/aux/deploy/check')  # TODO: polles all dmon-agents for current status
+class AuxDeployCheckThread(Resource):
+	def get(self):
+		agentPort = '5000'
+		nodesAll=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP).all()
+		if nodesAll is None:
+			response = jsonify({'Status': 'No monitored nodes found'})
+			response.status_code = 404
+			return response
+		nodeList = []
+		for n in nodesAll:
+			nodeList.append(n[1])
+
+		agentr = AgentResourceConstructor(nodeList, agentPort)
+		resourceList = agentr.check()
+		# q = Queue.LifoQueue()
+        #
+		# for res in resourceList:
+		# 	q.put(res)
+        #
+		# NodeResponse = []
+        #
+		# @copy_current_request_context
+		# def getThread():
+		# 	response = {}
+		# 	statusCode = {}
+		# 	data = {}
+		# 	while not q.empty():
+		# 		resourceURI = q.get()
+		# 		try:
+		# 			r = requests.get(resourceURI, timeout=2)
+		# 			data = r.json()
+		# 			response['Node'] = resourceURI
+		# 			statusCode['Code'] = r.status_code
+		# 			response['Data'] = data
+		# 		except requests.exceptions.Timeout:
+		# 			response['Node'] = resourceURI
+		# 			statusCode['StatusCode'] = 408
+		# 			response['Data'] = 'n/a'
+		# 		except requests.exceptions.ConnectionError:
+		# 			response['Node'] = resourceURI
+		# 			statusCode['StatusCode'] = 404
+		# 			response['Data'] = 'n/a'
+        #
+		# 		NodeResponse.append(response)
+		# 		q.task_done()
+        #
+		# threads = []
+		# for i in range(len(resourceList)):
+		# 	t = Thread(target=getThread)
+		# 	t.daemon = True
+		# 	t.start()
+		# 	threads.append(t)
+        #
+		# q.join()
+        #
+		# for t in threads:
+		# 	t.join
+		# return NodeResponse
+
+		dmon = GreenletRequests(resourceList)
+		nodeRes = dmon.parallelGet()
+		#dmonreq = DmonRequest(resourceList)
+		#nodeRes = dmonreq.getRequests()
+		return nodeRes
+
+
 @dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>')#TODO check parameter redeploy functionality 
-@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	@api.doc(parser=dmonAux)
 	def post(self, auxComp, nodeFQDN):
@@ -1634,7 +1733,15 @@ class AuxDeploySelective(Resource):
 				response = jsonify({'Status':'Node '+ nodeFQDN +' LSF already started!' })
 				response.status_code = 200
 				return response
-		
+
+
+@dmon.route('/v2/overlord/aux/deploy/<auxComp>/<nodeFQDN>')  # TODO: deploy specific configuration on the specified node
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
+class AuxDeploySelectiveThread(Resource):
+    def post(self, auxComp, nodeFQDN):
+        return 'same as v1'
+
+
 @dmon.route('/v1/overlord/aux/<auxComp>/config')
 @api.doc(params={'auxComp':'Aux Component'})
 class AuxConfigSelective(Resource):
@@ -1663,17 +1770,17 @@ class AuxConfigSelective(Resource):
 				return response
 		
 		if auxComp == 'lsf':
-			if not os.path.isfile(os.path.join(cfgDir,'logstash-forwarder.conf')):
+			if not os.path.isfile(os.path.join(cfgDir, 'logstash-forwarder.conf')):
 				response = jsonify({'Error':'Config file not found !'})
 				response.status_code = 404
 				return response
 			try:
-				Cfgfile=open(os.path.join(cfgDir,'logstash-forwarder.conf'),'r')
+				Cfgfile=open(os.path.join(cfgDir, 'logstash-forwarder.conf'), 'r')
 			except EnvironmentError:
 				response = jsonify({'EnvError':'file not found'})
 				response.status_code = 500
 				return response
-		return send_file(Cfgfile,mimetype = 'text/plain',as_attachment = True)
+		return send_file(Cfgfile, mimetype='text/plain', as_attachment=True)
 
 	def put(self,auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
@@ -1734,7 +1841,7 @@ class AuxStartAll(Resource):
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Starting LSF on '+ i.nodeFQDN +'!'})
+					response = jsonify({'Status':'Error Starting LSF on ' + i.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 
@@ -1817,9 +1924,8 @@ class AuxStopAll(Resource):
 			return response
 
 
-
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/start')
-@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
 class AuxStartSelective(Resource):
  	def post(self, auxComp, nodeFQDN):
  		auxList = ['collectd','lsf']
@@ -1871,6 +1977,7 @@ class AuxStartSelective(Resource):
 				response=jsonify({'Status':'Need to deploy LSF first!'})
 				response.status_code=403
 				return response
+
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/stop')
 @api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
@@ -1928,6 +2035,35 @@ class AuxStopSelective(Resource):
 				response=jsonify({'Status':'No running LSF instance found!'})
 				response.status_code=403
 				return response
+
+
+@dmon.route('/v2/overlord/aux/<auxComp>/<nodeFQDN>/start')
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
+class AuxStartSelectiveThreaded(Resource):
+	def post(self):
+		return "same as v1"  # TODO: start selected component and reconfigure it if json detected
+
+
+@dmon.route('/v2/overlord/aux/<auxComp>/<nodeFQDN>/stop')
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
+class AuxStopSelectiveThreaded(Resource):
+	def post(self):
+		return "same as v1"  # TODO: stop selected component
+
+
+@dmon.route('/v2/overlord/aux/<auxComp>/start')
+@api.doc(params={'auxComp':'Aux Component', 'nodeFQDN': 'Node FQDN'})
+class AuxStartAllThreaded(Resource):
+	def post(self):
+		return "same as v1" # TODO: start  component and reconfigure it if json detected
+
+
+@dmon.route('/v2/overlord/aux/<auxComp>/stop')
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
+class AuxStopAllThreaded(Resource):
+	def post(self):
+		return "same as v1"  # TODO: stop selected component
+
 
 """
 Custom errot Handling
@@ -1991,6 +2127,6 @@ if __name__ == '__main__':
 		#esDir=
 		#lsDir=
 		#kibanaDir=
-		app.run(port = 5001, debug=True)
+		app.run(port = 5001, debug=True, threaded=True)
 	else:
 		app.run(host='0.0.0.0', port=8080, debug = True)
