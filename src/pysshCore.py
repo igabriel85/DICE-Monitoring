@@ -454,7 +454,7 @@ def startOryx2():
 	'''
 		Start Oryx2 Installation
 	'''
-	oryx2Deployment = {speedLayer:"",batchLayer:"",servingLayer:""}
+	oryx2Deployment = {"speedLayer":"","batchLayer":"","servingLayer":""}
 	print "Oryx2 Start"
 
 
