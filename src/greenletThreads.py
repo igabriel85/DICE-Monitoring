@@ -66,7 +66,6 @@ def randomT(queue, name):
 
 def getRequest(queue):
     response = {}
-    statusCode = {}
     while not queue.empty():
         resURI = queue.get(timeout=1)
         try:
@@ -77,16 +76,16 @@ def getRequest(queue):
             response['Data'] = data
         except requests.exceptions.Timeout:
             response['Node'] = resURI
-            statusCode['StatusCode'] = 408
+            response['StatusCode'] = 408
             response['Data'] = 'n/a'
         except requests.exceptions.ConnectionError:
             response['Node'] = resURI
-            statusCode['StatusCode'] = 404
+            response['StatusCode'] = 404
             response['Data'] = 'n/a'
 
         GreenletRequests.NodeResponsesGet.append(response)
-        print 'Threaded GET with ID '+str(GreenletRequests.ng)+ ' executed for ' + resURI
-        GreenletRequests.ng+=1
+        print 'Threaded GET with ID ' + str(GreenletRequests.ng) + ' executed for ' + resURI
+        GreenletRequests.ng += 1
         gevent.sleep(0)
 
 
