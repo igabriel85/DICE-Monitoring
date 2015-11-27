@@ -40,6 +40,7 @@ import jinja2
 import requests
 import shutil
 #from werkzeug import secure_filename #unused
+from urlparse import urlparse
 #DICE Imports
 from pyESController import *
 from pysshCore import *
@@ -1590,55 +1591,16 @@ class AuxDeployCheckThread(Resource):
 
 		agentr = AgentResourceConstructor(nodeList, agentPort)
 		resourceList = agentr.check()
-		# q = Queue.LifoQueue()
-        #
-		# for res in resourceList:
-		# 	q.put(res)
-        #
-		# NodeResponse = []
-        #
-		# @copy_current_request_context
-		# def getThread():
-		# 	response = {}
-		# 	statusCode = {}
-		# 	data = {}
-		# 	while not q.empty():
-		# 		resourceURI = q.get()
-		# 		try:
-		# 			r = requests.get(resourceURI, timeout=2)
-		# 			data = r.json()
-		# 			response['Node'] = resourceURI
-		# 			statusCode['Code'] = r.status_code
-		# 			response['Data'] = data
-		# 		except requests.exceptions.Timeout:
-		# 			response['Node'] = resourceURI
-		# 			statusCode['StatusCode'] = 408
-		# 			response['Data'] = 'n/a'
-		# 		except requests.exceptions.ConnectionError:
-		# 			response['Node'] = resourceURI
-		# 			statusCode['StatusCode'] = 404
-		# 			response['Data'] = 'n/a'
-        #
-		# 		NodeResponse.append(response)
-		# 		q.task_done()
-        #
-		# threads = []
-		# for i in range(len(resourceList)):
-		# 	t = Thread(target=getThread)
-		# 	t.daemon = True
-		# 	t.start()
-		# 	threads.append(t)
-        #
-		# q.join()
-        #
-		# for t in threads:
-		# 	t.join
-		# return NodeResponse
 
 		dmon = GreenletRequests(resourceList)
 		nodeRes = dmon.parallelGet()
-		#dmonreq = DmonRequest(resourceList)
-		#nodeRes = dmonreq.getRequests()
+
+		for i in nodeRes:
+			nodeIP = urlparse(i['Node'])
+			print nodeIP.hostname
+
+		dmon.resetGet()
+
 		return nodeRes
 
 
