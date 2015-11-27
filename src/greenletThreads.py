@@ -6,8 +6,12 @@ import requests
 class GreenletRequests():
     NodeResponsesGet = []
     NodeResponsesPost = []
+    NodeResponsesPut = []
+    NodeResponsesDelete = []
     ng = 0
     np = 0
+    npo = 0
+    nd = 0
 
     def __init__(self, resourceList):
         self.resourceList = resourceList
@@ -42,8 +46,12 @@ class GreenletRequests():
 
         return GreenletRequests.NodeResponsesPost
 
-    def resetGet(self):
+    def reset(self): # TODO:  Check if reset is required for all attributes separately or general one is ok
         GreenletRequests.NodeResponsesGet = []
+        GreenletRequests.NodeResponsesPost = []
+        GreenletRequests.NodeResponsesPut = []
+        GreenletRequests.NodeResponsesDelete = []
+
 
 
 
