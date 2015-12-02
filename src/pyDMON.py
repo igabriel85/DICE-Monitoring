@@ -486,17 +486,17 @@ class OverlordFrameworkProperties(Resource):
 			
 		
 
-
-
 @dmon.route('/v1/overlord/applicaiton/<appID>')
 class OverlordAppSubmit(Resource):
 	def put(self):
 		return 'Registers an applicaiton with DMON and creates a unique tag!'
 
+
 @dmon.route('/v1/overlord/core')
 class OverlordBootstrap(Resource):
 	def post(self):
 		return "Deploys all monitoring core components with default configuration"
+
 
 @dmon.route('/v1/overlord/core/status')
 class OverlordCoreStatus(Resource):
@@ -1573,10 +1573,49 @@ class AuxDeployThread(Resource):
 
 
     def post(self):
-        return "same as v1 except using dmon-agent"
+		qNodes=db.session.query(dbNodes.nodeIP, dbNodes.nRoles).all()
+		nrList = []
+		for nr in qNodes:
+			nrNode = {}
+			nrNode[nr[0]] = nr[1].split(',')
+			nrList.append(nrNode)
+
+		resFin = {}
+		for e in nrList:
+			for k, v in e.iteritems():
+				nodeList = []
+				nodeList.append(k)
+				agentr = AgentResourceConstructor(nodeList, '5000')
+				resourceList = agentr.deploy()
+				r = {'roles': v}
+				resFin[resourceList[-1]] = r
 
 
-@dmon.route('/v2/overlord/aux/deploy/check')  # TODO: polles all dmon-agents for current status
+
+		dmon = GreenletRequests(resFin)
+		nodeRes = dmon.parallelPost(None)
+
+		failedNodes = []
+		NodeDict = {}
+		for n in nodeRes:
+			nodeIP = urlparse(n['Node'])
+			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
+			qNode.nStatus = 1  # TODO: Recheck nStatsus and nMonitored roles when are they true and when are they false
+			if n['StatusCode'] != 201:
+				failedNodes.append({'NodeIP': str(nodeIP.hostname),
+									'Code': n['StatusCode']})
+			NodeDict[nodeIP.hostname] = n['Data']['Components']
+		response = jsonify({'Status': 'Installed Aux ',
+							'Message': NodeDict,
+							'Failed': failedNodes})
+		response.status_code = 200
+
+		dmon.reset()
+
+		return response
+
+
+@dmon.route('/v2/overlord/aux/deploy/check')  #  TODO: polls all dmon-agents for current status
 class AuxDeployCheckThread(Resource):
 	def get(self):
 		agentPort = '5000'
@@ -1844,6 +1883,7 @@ class AuxStartAll(Resource):
 			response.status_code = 200
 			return response	
 			#return nodeCollectdStopped
+
 
 @dmon.route('/v1/overlord/aux/<auxComp>/stop')#auxCtrl(auxComp,'stop') #TODO revise from pysshCore and make it work!
 @api.doc(params={'auxComp':'Aux Component'})
