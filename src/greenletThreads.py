@@ -52,7 +52,7 @@ class GreenletRequests():
             return GreenletRequests.NodeResponsesPost
 
         if type(self.resourceList) is dict:
-            for k,v in self.resourceList.iteritems():
+            for k, v in self.resourceList.iteritems():
                 print k
                 queue.put(k)
 
@@ -64,7 +64,6 @@ class GreenletRequests():
             gevent.joinall(gList)
 
             return GreenletRequests.NodeResponsesPost
-
 
 
     def parallelPut(self, payload):
@@ -234,15 +233,15 @@ def deleteRequest(queue):
         gevent.sleep(0)
 
 #resourceList = ['http://109.231.121.135:5000/agent/v1/check', 'http://109.231.121.194:5000/agent/v1/check']
-resourceList = ['http://109.231.121.135:5000/agent/v1/deploy','http://109.231.121.134:5000/agent/v1/deploy','http://109.231.121.156:5000/agent/v1/deploy','http://109.231.121.194:5000/agent/v1/deploy']
-test = GreenletRequests(resourceList)
+#resourceList = ['http://109.231.121.135:5000/agent/v1/deploy','http://109.231.121.134:5000/agent/v1/deploy','http://109.231.121.156:5000/agent/v1/deploy','http://109.231.121.194:5000/agent/v1/deploy']
+#test = GreenletRequests(resourceList)
 #
 #testG = test.parallelGet()
-ff = {"roles": ["hdfs"]}
-testP = test.parallelPost(None)
+#ff = {"roles": ["hdfs"]}
+#testP = test.parallelPost(ff)
 
 #print testG
-print testP
+#print testP
 
 
 
