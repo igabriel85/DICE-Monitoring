@@ -889,7 +889,8 @@ where __s__ stands for second or __m__ for minites and __h__ for hours.
 
 
 #License
-##DICE Monitoring Platform
+
+__DICE Monitoring Platform__
 
 Copyright (C) 2015 Gabriel Iuhasz, Institute e-Austria Romania
 
