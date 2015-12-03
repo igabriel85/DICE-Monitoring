@@ -888,7 +888,8 @@ From Version __0.1.3__ it is possible to ommit the _tstop_ parameter, instead it
 where __s__ stands for second or __m__ for minites and __h__ for hours. 
 
 
-#DICE Monitoring Platform
+#License
+##DICE Monitoring Platform
 
 Copyright (C) 2015 Gabriel Iuhasz, Institute e-Austria Romania
 
