@@ -55,23 +55,23 @@ import requests
 
 #directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
-logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)),'logs')
-credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
+logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 # TODO: only provisory for testing
 esDir = '/opt/elasticsearch' 
 lsCDir = '/etc/logstash/conf.d/'
 
 # D-Mon Supported frameworks
-lFrameworks = ['hdfs','yarn','spark','storm']
+lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 
 
 app = Flask("D-MON")
-api = Api(app, version='0.1.3', title='DICE MOnitoring API',
+api = Api(app, version='0.1.3', title='DICE MONitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
@@ -107,12 +107,12 @@ class dbESCore(db.Model):
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
     nodeName = db.Column(db.String(64), index=True, unique=True)
-    nodePort = db.Column(db.Integer, index=True, unique=False,default = 9200)
+    nodePort = db.Column(db.Integer, index=True, unique=False,default=9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
     conf = db.Column(db.LargeBinary, index=True, unique=False)
     ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)  # Running, Pending, Stopped, unknown
     ESCorePID = db.Column(db.Integer, index=True, default=0, unique=False)  # pid of current running process
-    MasterNode = db.Column(db.Boolean,index=True, unique=False)  # which node is master
+    MasterNode = db.Column(db.Boolean, index=True, unique=False)  # which node is master
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
    
 
@@ -127,16 +127,16 @@ class dbSCore(db.Model):
     hostFQDN = db.Column(db.String(64), index=True, unique=True)
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
-    inLumberPort = db.Column(db.Integer, index=True, unique=False,default=5000)
-    sslCert = db.Column(db.String(120), index=True, unique=False,default='default')
-    sslKey = db.Column(db.String(120), index=True, unique=False,default='default')
-    udpPort = db.Column(db.Integer, index=True, unique=False,default=25826)  # collectd port same as collectd conf
+    inLumberPort = db.Column(db.Integer, index=True, unique=False, default=5000)
+    sslCert = db.Column(db.String(120), index=True, unique=False, default='default')
+    sslKey = db.Column(db.String(120), index=True, unique=False, default='default')
+    udpPort = db.Column(db.Integer, index=True, unique=False, default=25826)  # collectd port same as collectd conf
     outESclusterName = db.Column(db.String(64), index=True, unique=False)  # same as ESCore clusterName
-    outKafka = db.Column(db.String(64), index=True, unique=False,default ='unknown') # output kafka details
-    outKafkaPort = db.Column(db.Integer, index=True, unique=False,default='unknown')
+    outKafka = db.Column(db.String(64), index=True, unique=False, default='unknown') # output kafka details
+    outKafkaPort = db.Column(db.Integer, index=True, unique=False, default='unknown')
     conf = db.Column(db.String(140), index=True, unique=False)
     LSCoreStatus = db.Column(db.String(64), index=True, unique=False, default='unknown')#Running, Pending, Stopped, None
-    LSCorePID = db.Column(db.Integer, index=True,  unique=False, default=0)
+    LSCorePID = db.Column(db.Integer, index=True, unique=False, default=0)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -149,10 +149,10 @@ class dbKBCore(db.Model):
     hostFQDN = db.Column(db.String(64), index=True, unique=True)
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
-    kbPort = db.Column(db.Integer, index=True, unique=False,default = 5601)
-    KBCorePID = db.Column(db.Integer, index=True, default = 0, unique=False) # pid of current running process
+    kbPort = db.Column(db.Integer, index=True, unique=False, default=5601)
+    KBCorePID = db.Column(db.Integer, index=True, default=0, unique=False) # pid of current running process
     conf = db.Column(db.String(140), index=True, unique=False)
-    KBCoreStatus = db.Column(db.String(64), index=True,default='unknown', unique=False)#Running, Pending, Stopped, None
+    KBCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)#Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -174,10 +174,10 @@ class dbApp(db.Model):
 
 class dbCDHMng(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
-	cdhMng =  db.Column(db.String(64), index=True, unique=True)
-	cdhMngPort = db.Column(db.Integer, index=True, unique=False,default = 7180)
-	cpass = db.Column(db.String(64), index=True, default = 'admin',unique=False)
-	cuser = db.Column(db.String(64), index=True, default = 'admin',unique=False)
+	cdhMng = db.Column(db.String(64), index=True, unique=True)
+	cdhMngPort = db.Column(db.Integer, index=True, unique=False, default=7180)
+	cpass = db.Column(db.String(64), index=True, default='admin', unique=False)
+	cuser = db.Column(db.String(64), index=True, default='admin', unique=False)
 	
 	def __repr__(self):
 		return '<dbCDHMng %r>' % (self.body)
@@ -191,81 +191,80 @@ dmon = api.namespace('dmon', description='D-MON operations')
 
 #argument parser
 dmonAux = api.parser() 
-dmonAux.add_argument('redeploy', type=str, required=False, help = 'Redeploys configuration of Auxiliary components on the specified node.')
+dmonAux.add_argument('redeploy', type=str, required=False, help='Redeploys configuration of Auxiliary components on the specified node.')
 dmonAuxAll=api.parser()
-dmonAuxAll.add_argument('redeploy-all', type=str, required=False, help = 'Redeploys configuration of Auxiliary components on all nodes.')
+dmonAuxAll.add_argument('redeploy-all', type=str, required=False, help='Redeploys configuration of Auxiliary components on all nodes.')
 #pQueryES.add_argument('task',type=str, required=True, help='The task details', location='form')
 
 
 #descripes universal json @api.marshal_with for return or @api.expect for payload model
 queryES = api.model('query details Model', {
-	'fname': fields.String(required=False,default="output", description='Name of output file.'),
-    'size': fields.Integer(required=True,default=500, description='Number of record'),
+	'fname': fields.String(required=False, default="output", description='Name of output file.'),
+    'size': fields.Integer(required=True, default=500, description='Number of record'),
     'ordering': fields.String(required=True,default='desc', description='Ordering of records'),
-    'queryString': fields.String(required=True,default = "hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\""
+    'queryString': fields.String(required=True, default="hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\""
     	,description='ElasticSearc Query'),
-    'tstart': fields.Integer(required=True,default="now-1d",description='Start Date'),
-    'tstop': fields.Integer(required=False,default="None",description='Stop Date'),
-    'metrics': fields.List(fields.String(required=False, default = ' ', description = 'Desired Metrics'))
+    'tstart': fields.Integer(required=True, default="now-1d", description='Start Date'),
+    'tstop': fields.Integer(required=False, default="None", description='Stop Date'),
+    'metrics': fields.List(fields.String(required=False, default=' ', description='Desired Metrics'))
 
 })
 #Nested JSON input 
-dMONQuery = api.model('queryES Model',{
+dMONQuery = api.model('queryES Model', {
 	'DMON':fields.Nested(queryES, description="Query details")
 	})
 
 
-
 nodeSubmitCont = api.model('Submit Node Model Info',{
-	'NodeName':fields.String(required=True, description="Node FQDN"),
-	'NodeIP':fields.String(required=True, description="Node IP"),
-	'NodeOS':fields.String(required=False, description="Node OS"),
-	'key':fields.String(required=False, description="Node Pubilc key"),
-	'username':fields.String(required=False, description="Node User Name"),
-	'password':fields.String(required=False, description="Node Password"),
+	'NodeName': fields.String(required=True, description="Node FQDN"),
+	'NodeIP': fields.String(required=True, description="Node IP"),
+	'NodeOS': fields.String(required=False, description="Node OS"),
+	'key': fields.String(required=False, description="Node Pubilc key"),
+	'username': fields.String(required=False, description="Node User Name"),
+	'password': fields.String(required=False, description="Node Password"),
 	})
 
 
-nodeSubmit = api.model('Submit Node Model',{
-	'Nodes':fields.List(fields.Nested(nodeSubmitCont,required=True, description="Submit Node details"))
+nodeSubmit = api.model('Submit Node Model', {
+	'Nodes': fields.List(fields.Nested(nodeSubmitCont, required=True, description="Submit Node details"))
 	})
 
 
-esCore = api.model('Submit ES conf',{
-	'HostFQDN':fields.String(required=True, description='Host FQDN'),
-	'IP':fields.String(required=True, description='Host IP'),
-	'OS':fields.String(required=False,default='unknown',description='Host OS'),
-	'NodeName':fields.String(required=True,description='ES Host Name'),
-	'NodePort':fields.Integer(required=False, default=9200,description='ES Port'),
-	'ESClusterName':fields.String(required=True,description='ES Host Name')
+esCore = api.model('Submit ES conf', {
+	'HostFQDN': fields.String(required=True, description='Host FQDN'),
+	'IP': fields.String(required=True, description='Host IP'),
+	'OS': fields.String(required=False, default='unknown', description='Host OS'),
+	'NodeName': fields.String(required=True, description='ES Host Name'),
+	'NodePort': fields.Integer(required=False, default=9200, description='ES Port'),
+	'ESClusterName': fields.String(required=True, description='ES Host Name')
 	})
 
-kbCore = api.model('Submit KB conf',{
-	'HostFQDN':fields.String(required=True, description='Host FQDN'),
-	'IP':fields.String(required=True, description='Host IP'),
-	'OS':fields.String(required=False,default='unknown',description='Host OS'),
-	'KBPort':fields.Integer(required=False, default=5601,description='KB Port'),
+kbCore = api.model('Submit KB conf', {
+	'HostFQDN': fields.String(required=True, description='Host FQDN'),
+	'IP': fields.String(required=True, description='Host IP'),
+	'OS': fields.String(required=False, default='unknown', description='Host OS'),
+	'KBPort': fields.Integer(required=False, default=5601, description='KB Port'),
 	})
 
-nodeUpdate = api.model('Update Node Model Info',{
-	'IP':fields.String(required=True, description="Node IP"),
-	'OS':fields.String(required=False, description="Node OS"),
-	'Key':fields.String(required=False, description="Node Pubilc key"),
-	'User':fields.String(required=False, description="Node User Name"),
-	'Password':fields.String(required=False, description="Node Password")
+nodeUpdate = api.model('Update Node Model Info', {
+	'IP': fields.String(required=True, description="Node IP"),
+	'OS': fields.String(required=False, description="Node OS"),
+	'Key': fields.String(required=False, description="Node Pubilc key"),
+	'User': fields.String(required=False, description="Node User Name"),
+	'Password': fields.String(required=False, description="Node Password")
 	})
 
-nodeRoles = api.model('Update Node Role Model Info',{
-	'Roles':fields.List(fields.String(required=True, default = 'yarn', description = 'Node Roles'))
+nodeRoles = api.model('Update Node Role Model Info', {
+	'Roles': fields.List(fields.String(required=True, default='yarn', description='Node Roles'))
 	})
 
-lsCore=api.model('Submit LS conf',{
-	'HostFQDN':fields.String(required=True, description='Host FQDN'),
-	'IP':fields.String(required=True, description='Host IP'),
-	'OS':fields.String(required=False, description='Host OS'),
-	'LPort':fields.Integer(required=True, description='Lumberjack port'),
-	'udpPort':fields.String(required=True,default= 25826 ,description='UDP Collectd Port'),
-	'ESClusterName':fields.String(required=True, description='ES cluster name') # TODO: use as foreign key same as ClusterName in esCore
+lsCore = api.model('Submit LS conf',{
+	'HostFQDN': fields.String(required=True, description='Host FQDN'),
+	'IP': fields.String(required=True, description='Host IP'),
+	'OS': fields.String(required=False, description='Host OS'),
+	'LPort': fields.Integer(required=True, description='Lumberjack port'),
+	'udpPort': fields.String(required=True, default=25826, description='UDP Collectd Port'),
+	'ESClusterName': fields.String(required=True, description='ES cluster name') # TODO: use as foreign key same as ClusterName in esCore
 	})
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
@@ -274,11 +273,11 @@ lsCore=api.model('Submit LS conf',{
 # 	'FQDN' : field
 # 	})#[{'FQDN':'IP'}]
 
-certModel = api.model('Update Cert',{
-	'Certificate':fields.String(required=False, description='Certificate')
+certModel = api.model('Update Cert', {
+	'Certificate': fields.String(required=False, description='Certificate')
 	})
 
-app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db.create_all()
 
@@ -2037,7 +2036,7 @@ class AuxStopSelective(Resource):
 					response.status_code = 500
 					return response
 				qAux.nCollectdState = 'Stopped'
-				response = jsonify({'Status': 'Collectd stopped on '+ nodeFQDN})
+				response = jsonify({'Status': 'Collectd stopped on ' + nodeFQDN})
 				response.status_code = 200
 				return response
 			else:
