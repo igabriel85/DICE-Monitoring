@@ -258,6 +258,15 @@ nodeRoles = api.model('Update Node Role Model Info', {
 	'Roles': fields.List(fields.String(required=True, default='yarn', description='Node Roles'))
 	})
 
+listNodesRolesInternal = api.model('Update List Node Role Model Info Nested', {
+	"NodeName": fields.String(required=True, description="Node FQDN"),
+	"Roles": fields.List(fields.String(required=True, default='yarn', description='Node Roles'))
+})
+
+listNodeRoles = api.model('Update List Node Role Model Info', {
+	"Nodes": fields.List(fields.Nested(listNodesRolesInternal, required=True, description='List of nodes and their roles'))
+})
+
 lsCore = api.model('Submit LS conf',{
 	'HostFQDN': fields.String(required=True, description='Host FQDN'),
 	'IP': fields.String(required=True, description='Host IP'),
@@ -444,28 +453,28 @@ class OverlordFrameworkInfo(Resource):
 class OverlordFrameworkProperties(Resource):
 	def get(self, fwork):
 		if fwork not in lFrameworks:
-			response = jsonify({'Status':'Malformed URI','Message':'Unknown framework '+fwork})
+			response = jsonify({'Status': 'Malformed URI', 'Message': 'Unknown framework '+ fwork})
 			response.status_code = 404
 			return response
 		if fwork =='hdfs' or fwork=='yarn':
-			propFile = os.path.join(tmpDir,'metrics/hadoop-metrics2.tmp')
+			propFile = os.path.join(tmpDir, 'metrics/hadoop-metrics2.tmp')
 			try:
-				propCfg = open(propFile,'r')
+				propCfg = open(propFile, 'r')
 			except EnvironmentError:
-				response = jsonify({'Status':'Environment Error!','Message':'File not Found!'})
+				response = jsonify({'Status': 'Environment Error!', 'Message': 'File not Found!'})
 				response.status_code = 500
 				return response 
-			return send_file(propCfg,mimetype = 'text/x-java-properties',as_attachment = True)
+			return send_file(propCfg, mimetype='text/x-java-properties', as_attachment = True)
 
 		if fwork == 'spark':
-			templateLoader = jinja2.FileSystemLoader( searchpath="/" )
-			templateEnv = jinja2.Environment( loader=templateLoader )
-			propSparkTemp= os.path.join(tmpDir,'metrics/spark-metrics.tmp')
-			propSparkFile = os.path.join(cfgDir,'metrics.properties')
+			templateLoader = jinja2.FileSystemLoader( searchpath="/")
+			templateEnv = jinja2.Environment(loader=templateLoader)
+			propSparkTemp= os.path.join(tmpDir, 'metrics/spark-metrics.tmp')
+			propSparkFile = os.path.join(cfgDir, 'metrics.properties')
 			try:
 				template = templateEnv.get_template(propSparkTemp)
 			except:
-				response = jsonify({'Status':'I/O Error','Message':'Template file missing!'})
+				response = jsonify({'Status': 'I/O Error', 'Message': 'Template file missing!'})
 				response.status_code = 500
 				return response
 
@@ -585,27 +594,27 @@ class MonitoredNodes(Resource):
 class ClusterRoles(Resource):
 	def get(self):
 		nodeList = []
-		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nRoles).all()
+		nodesAll=db.session.query(dbNodes.nodeFQDN, dbNodes.nRoles).all()
 		if nodesAll is None:
-			response = jsonify({'Status':'No monitored nodes found'})
+			response = jsonify({'Status': 'No monitored nodes found'})
 			response.status_code = 404
 			return response
 		for nl in nodesAll:
 			nodeDict= {}
 			print >>sys.stderr, nl[0]
-			nodeDict.update({nl[0]:nl[1].split(',')})
+			nodeDict.update({nl[0]: nl[1].split(',')})
 			nodeList.append(nodeDict)
-		response = jsonify({'Nodes':nodeList})
-		response.status_code=200
+		response = jsonify({'Nodes': nodeList})
+		response.status_code = 200
 		return response
 
 	def put(self):
 		return 'Modify roles of nodes node list'
 
 	def post(self):
-		nodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP,dbNodes.nUser,dbNodes.nPass,dbNodes.nRoles).all()
+		nodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nUser, dbNodes.nPass, dbNodes.nRoles).all()
 		if nodes is None:
-			response = jsonify({'Status':'No monitored nodes found'})
+			response = jsonify({'Status': 'No monitored nodes found'})
 			response.status_code = 404
 			return response
 
@@ -619,9 +628,9 @@ class ClusterRoles(Resource):
 				yarnPropertiesLoc = os.path.join(tmpDir, 'hadoop-metrics2.tmp')
 				nl = []
 				nl.append(node[1])
-				uploadFile(nl,node[2],node[3],yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties')  # TODO better solution
-				uploadFile(nl,node[2],node[3],yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties')  # TODO better solution
-				uploadFile(nl,node[2],node[3],yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf/hadoop-metrics2.properties')  # TODO better solution
+				uploadFile(nl, node[2], node[3], yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties')  # TODO better solution
+				uploadFile(nl, node[2], node[3], yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties')  # TODO better solution
+				uploadFile(nl, node[2], node[3], yarnPropertiesLoc, 'hadoop-metrics2.tmp', '/etc/hadoop/conf/hadoop-metrics2.properties')  # TODO better solution
 				yarnList.append(node[0])
 			if 'spark' in roleList:  # TODO Same as /v1/overlord/framework/<fwork>, needs unification
 				templateLoader = jinja2.FileSystemLoader( searchpath="/")
@@ -1429,12 +1438,12 @@ class AuxDeploy(Resource):
 		collectdTemp = os.path.join(tmpDir, 'collectd.tmp')
 		collectdConfLoc = os.path.join(cfgDir, 'collectd.conf')
 		lsfConfLoc = os.path.join(cfgDir, 'logstash-forwarder.conf')
-		qNodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nMonitored,
+		qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nMonitored,
 			dbNodes.nCollectdState, dbNodes.nLogstashForwState, dbNodes.nUser, dbNodes.nPass, dbNodes.nodeIP).all()
 		result = []
 		credentials ={}
 		for n in qNodes:
-			credentials['User'] = n[4]#TODO need a more elegant solution, currently it is rewriten every iteration
+			credentials['User'] = n[4] #TODO need a more elegant solution, currently it is rewriten every iteration
 			credentials['Pass'] = n[5]
 			print >> sys.stderr, credentials
 			rp = {}
@@ -1465,12 +1474,12 @@ class AuxDeploy(Resource):
 			uploadFile(allNodes, credentials['User'], credentials['Pass'], lsfConfLoc, 'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
 			serviceCtrl(allNodes, credentials['User'], credentials['Pass'], 'collectd', 'restart')
 			serviceCtrl(allNodes, credentials['User'], credentials['Pass'], 'logstash-forwarder', 'restart')
-			response = jsonify({'Status' :'All aux components reloaded!'})
+			response = jsonify({'Status': 'All aux components reloaded!'})
 			response.status_code = 200
 			return response
 
 		if not collectdList and not LSFList:
-			response = jsonify({'Status' :'All registred nodes are already monitored!'})
+			response = jsonify({'Status': 'All registred nodes are already monitored!'})
 			response.status_code = 200
 			return response	
 
@@ -1479,7 +1488,7 @@ class AuxDeploy(Resource):
 		print >> sys.stderr, credentials['User']
 		print >> sys.stderr, confDir
 
-		qSCore = dbSCore.query.first()#TODO Change for distributed deployment
+		qSCore = dbSCore.query.first() #TODO Change for distributed deployment
 		try:
 			lsfTemplate = templateEnv.get_template(lsfTemp)
 			#print >>sys.stderr, template
