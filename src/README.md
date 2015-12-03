@@ -22,7 +22,7 @@ It is designed for:
 * v0.1.2 - Minor alpha release
 	* added support for Spark monitoring
 	* modified logstash conf generation to include graphite input 
-* v0.1.3 - Minor alha release
+* v0.1.3 - Minor alpha release
 	* added jmxtrans install to pysshCore
 	* added the capability to define node roles
 	* added the capability to start/stop all auxiliary components
