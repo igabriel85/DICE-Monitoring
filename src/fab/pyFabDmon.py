@@ -6,22 +6,21 @@ from fabric.contrib.console import confirm
 #fab -f pyFabDmon.py -t 60 -P  editHostFile
 #fab -f pyFabDmon.py -t 60 -P cleanup
 
-env.hosts = ['109.231.122.187' ,'109.231.122.173' ,'109.231.122.164' ,'109.231.122.233' ,'109.231.122.201' ,'109.231.122.130' 
-,'109.231.122.231' ,'109.231.122.194' ,'109.231.122.182' ,'109.231.122.207' ,'109.231.122.156','109.231.122.240' ,'109.231.122.127']
+#env.hosts = ['109.231.122.187' ,'109.231.122.173' ,'109.231.122.164' ,'109.231.122.233' ,'109.231.122.201' ,'109.231.122.130' ,'109.231.122.231' ,'109.231.122.194' ,'109.231.122.182' ,'109.231.122.207' ,'109.231.122.156','109.231.122.240' ,'109.231.122.127']
 
 
-full = ['109.231.122.228' ,'109.231.122.187' ,'109.231.122.173' ,'109.231.122.164' ,'109.231.122.233' ,'109.231.122.201' ,'109.231.122.130' 
-,'109.231.122.231' ,'109.231.122.194' ,'109.231.122.182' ,'109.231.122.207' ,'109.231.122.156','109.231.122.240' ,'109.231.122.127']
+#full = ['109.231.122.228' ,'109.231.122.187' ,'109.231.122.173' ,'109.231.122.164' ,'109.231.122.233' ,'109.231.122.201' ,'109.231.122.130' ,'109.231.122.231' ,'109.231.122.194' ,'109.231.122.182' ,'109.231.122.207' ,'109.231.122.156','109.231.122.240' ,'109.231.122.127']
 
-hostFQDN = ['dice.cdh5.mng.internal', 'dice.cdh5.w1.internal','dice.cdh5.w2.internal','dice.cdh5.w3.internal','dice.cdh5.w4.internal','dice.cdh5.w5.internal','dice.cdh5.w6.internal',
-'dice.cdh5.w7.internal','dice.cdh5.w8.internal','dice.cdh5.w9.internal','dice.cdh5.w10.internal','dice.cdh5.w11.internal','dice.cdh5.w12.internal','dice.cdh5.w13.internal']
+#hostFQDN = ['dice.cdh5.mng.internal', 'dice.cdh5.w1.internal','dice.cdh5.w2.internal','dice.cdh5.w3.internal','dice.cdh5.w4.internal','dice.cdh5.w5.internal','dice.cdh5.w6.internal','dice.cdh5.w7.internal','dice.cdh5.w8.internal','dice.cdh5.w9.internal','dice.cdh5.w10.internal','dice.cdh5.w11.internal','dice.cdh5.w12.internal','dice.cdh5.w13.internal']
 
+#env.hosts = ['109.231.121.135', '109.231.121.194', '109.231.121.134', '109.231.121.156', '109.231.121.210'] 
+env.hosts = ['109.231.126.18'] 
 
 # Set the username
-env.user   = "ubuntu"
+env.user   = "<user>"
 
 # Set the password [NOT RECOMMENDED]
-env.password = "rexmundi220"
+env.password = "<password>"
 
 
 def uploadBoostrapt():
