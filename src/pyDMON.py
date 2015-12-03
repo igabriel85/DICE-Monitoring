@@ -568,23 +568,23 @@ class MonitoredNodes(Resource):
 	def put(self):
 		if not request.json:
 			abort(400)
-		listN =[]
+		listN = []
 		for nodes in request.json['Nodes']:
-			qNodes = dbNodes.query.filter_by(nodeFQDN = nodes['NodeName']).first()
+			qNodes = dbNodes.query.filter_by(nodeFQDN=nodes['NodeName']).first()
 			if qNodes is None:
-				e = dbNodes(nodeFQDN = nodes['NodeName'], nodeIP =nodes['NodeIP'] , nodeOS = nodes['NodeOS'], 
-					nkey = nodes['key'],nUser=nodes['username'],nPass=nodes['password'])
+				e = dbNodes(nodeFQDN=nodes['NodeName'], nodeIP=nodes['NodeIP'], nodeOS=nodes['NodeOS'],
+					nkey=nodes['key'], nUser=nodes['username'], nPass=nodes['password'])
 				db.session.add(e)
 			else:
 				qNodes.nodeIP = nodes['NodeIP']
-				qNodes.nodeOS =nodes['NodeOS']
+				qNodes.nodeOS = nodes['NodeOS']
 				qNodes.nkey = nodes['key']
-				qNodes.nUser=nodes['username']
-				qNodes.nPass=nodes['password']
+				qNodes.nUser = nodes['username']
+				qNodes.nPass = nodes['password']
 				db.session.add(qNodes)
 			db.session.commit
-		response = jsonify({'Status':"Nodes list Updated!"})
-		response.status_code=201
+		response = jsonify({'Status': "Nodes list Updated!"})
+		response.status_code = 201
 		return response	
 
 	def post(self):
@@ -608,8 +608,28 @@ class ClusterRoles(Resource):
 		response.status_code = 200
 		return response
 
+	@api.expect(listNodeRoles)
 	def put(self):
-		return 'Modify roles of nodes node list'
+		if not request.json or not "Nodes" in request.json:
+			response = jsonify({'Status': 'Mimetype Error',
+								'Message': 'Only JSON requests are permitted'})
+			response.status_code = 400
+			return response
+
+		nList = request.json["Nodes"]
+
+		for n in nList:
+			#print n["NodeName"]
+			#print n["Roles"]
+			upRoles = dbNodes.query.filter_by(nodeFQDN=n["NodeName"]).first()
+			upRoles.nRoles = ', '.join(map(str, n["Roles"]))
+
+		response = jsonify({'Status': 'Done',
+							'Message': 'All roles updated!'})
+
+		response.status_code = 201
+		return response
+
 
 	def post(self):
 		nodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nUser, dbNodes.nPass, dbNodes.nRoles).all()
