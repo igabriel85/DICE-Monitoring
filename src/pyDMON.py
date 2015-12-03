@@ -88,8 +88,8 @@ class dbNodes(db.Model):
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
     nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') # hadoop roles running on server
-    nStatus = db.Column(db.Boolean,index=True, unique=False, default='0')
-    nMonitored = db.Column(db.Boolean,index=True, unique=False, default='0')
+    nStatus = db.Column(db.Boolean, index=True, unique=False, default='0')
+    nMonitored = db.Column(db.Boolean, index=True, unique=False, default='0')
     nCollectdState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
     nLogstashForwState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
@@ -1351,19 +1351,20 @@ class LSCertControl(Resource):
 class LSKeyQuery(Resource):
 	def get(self, keyName):
 		if keyName == 'default':
-			response = jsonify({'Key':'default'})
-			response.status_code=200
+			response = jsonify({'Key' : 'default'})
+			response.status_code = 200
 			return response
-		qSCoreKey = dbSCore.query.filter_by(sslKey = keyName).first()
+		qSCoreKey = dbSCore.query.filter_by(sslKey=keyName).first()
 		if qSCoreKey is None:
-			response = jsonify({'Status':keyName+' not found!'})
+			response = jsonify({'Status': keyName + ' not found!'})
 			response.status_code = 404
 			return response
 
-		response=jsonify({'Host':qSCoreKey.hostFQDN, 'Key':qSCoreKey.sslKey})
+		response = jsonify({'Host': qSCoreKey.hostFQDN, 'Key': qSCoreKey.sslKey})
 		response.status_code = 200
 		return response
-		
+
+
 @dmon.route('/v1/overlord/core/ls/key/<keyName>/<hostFQDN>')
 @api.doc(params={'keyName': 'Name of the private key.','hostFQDN':'Host FQDN'})
 class LSKeyControl(Resource):
@@ -1372,28 +1373,28 @@ class LSKeyControl(Resource):
 			pemData = request.data
 		else:
 			abort(400)
-		qSCoreKey = dbSCore.query.filter_by(hostFQDN = hostFQDN).first()
+		qSCoreKey = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
 		if qSCoreKey is None:
-			response=jsonify({'Status':'unknown host'})
+			response = jsonify({'Status': 'unknown host'})
 			response.status_code = 404
 			return response
 		else:
 			if keyName == 'default':
-				keyFile = os.path.join(credDir,'logstash-forwarder.key')
+				keyFile = os.path.join(credDir, 'logstash-forwarder.key')
 			else:
-				keyFile = os.path.join(credDir,keyName+'.key')
+				keyFile = os.path.join(credDir, keyName + '.key')
 			try:
-				key = open(keyFile,'w+')
+				key = open(keyFile, 'w+')
 				key.write(pemData)
 				key.close()
 			except IOError:
-				response = jsonify({'Error':'File I/O!'})
+				response = jsonify({'Error': 'File I/O!'})
 				response.status_code = 500
 				return response	
 
 		qSCoreKey.sslKey = keyName
-		response = jsonify({'Status':'updated key!'})
-		response.status_code=201
+		response = jsonify({'Status': 'updated key!'})
+		response.status_code = 201
 		return response
 
 @dmon.route('/v1/overlord/aux')
@@ -1405,32 +1406,32 @@ class AuxInfo(Resource):
 @dmon.route('/v1/overlord/aux/deploy')
 class AuxDeploy(Resource):
 	def get(self):
-		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP,dbNodes.nMonitored,
-			dbNodes.nCollectdState,dbNodes.nLogstashForwState).all()
+		qNodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
+			dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
 		mnList = []
 		for nm in qNodes:
 			mNode = {}
-			mNode['NodeFQDN']=nm[0]
-			mNode['NodeIP']=nm[1]
-			mNode['Monitored']=nm[2]
-			mNode['Collectd']=nm[3]
-			mNode['LSF']=nm[4]
+			mNode['NodeFQDN'] = nm[0]
+			mNode['NodeIP'] = nm[1]
+			mNode['Monitored'] = nm[2]
+			mNode['Collectd'] = nm[3]
+			mNode['LSF'] = nm[4]
 			mnList.append(mNode)
 			#print >> sys.stderr, nm
-		response = jsonify({'Aux Status':mnList})
-		response.status_code=200
+		response = jsonify({'Aux Status': mnList})
+		response.status_code = 200
 		return response
 
 	@api.doc(parser=dmonAuxAll)#TODO Status handling (Running, Stopped, None )Needs Checking 
 	def post(self): #TODO currently works only if the same username and password is used for all Nodes
-		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
-		templateEnv = jinja2.Environment( loader=templateLoader )
-		lsfTemp= os.path.join(tmpDir,'logstash-forwarder.tmp')#tmpDir+"/collectd.tmp"
-		collectdTemp = os.path.join(tmpDir,'collectd.tmp')
-		collectdConfLoc = os.path.join(cfgDir,'collectd.conf')
-		lsfConfLoc = os.path.join(cfgDir,'logstash-forwarder.conf')
-		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nMonitored,
-			dbNodes.nCollectdState,dbNodes.nLogstashForwState,dbNodes.nUser,dbNodes.nPass,dbNodes.nodeIP).all()
+		templateLoader = jinja2.FileSystemLoader(searchpath="/")
+		templateEnv = jinja2.Environment(loader=templateLoader)
+		lsfTemp= os.path.join(tmpDir, 'logstash-forwarder.tmp')#tmpDir+"/collectd.tmp"
+		collectdTemp = os.path.join(tmpDir, 'collectd.tmp')
+		collectdConfLoc = os.path.join(cfgDir, 'collectd.conf')
+		lsfConfLoc = os.path.join(cfgDir, 'logstash-forwarder.conf')
+		qNodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nMonitored,
+			dbNodes.nCollectdState, dbNodes.nLogstashForwState, dbNodes.nUser, dbNodes.nPass, dbNodes.nodeIP).all()
 		result = []
 		credentials ={}
 		for n in qNodes:
@@ -1461,17 +1462,17 @@ class AuxDeploy(Resource):
 		args = dmonAuxAll.parse_args()
 
 		if args == 'redeploy-all': #TODO check if conf files exist if not catch error
-			uploadFile(allNodes,credentials['User'],credentials['Pass'],collectdConfLoc,'collectd.conf', '/etc/collectd/collectd.conf')
-			uploadFile(allNodes,credentials['User'],credentials['Pass'],lsfConfLoc,'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
-			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'collectd', 'restart')
-			serviceCtrl(allNodes,credentials['User'],credentials['Pass'],'logstash-forwarder', 'restart')
-			response = jsonify({'Status':'All aux components reloaded!'})
+			uploadFile(allNodes, credentials['User'], credentials['Pass'], collectdConfLoc, 'collectd.conf', '/etc/collectd/collectd.conf')
+			uploadFile(allNodes, credentials['User'], credentials['Pass'], lsfConfLoc, 'logstash-forwarder.conf', '/etc/logstash-forwarder.conf')
+			serviceCtrl(allNodes, credentials['User'], credentials['Pass'], 'collectd', 'restart')
+			serviceCtrl(allNodes, credentials['User'], credentials['Pass'], 'logstash-forwarder', 'restart')
+			response = jsonify({'Status' :'All aux components reloaded!'})
 			response.status_code = 200
 			return response
 
 		if not collectdList and not LSFList:
-			response = jsonify({'Status':'All registred nodes are already monitored!'})
-			response.status_code=200
+			response = jsonify({'Status' :'All registred nodes are already monitored!'})
+			response.status_code = 200
 			return response	
 
 		print >> sys.stderr, collectdList
@@ -1481,73 +1482,73 @@ class AuxDeploy(Resource):
 
 		qSCore = dbSCore.query.first()#TODO Change for distributed deployment
 		try:
-			lsfTemplate = templateEnv.get_template( lsfTemp )
+			lsfTemplate = templateEnv.get_template(lsfTemp)
 			#print >>sys.stderr, template
 		except:
 			return "Tempalte file unavailable!"
 
 		#{{ESCoreIP}}:{{LSLumberPort}}	
-		infolsfAux = {"ESCoreIP":qSCore.hostIP,"LSLumberPort":qSCore.inLumberPort}			
+		infolsfAux = {"ESCoreIP": qSCore.hostIP, "LSLumberPort": qSCore.inLumberPort}
 		lsfConf = lsfTemplate.render(infolsfAux)
 		
-		lsfConfFile = open(lsfConfLoc,"wb") #TODO trycatch
+		lsfConfFile = open(lsfConfLoc, "wb") #TODO trycatch
 		lsfConfFile.write(lsfConf)
 		lsfConfFile.close()
 
 		#{{logstash_server_ip}}" "{{logstash_server_port}}
 		try:
-			collectdTemplate = templateEnv.get_template( collectdTemp )
+			collectdTemplate = templateEnv.get_template(collectdTemp)
 		except:
 			return "Template file unavailable!"
 
-		infocollectdAux = {"logstash_server_ip":qSCore.hostIP,"logstash_server_port":qSCore.udpPort}
+		infocollectdAux = {"logstash_server_ip": qSCore.hostIP, "logstash_server_port": qSCore.udpPort}
 		collectdConf = collectdTemplate.render(infocollectdAux)
 
-		collectdConfFile = open(collectdConfLoc,"wb")
+		collectdConfFile = open(collectdConfLoc, "wb")
 		collectdConfFile.write(collectdConf)
 		collectdConfFile.close()
 
 		
 
 		try:
-			installCollectd(collectdList,credentials['User'],credentials['Pass'],confDir=cfgDir)
-		except Exception as inst:#TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
+			installCollectd(collectdList, credentials['User'], credentials['Pass'], confDir=cfgDir)
+		except Exception as inst:    # TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
 			print >> sys.stderr, type(inst) 
 			print >> sys.stderr, inst.args
-			response = jsonify({'Status':'Error Installing collectd!'})
+			response = jsonify({'Status': 'Error Installing collectd!'})
 			response.status_code = 500
 			return response
 
 		try:
-			installLogstashForwarder(LSFList,userName=credentials['User'],uPassword=credentials['Pass'],confDir=cfgDir)
+			installLogstashForwarder(LSFList, userName=credentials['User'], uPassword=credentials['Pass'], confDir=cfgDir)
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-			response = jsonify({'Status':'Error Installig LSF!'})
+			response = jsonify({'Status': 'Error Installig LSF!'})
 			response.status_code = 500
 			return response
 
 		for c in collectdList:
-			updateNodesCollectd =  dbNodes.query.filter_by(nodeIP = c).first()
+			updateNodesCollectd = dbNodes.query.filter_by(nodeIP=c).first()
 			if updateNodesCollectd is None:
-				response = jsonify({'Error':'DB error, IP ' + c + ' not found!'})
-				response.status_code=500
+				response = jsonify({'Error': 'DB error, IP ' + c + ' not found!'})
+				response.status_code = 500
 				return response
-			updateNodesCollectd.nCollectdState='Running'
+			updateNodesCollectd.nCollectdState = 'Running'
 
 		for l in LSFList:
-			updateNodesLSF =  dbNodes.query.filter_by(nodeIP = l).first()
+			updateNodesLSF = dbNodes.query.filter_by(nodeIP=l).first()
 			if updateNodesLSF is None:
-				response = jsonify({'Error':'DB error, IP ' + l + ' not found!'})
-				response.status_code=500
+				response = jsonify({'Error': 'DB error, IP ' + l + ' not found!'})
+				response.status_code = 500
 				return response
-			updateNodesLSF.nLogstashForwState='Running'	
+			updateNodesLSF.nLogstashForwState = 'Running'
 
-		updateAll = dbNodes.query.filter_by(nMonitored = 0).all()
+		updateAll = dbNodes.query.filter_by(nMonitored=0).all()
 		for ua in updateAll:
 			ua.nMonitored = 1
 
-		response = jsonify({'Status':'Aux Componnets deployed!'})
+		response = jsonify({'Status': 'Aux Componnets deployed!'})
 		response.status_code = 201		
 		return response			
 
@@ -1555,20 +1556,20 @@ class AuxDeploy(Resource):
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
     def get(self):
-		qNodes=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP,dbNodes.nMonitored,
-			dbNodes.nCollectdState,dbNodes.nLogstashForwState).all()
+		qNodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
+			dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
 		mnList = []
 		for nm in qNodes:
 			mNode = {}
-			mNode['NodeFQDN']=nm[0]
-			mNode['NodeIP']=nm[1]
-			mNode['Monitored']=nm[2]
-			mNode['Collectd']=nm[3]
-			mNode['LSF']=nm[4]
+			mNode['NodeFQDN'] = nm[0]
+			mNode['NodeIP'] = nm[1]
+			mNode['Monitored'] = nm[2]
+			mNode['Collectd'] = nm[3]
+			mNode['LSF'] = nm[4]
 			mnList.append(mNode)
 			#print >> sys.stderr, nm
-		response = jsonify({'Aux Status':mnList})
-		response.status_code=200
+		response = jsonify({'Aux Status': mnList})
+		response.status_code = 200
 		return response
 
 
@@ -1590,8 +1591,6 @@ class AuxDeployThread(Resource):
 				r = {'roles': v}
 				resFin[resourceList[-1]] = r
 
-
-
 		dmon = GreenletRequests(resFin)
 		nodeRes = dmon.parallelPost(None)
 
@@ -1600,7 +1599,7 @@ class AuxDeployThread(Resource):
 		for n in nodeRes:
 			nodeIP = urlparse(n['Node'])
 			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
-			qNode.nStatus = 1  # TODO: Recheck nStatsus and nMonitored roles when are they true and when are they false
+			qNode.nStatus = 1  # TODO: Recheck nStatus and nMonitored roles when are they true and when are they false
 			if n['StatusCode'] != 201:
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
 									'Code': n['StatusCode']})
@@ -1615,7 +1614,7 @@ class AuxDeployThread(Resource):
 		return response
 
 
-@dmon.route('/v2/overlord/aux/deploy/check')  #  TODO: polls all dmon-agents for current status
+@dmon.route('/v2/overlord/aux/deploy/check')  #   TODO: polls all dmon-agents for current status
 class AuxDeployCheckThread(Resource):
 	def get(self):
 		agentPort = '5000'
@@ -1679,10 +1678,10 @@ class AuxDeploySelective(Resource):
 		auxList = ['collectd','lsf']
 		#status = {}
 		if auxComp not in auxList:
-			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response = jsonify({'Status':'No such such aux component ' + auxComp})
 			response.status_code = 400
 			return response
-		qAux =  dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		qAux = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
 		if qAux is None:
 			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
 			response.status_code=404
@@ -1772,10 +1771,10 @@ class AuxDeploySelectiveThread(Resource):
 
 
 @dmon.route('/v1/overlord/aux/<auxComp>/config')
-@api.doc(params={'auxComp':'Aux Component'})
+@api.doc(params={'auxComp': 'Aux Component'})
 class AuxConfigSelective(Resource):
 	def get(self, auxComp):
-		allowed = ['collectd','lsf']
+		allowed = ['collectd', 'lsf']
 		if auxComp not in allowed:
 			response = jsonify({'Status':'unrecognized aux component ' +auxComp})
 			response.status_code = 404
@@ -1811,7 +1810,7 @@ class AuxConfigSelective(Resource):
 				return response
 		return send_file(Cfgfile, mimetype='text/plain', as_attachment=True)
 
-	def put(self,auxComp):
+	def put(self, auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
 
 @dmon.route('/v1/overlord/aux/<auxComp>/start')
@@ -1886,20 +1885,20 @@ class AuxStartAll(Resource):
 
 
 @dmon.route('/v1/overlord/aux/<auxComp>/stop')#auxCtrl(auxComp,'stop') #TODO revise from pysshCore and make it work!
-@api.doc(params={'auxComp':'Aux Component'})
+@api.doc(params={'auxComp': 'Aux Component'})
 class AuxStopAll(Resource):
-	def post(self,auxComp):
-		auxList = ['collectd','lsf']
+	def post(self, auxComp):
+		auxList = ['collectd', 'lsf']
 		if auxComp not in auxList:
-			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
 			response.status_code = 400
 			return response
 
 		if auxComp == "collectd":
-			qNCollectd = dbNodes.query.filter_by(nCollectdState = 'Running').all()
+			qNCollectd = dbNodes.query.filter_by(nCollectdState='Running').all()
 			
 			if qNCollectd is None:
-				response = jsonify({'Status':'No nodes in state Running!'})
+				response = jsonify({'Status': 'No nodes in state Running!'})
 				response.status_code = 404
 				return response
 
@@ -1908,11 +1907,11 @@ class AuxStopAll(Resource):
 				node = []
 				node.append(i.nodeIP)
 				try:
-					serviceCtrl(node,i.nUser,i.nPass,'collectd', 'stop')
+					serviceCtrl(node, i.nUser, i.nPass, 'collectd', 'stop')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Stopping collectd on '+ i.nodeFQDN +'!'})
+					response = jsonify({'Status':'Error Stopping collectd on ' + i.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 				CollectdNodes = {}
@@ -2005,24 +2004,24 @@ class AuxStartSelective(Resource):
 				return response
 			else:
 				response=jsonify({'Status':'Need to deploy LSF first!'})
-				response.status_code=403
+				response.status_code = 403
 				return response
 
 
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/stop')
-@api.doc(params={'auxComp':'Aux Component','nodeFQDN':'Node FQDN'})
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
 class AuxStopSelective(Resource):
 	def post(self, auxComp, nodeFQDN):
-		auxList = ['collectd','lsf']
+		auxList = ['collectd', 'lsf']
  		if auxComp not in auxList:
 			response = jsonify({'Status':'No such  aux component '+ auxComp})
 			response.status_code = 400
 			return response
 
-		qAux =  dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		qAux = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qAux is None:
-			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
-			response.status_code=404
+			response = jsonify({'Status': 'Unknown node ' + nodeFQDN})
+			response.status_code = 404
 			return response
 
 		node = []
@@ -2030,40 +2029,40 @@ class AuxStopSelective(Resource):
 		if auxComp == 'collectd':
 			if qAux.nCollectdState == 'Running': 
 				try:
-					serviceCtrl(node,qAux.nUser,qAux.nPass,'collectd', 'stop')
+					serviceCtrl(node, qAux.nUser, qAux.nPass, 'collectd', 'stop')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error stopping collectd on '+ nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error stopping collectd on ' + nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 				qAux.nCollectdState = 'Stopped'
-				response = jsonify({'Status':'Collectd stopped on '+nodeFQDN})
+				response = jsonify({'Status': 'Collectd stopped on '+ nodeFQDN})
 				response.status_code = 200
 				return response
 			else:
-				response=jsonify({'Status':'No running Collectd instance found!'})
-				response.status_code=403
+				response = jsonify({'Status': 'No running Collectd instance found!'})
+				response.status_code = 403
 				return response
 
 		if auxComp == 'lsf':
 			if qAux.nLogstashForwState == 'Running': 
 				try:
-					serviceCtrl(node,qAux.nUser,qAux.nPass,'logstash-forwarder', 'stop')
+					serviceCtrl(node, qAux.nUser, qAux.nPass, 'logstash-forwarder', 'stop')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error stopping LSF on '+ nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error stopping LSF on ' + nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 
 				qAux.nCollectdState = 'Stopped'
-				response = jsonify({'Status':'LSF stopped on '+nodeFQDN})
+				response = jsonify({'Status': 'LSF stopped on '+nodeFQDN})
 				response.status_code = 200
 				return response
 			else:
-				response=jsonify({'Status':'No running LSF instance found!'})
-				response.status_code=403
+				response = jsonify({'Status': 'No running LSF instance found!'})
+				response.status_code = 403
 				return response
 
 
@@ -2082,17 +2081,102 @@ class AuxStopSelectiveThreaded(Resource):
 
 
 @dmon.route('/v2/overlord/aux/<auxComp>/start')
-@api.doc(params={'auxComp':'Aux Component', 'nodeFQDN': 'Node FQDN'})
+@api.doc(params={'auxComp': 'Aux Component'})
 class AuxStartAllThreaded(Resource):
-	def post(self):
-		return "same as v1" # TODO: start  component and reconfigure it if json detected
+	def post(self, auxComp):
+		auxList = ['collectd', 'lsf', 'jmx', 'all']
+		if auxComp not in auxList:
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
+			response.status_code = 400
+			return response
+		qNodes = db.session.query(dbNodes.nodeIP).all()
+		nList = []
+		for n in qNodes:
+			nList.append(n[0])
+
+		agentr = AgentResourceConstructor(nList, '5000')
+		if auxComp == 'all':
+			resourceList = agentr.start()
+		else:
+			resourceList = agentr.startSelective(auxComp)
+
+		dmon = GreenletRequests(resourceList)
+		nodeRes = dmon.parallelPost(None)
+
+		# TODO: create parallel request response parse function
+		failedNodes = []
+		for n in nodeRes:
+			nodeIP = urlparse(n['Node'])
+			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
+			#print n['StatusCode']
+			if n['StatusCode'] != 200:
+				failedNodes.append({'NodeIP': str(nodeIP.hostname),
+								'Code': n['StatusCode']})
+				qNode.nCollectdState = 'unknown'
+				qNode.nLogstashForwState = 'unknown'
+			else:
+				qNode.nCollectdState = 'Running'
+				qNode.nLogstashForwState = 'Running'
+
+		response = jsonify({'Status': 'Running ' + auxComp,
+							'Message': 'Updated Status',
+							'Failed': failedNodes})
+
+		response.status_code = 200
+
+		dmon.reset()
+
+		return response
+		return "same as v1"  # TODO: start  component and reconfigure it if json detected
 
 
 @dmon.route('/v2/overlord/aux/<auxComp>/stop')
-@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
+@api.doc(params={'auxComp': 'Aux Component'})
 class AuxStopAllThreaded(Resource):
-	def post(self):
-		return "same as v1"  # TODO: stop selected component
+	def post(self, auxComp):
+		auxList = ['collectd', 'lsf', 'jmx', 'all']
+		if auxComp not in auxList:
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
+			response.status_code = 400
+			return response
+		qNodes = db.session.query(dbNodes.nodeIP).all()
+		nList = []
+		for n in qNodes:
+			nList.append(n[0])
+
+		agentr = AgentResourceConstructor(nList, '5000')
+		if auxComp == 'all':
+			resourceList = agentr.stop()
+		else:
+			resourceList = agentr.stopSelective(auxComp)
+
+		dmon = GreenletRequests(resourceList)
+		nodeRes = dmon.parallelPost(None)
+
+		# TODO: create parallel request response parse function
+		failedNodes = []
+		for n in nodeRes:
+			nodeIP = urlparse(n['Node'])
+			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
+			#print n['StatusCode']
+			if n['StatusCode'] != 200:
+				failedNodes.append({'NodeIP': str(nodeIP.hostname),
+								'Code': n['StatusCode']})
+				qNode.nCollectdState = 'unknown'
+				qNode.nLogstashForwState = 'unknown'
+			else:
+				qNode.nCollectdState = 'Stopped'
+				qNode.nLogstashForwState = 'Stopped'
+
+		response = jsonify({'Status': 'Stopped ' + auxComp,
+							'Message': 'Updated Status',
+							'Failed': failedNodes})
+
+		response.status_code = 200
+
+		dmon.reset()
+
+		return response
 
 
 """
