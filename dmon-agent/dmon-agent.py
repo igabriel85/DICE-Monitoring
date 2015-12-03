@@ -217,7 +217,7 @@ class NodeMonitStartSelective(Resource):
             response.status_code = 500
             return response
         response = jsonify({'Status': 'Done',
-                            'Message': 'Component '+auxComp+' started!'})
+                            'Message': 'Component ' + auxComp + ' started!'})
         response.status_code = 200
         return response
 
