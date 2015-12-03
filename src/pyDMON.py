@@ -1554,7 +1554,7 @@ class AuxDeploy(Resource):
 
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
-    def get(self):
+	def get(self):
 		qNodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
 			dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
 		mnList = []
@@ -1571,8 +1571,10 @@ class AuxDeployThread(Resource):
 		response.status_code = 200
 		return response
 
+	def put(self): #TODO: used to enact new configurations
+		return "something"
 
-    def post(self):
+	def post(self):  #TODO: Create api model
 		qNodes=db.session.query(dbNodes.nodeIP, dbNodes.nRoles).all()
 		nrList = []
 		for nr in qNodes:
@@ -1617,7 +1619,7 @@ class AuxDeployThread(Resource):
 class AuxDeployCheckThread(Resource):
 	def get(self):
 		agentPort = '5000'
-		nodesAll=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP).all()
+		nodesAll = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP).all()
 		if nodesAll is None:
 			response = jsonify({'Status': 'No monitored nodes found'})
 			response.status_code = 404
@@ -1674,13 +1676,13 @@ class AuxDeployCheckThread(Resource):
 class AuxDeploySelective(Resource):
 	@api.doc(parser=dmonAux)
 	def post(self, auxComp, nodeFQDN):
-		auxList = ['collectd','lsf']
+		auxList = ['collectd', 'lsf']
 		#status = {}
 		if auxComp not in auxList:
-			response = jsonify({'Status':'No such such aux component ' + auxComp})
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
 			response.status_code = 400
 			return response
-		qAux = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		qAux = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qAux is None:
 			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
 			response.status_code=404
@@ -1811,6 +1813,7 @@ class AuxConfigSelective(Resource):
 
 	def put(self, auxComp):
 		return "Sets configuration of aux components use parameters (args) -unsafe"
+
 
 @dmon.route('/v1/overlord/aux/<auxComp>/start')
 @api.doc(params={'auxComp':'Aux Component'})
@@ -2068,14 +2071,109 @@ class AuxStopSelective(Resource):
 @dmon.route('/v2/overlord/aux/<auxComp>/<nodeFQDN>/start')
 @api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
 class AuxStartSelectiveThreaded(Resource):
-	def post(self):
-		return "same as v1"  # TODO: start selected component and reconfigure it if json detected
+	def post(self, auxComp, nodeFQDN):
+		auxList = ['collectd', 'lsf', 'jmx', 'all']
+		if auxComp not in auxList:
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
+			response.status_code = 400
+			return response
+
+		qAux = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
+
+		if qAux is None:
+			response = jsonify({'Status': 'Node ' + nodeFQDN +' not found!'})
+			response.status_code = 404
+			return response
+
+		node = []
+		node.append(qAux.nodeIP)
+		agentr = AgentResourceConstructor(node, '5000')
+
+		if auxComp == 'all':
+			resourceList = agentr.start()
+		else:
+			resourceList = agentr.startSelective(auxComp)
+
+		try:
+			r = requests.post(resourceList[0])
+			#data = r.text
+		except requests.exceptions.Timeout:
+			response = jsonify({'Status': 'Timeout',
+								'Message': 'Request timedout!'})
+			response.status_code = 408
+			return response
+		except requests.exceptions.ConnectionError:
+			response = jsonify({'Status': 'Error',
+								'Message': 'Connection Error!'})
+			response.status_code = 404
+			return response
+
+		if auxComp is 'collectd':
+			qAux.nCollectdState = 'Running'
+		elif auxComp is 'lsf':
+			qAux.nLogstashForwState = 'Running'
+		else:
+			qAux.nCollectdState = 'Running'
+			qAux.nLogstashForwState = 'Running'
+
+		response = jsonify({'Status': 'Success',
+							'Message': 'Component ' + auxComp + ' started!'})
+		response.status_code = 200
+		return response
 
 
 @dmon.route('/v2/overlord/aux/<auxComp>/<nodeFQDN>/stop')
 @api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
 class AuxStopSelectiveThreaded(Resource):
-	def post(self):
+	def post(self, auxComp, nodeFQDN):
+		auxList = ['collectd', 'lsf', 'jmx', 'all']
+		if auxComp not in auxList:
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
+			response.status_code = 400
+			return response
+
+		qAux = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
+
+		if qAux is None:
+			response = jsonify({'Status': 'Node ' + nodeFQDN +' not found!'})
+			response.status_code = 404
+			return response
+
+		node = []
+		node.append(qAux.nodeIP)
+		agentr = AgentResourceConstructor(node, '5000')
+
+		if auxComp == 'all':
+			resourceList = agentr.stop()
+		else:
+			resourceList = agentr.stopSelective(auxComp)
+
+		try:
+			r = requests.post(resourceList[0])
+			#data = r.text
+		except requests.exceptions.Timeout:
+			response = jsonify({'Status': 'Timeout',
+								'Message': 'Request timedout!'})
+			response.status_code = 408
+			return response
+		except requests.exceptions.ConnectionError:
+			response = jsonify({'Status': 'Error',
+								'Message': 'Connection Error!'})
+			response.status_code = 404
+			return response
+
+		if auxComp is 'collectd':
+			qAux.nCollectdState = 'Stopped'
+		elif auxComp is 'lsf':
+			qAux.nLogstashForwState = 'Stopped'
+		else:
+			qAux.nCollectdState = 'Stopped'
+			qAux.nLogstashForwState = 'Stopped'
+
+		response = jsonify({'Status': 'Success',
+							'Message': 'Component ' + auxComp + ' stopped!'})
+		response.status_code = 200
+		return response
 		return "same as v1"  # TODO: stop selected component
 
 
@@ -2126,7 +2224,6 @@ class AuxStartAllThreaded(Resource):
 		dmon.reset()
 
 		return response
-		return "same as v1"  # TODO: start  component and reconfigure it if json detected
 
 
 @dmon.route('/v2/overlord/aux/<auxComp>/stop')
