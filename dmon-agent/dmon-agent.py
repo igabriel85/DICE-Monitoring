@@ -114,8 +114,8 @@ class NodeDeployCollectd(Resource):
     @api.expect(collectdConfModel)
     def post(self):
         collectdTemp = os.path.join(tmpDir, 'collectd.tmp')
-        settingsDict={'logstash_server_ip': request.json['LogstashIP'], 'logstash_server_port': request.json['UDPPort']
-                      , 'collectd_pid_file': '/var/run/collectd.pid'}
+        settingsDict = {'logstash_server_ip': request.json['LogstashIP'], 'logstash_server_port': request.json['UDPPort'],
+                        'collectd_pid_file': '/var/run/collectd.pid'}
         aux.configureComponent(settingsDict, collectdTemp, collectdConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
@@ -128,13 +128,13 @@ class NodeDeployCollectd(Resource):
 class NodeDeployLSF(Resource):
     @api.expect(lsfConfModel)
     def post(self):
-        lsfTemp= os.path.join(tmpDir, 'logstash-forwarder.tmp')
-        settingsDict={'ESCoreIP': request.json['LogstashIP'], 'LSLumberPort': request.json['LumberjackPort']}
+        lsfTemp = os.path.join(tmpDir, 'logstash-forwarder.tmp')
+        settingsDict  = {'ESCoreIP': request.json['LogstashIP'], 'LSLumberPort': request.json['LumberjackPort']}
         aux.configureComponent(settingsDict, lsfTemp)
         aux.controll('logstash-forwarder', 'restart')
         response = jsonify({'Status': 'Done',
                             'Message': 'LSF Stated'})
-        response.status_code=200
+        response.status_code = 200
         return response
 
 

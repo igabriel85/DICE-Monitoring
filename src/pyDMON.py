@@ -372,68 +372,68 @@ class QueryEsCore(Resource):
 			query = queryConstructor(tstart=request.json['DMON']['tstart'], queryString=request.json['DMON']['queryString'],
 				size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
 		else:
-			query = queryConstructor(tstart=request.json['DMON']['tstart'],tstop=request.json['DMON']['tstop'],
-				queryString=request.json['DMON']['queryString'],size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
+			query = queryConstructor(tstart=request.json['DMON']['tstart'], tstop=request.json['DMON']['tstop'],
+				queryString=request.json['DMON']['queryString'], size=request.json['DMON']['size'], ordering=request.json['DMON']['ordering'])
 		
 		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
 			ListMetrics, resJson = queryESCore(query, debug=False) #TODO enclose in Try Catch if es instance unreachable
 			if not ListMetrics:
-				response = jsonify({'Status':'No results found!'})
+				response = jsonify({'Status': 'No results found!'})
 				response.status_code = 404
 				return response
 
 			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
-					fileName = 'output'+'.csv'
+					fileName = 'output' + '.csv'
 					dict2CSV(ListMetrics)
 				else:
-					fileName = request.json['DMON']['fname']+'.csv'
-					dict2CSV(ListMetrics,request.json['DMON']['fname'])
+					fileName = request.json['DMON']['fname'] + '.csv'
+					dict2CSV(ListMetrics, request.json['DMON']['fname'])
 
-				csvOut = os.path.join(outDir,fileName)
+				csvOut = os.path.join(outDir, fileName)
 				try:
-					csvfile=open(csvOut,'r')
+					csvfile=open(csvOut, 'r')
 				except EnvironmentError:
-					response = jsonify({'EnvError':'file not found'})
+					response = jsonify({'EnvError': 'file not found'})
 					response.status_code = 500
 					return response
-				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
+				return send_file(csvfile, mimetype='text/csv', as_attachment=True)
 			if ftype == 'json':
-				response = jsonify({'DMON':resJson})
+				response = jsonify({'DMON': resJson})
 				response.status_code = 200
 				return response
 			if ftype == 'plain':
-				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
+				return Response(str(ListMetrics), status=200, mimetype='text/plain')
 
 		else:
 			metrics = request.json['DMON']['metrics']
 			ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
 			if not ListMetrics:
-				response = jsonify({'Status':'No results found!'})
+				response = jsonify({'Status': 'No results found!'})
 				response.status_code = 404
 				return response
 			#repeated from before create function
 			if ftype == 'csv':
 				if not 'fname' in request.json['DMON']:
-					fileName = 'output'+'.csv'
+					fileName = 'output' + '.csv'
 					dict2CSV(ListMetrics)
 				else:
-					fileName = request.json['DMON']['fname']+'.csv'
-					dict2CSV(ListMetrics,request.json['DMON']['fname'])
-				csvOut = os.path.join(outDir,fileName)
+					fileName = request.json['DMON']['fname'] + '.csv'
+					dict2CSV(ListMetrics, request.json['DMON']['fname'])
+				csvOut = os.path.join(outDir, fileName)
 				try:
-					csvfile=open(csvOut,'r')
+					csvfile = open(csvOut, 'r')
 				except EnvironmentError:
-					response = jsonify({'EnvError':'file not found'})
+					response = jsonify({'EnvError' : 'file not found'})
 					response.status_code = 500
 					return response
-				return send_file(csvfile,mimetype = 'text/csv',as_attachment = True)
+				return send_file(csvfile, mimetype='text/csv', as_attachment=True)
 			if ftype == 'json':
-				response = jsonify({'DMON':resJson})
+				response = jsonify({'DMON': resJson})
 				response.status_code = 200
 				return response
 			if ftype == 'plain':
-				return Response(str(ListMetrics),status=200 ,mimetype='text/plain')
+				return Response(str(ListMetrics), status=200, mimetype='text/plain')
 
 
 @dmon.route('/v1/overlord')
@@ -442,21 +442,23 @@ class OverlordInfo(Resource):
 		message = 'Message goes Here and is not application/json (TODO)!'
 		return message
 
+
 @dmon.route('/v1/overlord/framework')
 class OverlordFrameworkInfo(Resource):
 	def get(self):
-		response = jsonify({'Supported Frameworks':lFrameworks})
+		response = jsonify({'Supported Frameworks': lFrameworks})
 		response.status_code = 200
 		return response
+
 
 @dmon.route('/v1/overlord/framework/<fwork>')
 class OverlordFrameworkProperties(Resource):
 	def get(self, fwork):
 		if fwork not in lFrameworks:
-			response = jsonify({'Status': 'Malformed URI', 'Message': 'Unknown framework '+ fwork})
+			response = jsonify({'Status': 'Malformed URI', 'Message': 'Unknown framework ' + fwork})
 			response.status_code = 404
 			return response
-		if fwork =='hdfs' or fwork=='yarn':
+		if fwork == 'hdfs' or fwork == 'yarn':
 			propFile = os.path.join(tmpDir, 'metrics/hadoop-metrics2.tmp')
 			try:
 				propCfg = open(propFile, 'r')
@@ -467,7 +469,7 @@ class OverlordFrameworkProperties(Resource):
 			return send_file(propCfg, mimetype='text/x-java-properties', as_attachment = True)
 
 		if fwork == 'spark':
-			templateLoader = jinja2.FileSystemLoader( searchpath="/")
+			templateLoader = jinja2.FileSystemLoader(searchpath="/")
 			templateEnv = jinja2.Environment(loader=templateLoader)
 			propSparkTemp= os.path.join(tmpDir, 'metrics/spark-metrics.tmp')
 			propSparkFile = os.path.join(cfgDir, 'metrics.properties')
@@ -480,11 +482,11 @@ class OverlordFrameworkProperties(Resource):
 
 			qLSCore = dbSCore.query.first() #TODO: Only works for single deployment
 			if qLSCore is None:
-				response = jsonify({'Status':'Missing Instance','Message':'No Logstash Instance Configured'})
+				response = jsonify({'Status': 'Missing Instance', 'Message': 'No Logstash Instance Configured'})
 				response.status_code = 404
 				return response
-			infoSpark = {'logstashserverip':qLSCore.hostIP,'logstashportgraphite':'5002','period':'10'}
-			propSparkInfo=template.render(infoSpark)
+			infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
+			propSparkInfo = template.render(infoSpark)
 			propSparkConf = open(propSparkFile,"w+")
 			propSparkConf.write(propSparkInfo)
 			propSparkConf.close()
