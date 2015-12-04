@@ -2,6 +2,7 @@ FQDNLookup true
 
 #PIDFile "{{collectd_pid_file}}"
 #LogFile "{{collectd_log_file}}"
+#Interval {{poll_interval}}
 
 LoadPlugin cpu
 
