@@ -506,27 +506,52 @@ class OverlordBootstrap(Resource):
 		return "Deploys all monitoring core components with default configuration"
 
 
+@dmon.route('/v1/overlord/core/database')
+class OverlordCoredb(Resource):
+    def get(self):
+        try:
+            dbFile = open(os.path.join(baseDir, 'dmon.db'), 'r')
+        except EnvironmentError:
+            response = jsonify({'EnvError': 'file not found'})
+            response.status_code = 500
+            return response
+
+        return send_file(dbFile, mimetype='application/x-sqlite3', as_attachement=True)
+
+    def put(self):
+        dbLoc = os.path.join(baseDir, 'dmon.db')
+        file = request.files['dmon.db']
+        if os.path.isfile(os.path.join(baseDir, 'dmon.db')) is True:
+            os.rename(dbLoc, dbLoc + '.backup')
+        file.save(dbLoc)
+
+        response = jsonify({'Status': 'Done',
+                            'Message': 'New DB loaded'})
+        response.status_code = 201
+        return response
+
+
 @dmon.route('/v1/overlord/core/status')
 class OverlordCoreStatus(Resource):
 	def get(self):
 		rspD = {}
-		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
+		qESCore = dbESCore.query.filter_by(MasterNode=1).first() #TODO -> curerntly only generates config file for master node
 		if qESCore is None:
-			response = jsonify({"Status":"No master ES instances found!"})
+			response = jsonify({"Status": "No master ES instances found!"})
 			response.status_code = 500
 			return response
 		try:
-			esCoreUrl='http://'+qESCore.hostIP+':'+str(qESCore.nodePort)
-			r = requests.get(esCoreUrl,timeout=2) #timeout in seconds
+			esCoreUrl='http://' + qESCore.hostIP + ':' + str(qESCore.nodePort)
+			r = requests.get(esCoreUrl, timeout=2) #timeout in seconds
 		except:
-			response = jsonify({"Error":"Masteraster ES instances not reachable!"})
+			response = jsonify({"Error": "Masteraster ES instances not reachable!"})
 			response.status_code = 500
 			return response
 
 		rsp = r.json()
-		rspES={'ElasticSearch':rsp}
-		rspLS = {'Logstash':{'Status':'TODO','Version':'TODO'}}
-		rspKB = {'Kibana':{'Status':'TODO','Version':'TODO'}}
+		rspES = {'ElasticSearch': rsp}
+		rspLS = {'Logstash': {'Status': 'TODO', 'Version': 'TODO'}}
+		rspKB = {'Kibana': {'Status': 'TODO', 'Version': 'TODO'}}
 
 		rspD.update(rspES)
 		rspD.update(rspLS) #TODO
@@ -1055,30 +1080,30 @@ class KBCoreConfiguration(Resource):
 @dmon.route('/v1/overlord/core/kb')
 class KKCoreController(Resource):
 	def get(self):
-		KBhostsAll=db.session.query(dbKBCore.hostFQDN,dbKBCore.hostIP,dbKBCore.hostOS,dbKBCore.kbPort,dbKBCore.KBCorePID,
-			dbKBCore.KBCoreStatus).all()
+		KBhostsAll = db.session.query(dbKBCore.hostFQDN, dbKBCore.hostIP, dbKBCore.hostOS,
+                                    dbKBCore.kbPort, dbKBCore.KBCorePID, dbKBCore.KBCoreStatus).all()
 		resList=[]
 		for hosts in KBhostsAll:
-			confDict={}
-			confDict['HostFQDN']=hosts[0]
-			confDict['IP']=hosts[1]
-			confDict['OS']=hosts[2]
-			confDict['KBPort']=hosts[3]
-			confDict['PID']=hosts[4]
-			confDict['KBStatus']=hosts[5]
+			confDict = {}
+			confDict['HostFQDN'] = hosts[0]
+			confDict['IP'] = hosts[1]
+			confDict['OS'] = hosts[2]
+			confDict['KBPort'] = hosts[3]
+			confDict['PID'] = hosts[4]
+			confDict['KBStatus'] = hosts[5]
 			resList.append(confDict)
-		response = jsonify({'KB Instances':resList})
+		response = jsonify({'KB Instances': resList})
 		response.status_code = 200
 		return response
 
 	def post(self):
-		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
-		templateEnv = jinja2.Environment( loader=templateLoader )
-		kbTemp= os.path.join(tmpDir,'kibana.tmp')#tmpDir+"/collectd.tmp"
-		kbfConf = os.path.join(cfgDir,'kibana.yml')
-		qKBCore=dbKBCore.query.first() # TODO: only one instance is supported
+		templateLoader = jinja2.FileSystemLoader(searchpath="/")
+		templateEnv = jinja2.Environment(loader=templateLoader)
+		kbTemp= os.path.join(tmpDir, 'kibana.tmp')#tmpDir+"/collectd.tmp"
+		kbfConf = os.path.join(cfgDir, 'kibana.yml')
+		qKBCore = dbKBCore.query.first() # TODO: only one instance is supported
 		if qKBCore is None:
-			response = jsonify({"Status":"No KB instance found!"})
+			response = jsonify({"Status": "No KB instance found!"})
 			response.status_code = 500
 			return response
 
@@ -1086,17 +1111,17 @@ class KKCoreController(Resource):
 			subprocess.call(["kill", "-9", str(qKBCore.KBCorePID)])
 
 		try:
-			template = templateEnv.get_template( kbTemp )
+			template = templateEnv.get_template(kbTemp)
 			#print >>sys.stderr, template
 		except:
 			return "Tempalte file unavailable!"
 
 		#Log and PID location for kibana
 		
-		kbPID = os.path.join(pidDir,'kibana.pid')
-		kbLog = os.path.join(logDir,'kibana.log')
+		kbPID = os.path.join(pidDir, 'kibana.pid')
+		kbLog = os.path.join(logDir, 'kibana.log')
 
-		infoKBCore = {"kbPort":qKBCore.kbPort, "kibanaPID":kbPID,"kibanaLog":kbLog}			
+		infoKBCore = {"kbPort": qKBCore.kbPort, "kibanaPID": kbPID, "kibanaLog": kbLog}
 		kbConf = template.render(infoKBCore)
 		qKBCore.conf = kbConf
 		#print >>sys.stderr, esConf
@@ -1120,6 +1145,7 @@ class KKCoreController(Resource):
 		response = jsonify({'Status':'Kibana Core  PID '+str(kbPid)})
 		response.status_code = 200
 		return response
+
 
 @dmon.route('/v1/overlord/core/ls/config')
 class LSCoreConfiguration(Resource):
@@ -1187,6 +1213,7 @@ class LSCoreConfiguration(Resource):
 			response.status_code = 201
 			return response
 		#return "Changes configuration fo logstash server"
+
 
 @dmon.route('/v1/overlord/core/ls')
 class LSCoreController(Resource):
@@ -1603,7 +1630,7 @@ class AuxDeployThread(Resource):
 	def put(self): #TODO: used to enact new configurations
 		return "something"
 
-	def post(self):  #TODO: Create api model
+	def post(self):
 		qNodes=db.session.query(dbNodes.nodeIP, dbNodes.nRoles).all()
 		nrList = []
 		for nr in qNodes:
