@@ -88,8 +88,8 @@ def checkUnique(nodeList):
 	'''
 	Checks for unique values in a dictionary.
 	'''
-	seen={}
-	result =set()
+	seen = {}
+	result = set()
 	sameCredentials = []
 	ipNode = []
 	for d in nodeList:
@@ -110,16 +110,16 @@ def checkUnique(nodeList):
 
 class AgentResourceConstructor():
 	uriRoot = '/agent/v1'
-	chck = '/check' #Done
-	clctd = '/collectd' #Done
-	logsf = '/lsf' #Done
-	jmxr = '/jmx' #Done
-	confr = '/conf'  # TODO: must specify auxComp name
-	logsr = '/logs'  # TODO: must specify auxComp name
-	deployr = '/deploy' #Done
-	noder = '/node' #Done
-	startr = '/start'  # TODO: append comp name # Done
-	stopr = '/stop'  # TODO: append comp name # Done
+	chck = '/check'
+	clctd = '/collectd'
+	logsf = '/lsf'
+	jmxr = '/jmx'
+	confr = '/conf'
+	logsr = '/logs'
+	deployr = '/deploy'
+	noder = '/node'
+	startr = '/start'
+	stopr = '/stop'
 
 	def __init__(self, IPList, Port):
 		self.IPList = IPList
@@ -210,6 +210,22 @@ class AgentResourceConstructor():
 			resource = 'http://%s:%s%s%s/%s' %(ip, self.Port, AgentResourceConstructor.uriRoot, AgentResourceConstructor.stopr, comp)
 			confList.append(resource)
 		return confList
+
+def dbBackup(db, source, destination, version=1):
+	'''
+
+	:param db: -> database
+	:param source: -> original name
+	:param destination: -> new name
+	:return:
+	'''
+
+
+	vdest = destination+str(version)
+	if os.path.isfile(source) is True:
+		if os.path.isfile(vdest) is True:
+			return dbBackup(db, source, destination, version + 1)
+		os.rename(source, destination)
 
 
 # test = AgentResourceConstructor(['192.12.12.12'], '5000')

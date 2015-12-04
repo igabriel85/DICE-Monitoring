@@ -486,9 +486,9 @@ def auxCtrl(auxComp,command):
 		print "Unknown command! Only Start and Stop is supported"
 
 	if auxComp == "collectd":
-		qNCollectd = dbNodes.query.filter_by(nCollectdState = cState).all()
+		qNCollectd = dbNodes.query.filter_by(nCollectdState=cState).all()
 		if qNCollectd is None:
-			response = jsonify({'Status':'No nodes in state '+cState+' !'})
+			response = jsonify({'Status': 'No nodes in state ' + cState + ' !'})
 			response.status_code = 404
 			return response
 
