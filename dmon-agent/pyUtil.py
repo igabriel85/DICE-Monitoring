@@ -140,7 +140,8 @@ class AuxComponent():
 
     def controll(self, component, cmd):
         try:
-            subprocess.Popen('sudo service ' + component + ' ' + cmd, shell=True)
+            pro = subprocess.Popen('sudo service ' + component + ' ' + cmd, shell=True)
+            proOut = pro.communicate()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
