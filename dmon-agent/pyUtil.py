@@ -6,7 +6,7 @@ import time
 import jinja2
 
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
-
+pidDir = '/var/run'
 
 def installCollectd():
     '''
@@ -78,6 +78,19 @@ def installLsf(listLocation, lsfGPG):
 def installJmxTrans():  # TODO: create jmxtrans installation
     return "Install jmxtrans"
 
+def checkPID(pid):
+	"""
+	Check For the existence of a unix pid.
+	Sending signal 0 to a pid will raise an OSError exception if the pid is not running, and do nothing otherwise.
+	"""
+	if pid == 0:	#If PID newly created return False
+		return 0
+	try:
+		os.kill(pid, 0)
+	except OSError:
+		return 0
+	else:
+		return 1
 
 class AuxComponent():
     """Controlling auxiliary monitoring components
@@ -141,27 +154,55 @@ class AuxComponent():
     def controll(self, component, cmd):
         try:
             pro = subprocess.Popen('sudo service ' + component + ' ' + cmd, shell=True)
-            proOut = pro.communicate()
+            pro.wait()
         except Exception as inst:
             print >> sys.stderr, type(inst)
             print >> sys.stderr, inst.args
             raise
+
+    def collectdStop(self):
+        try:
+            cPid = open('/var/run/collectd.pid','r').readline()
+            pidString = cPid.strip()
+            pid = int(pidString)
+        except IOError:
+            return 0
+
 
     def checkAux(self, component):
-        try:
-            p = subprocess.Popen(['service', component, 'status'], stdout=subprocess.PIPE)
-            pOut = p.communicate()[0]
-        except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
-            raise
-
-        if 'running' in pOut:
-            return 1
-        elif 'unrecognized' in pOut:
-            return 'unknown'
-        else:
+        pidPath = os.path.join(pidDir, component + '.pid')
+        if not os.path.isfile(pidPath):
             return 0
+
+        try:
+            pid = open(pidPath).readline()
+            pidString = pid.strip()
+            print pidString
+            pidint = int(pidString)
+        except IOError:
+            return 0
+
+        try:
+            os.kill(pidint, 0)
+        except OSError:
+            return 0
+        else:
+            return 1
+
+        # try:
+        #     p = subprocess.Popen(['service', component, 'status'], stdout=subprocess.PIPE)
+        #     pOut = p.communicate()[0]
+        # except Exception as inst:
+        #     print >> sys.stderr, type(inst)
+        #     print >> sys.stderr, inst.args
+        #     raise
+        #
+        # if 'running' in pOut:
+        #     return 1
+        # elif 'unrecognized' in pOut:
+        #     return 'unknown'
+        # else:
+        #     return 0
 
     def configureComponent(self, settingsDict, tmpPath, filePath):
         '''

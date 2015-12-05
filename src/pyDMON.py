@@ -1197,11 +1197,11 @@ class LSCoreConfiguration(Resource):
 			os=request.json["OS"]
 
 		if qSCore is None:
-			upS = dbSCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os,
+			upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"],hostOS=os,
 			 outESclusterName=request.json["ESClusterName"], udpPort = request.json["udpPort"], inLumberPort=request.json['LPort'])
 			db.session.add(upS) 
 			db.session.commit()
-			response = jsonify({'Added':'LS Config for '+ request.json["HostFQDN"]})
+			response = jsonify({'Added':'LS Config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
 		else:
@@ -1246,12 +1246,12 @@ class LSCoreController(Resource):
 		qSCore=dbSCore.query.first()# TODO: currently only one LS instance supported
 		#return qSCore
 		if qSCore is None:
-			response = jsonify({"Status":"No LS instances registered"})
+			response = jsonify({"Status": "No LS instances registered"})
 			response.status_code = 500
 			return response
 
 		if checkPID(qSCore.LSCorePID) is True:
-			subprocess.call(['kill','-9', str(qSCore.LSCorePID)])	
+			subprocess.call(['kill', '-9', str(qSCore.LSCorePID)])
 
 		try:
 			template = templateEnv.get_template(lsTemp)
@@ -1262,7 +1262,7 @@ class LSCoreController(Resource):
 			print >> sys.stderr, inst.args
 
 		if qSCore.sslCert == 'default':
-			certLoc = os.path.join(credDir,'logstash-forwarder.crt')
+			certLoc = os.path.join(credDir, 'logstash-forwarder.crt')
 		else:
 			certLoc = os.path.join(credDir,qSCore.sslCert+'.crt') 
 
