@@ -224,3 +224,58 @@ class AuxComponent():
 
     def getRoles(self):  # TODO:  implement role identification based on JPS and possibly pid files in /var/run
         return 'check vm roles using JPS!'
+
+
+class BDPlatform():
+    sparkLoc = '/etc/spark/conf/metrics.properties'
+    yarnLoc = '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties'
+    hdfsLoc = '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties'
+
+    def __init__(self, tmpDir):
+        self.sparkTmp = os.path.join(tmpDir, 'spark-metrics.tmp')
+        self.yarnTmp = os.path.join(tmpDir, 'hadoop-metrics2.tmp')
+
+    def generateYarnConfig(self, settingsDict):
+        print "Adding Yarn properties ..."
+        generateConf(self.yarnTmp, settingsDict, BDPlatform.yarnLoc)
+        print "Adding HDFS Properties ..."
+        generateConf(self.yarnTmp, settingsDict, BDPlatform.hdfsLoc)
+        print "Done"
+
+
+    def generateSparkConfig(self, settingsDict):
+        print "Adding Spark properties ..."
+        generateConf(self.sparkTmp, settingsDict, BDPlatform.sparkLoc)
+        print "Done"
+
+
+    def checkRole(self, role):
+        if role == 'spark':
+            if os.path.isdir('/etc/spark'):
+                return 1
+            else:
+                return 0
+        if role == 'yarn':
+            if os.path.isdir('/etc/hadoop'):
+                return 1
+            else:
+                return 0
+
+
+def generateConf(tmpPath, settingsDict, filePath):
+    '''
+    :param tmpPath: path to template file
+    :param settingsDict: settings dict
+    :param filePath: path to saved config file
+    :return:
+    '''
+    templateLoader = jinja2.FileSystemLoader(searchpath="/")
+    templateEnv = jinja2.Environment(loader=templateLoader)
+    try:
+        template = templateEnv.get_template(tmpPath)
+    except:
+        return "response"
+    confInfo = template.render(settingsDict)
+    confFile = open(filePath, "w+")
+    confFile.write(confInfo)
+    confFile.close()

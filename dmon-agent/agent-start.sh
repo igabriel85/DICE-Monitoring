@@ -15,10 +15,10 @@ fi
 
 
 if [ $# -eq 0 ]; then
-    echo "Starting default."
-	. $DIR/dmonEnv/bin/activate
-        python $DIR/src/start.py
+    echo "Starting dmon."
+	#. $DIR/dmonEnv/bin/activate
+        python dmon-agent.py > dmon-agent.log 2>&1 &
+        echo $! | dmon-agent.pid
 else
-   #. $DIR/dmonEnv/bin/activate
-	python $DIR/src/start.py $1 $2 $3 > /src/logs/dmon.log 2>&1 &
+   echo "DMON-agent does not support commandline arguments!"
 fi

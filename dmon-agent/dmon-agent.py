@@ -70,10 +70,18 @@ lsfConfModel = api.model('configuration details Model for LSF', {
     'LumberjackPort': fields.String(required=True, default='5000', description='Logstash Lumberjack input port')
 })
 
+yarnProperties = api.model('Yarn properties configuration Model', {
+    'Period': fields.String(required=True, default='10', description='Polling period for all Yarn/HDFS metrics')
+})
 
-
+sparkProperties = api.model('Spark properties configuration Model', {
+    'LogstashIP': fields.String(required=True, default='109.231.121.210', description='Logstash IP (only Spark)'),
+    'GraphitePort': fields.String(required=True, default='5002', description='Logstash Graphite input Port (only Spark)'),
+    'Period': fields.String(required=True, default='5', description='Spark Polling Period')
+})
 # Instance of AuxComponent Class
 aux = AuxComponent(lsfList, lsfGPG)
+
 
 @agent.route('/v1/node')
 class NodeInfo(Resource):
@@ -298,6 +306,59 @@ class NodeCheck(Resource):  # TODO: implement check functionality
                             'LSF': rLSF})
         response.status_code = 200
         return response
+
+
+@agent.route('/v1/bdp/<platform>')
+class AgentMetricsSystem(Resource):
+    @api.expect(sparkProperties)
+    def post(self, platform):
+        if not request.json:
+            response = jsonify({'Status': 'Request Error',
+                                'Message': 'Request body must be JSON'})
+            response.status_code = 400
+            return response
+        BDService = BDPlatform(tmpDir)
+        if platform == 'yarn':
+            if not BDService.checkRole('yarn'):
+                response = jsonify({'Status': 'Error',
+                                    'Message': 'Yarn not detected!'})
+                response.status_code = 404
+                return response
+            if 'Period' not in request.json:
+                response = jsonify({'Status': 'Request Error',
+                                'Message': 'Must contain Period field'})
+                response.status_code = 400
+                return response
+            settingsDict = {'metrics2_period': request.json['Period']}
+            BDService.generateYarnConfig(settingsDict)
+            response = jsonify({'Status': 'Done',
+                            'Message': 'Yarn properties uploaded'})
+            response.status_code = 200
+            return response
+        if platform == 'spark':
+            if not BDService.checkRole('spark'):
+                response = jsonify({'Status': 'Error',
+                                    'Message': 'Spark not detected!'})
+                response.status_code = 404
+                return response
+            if 'Period' or 'LogstashIP' or 'GraphitePort' not in request.json:
+                response = jsonify({'Status': 'Request Error',
+                                'Message': 'Must contain Period, Logstash IP and Graphite Port fields'})
+                response.status_code = 400
+                return response
+            settingsDict = {'logstashserverip': request.json['LogstashIP'],
+                        'logstashportgraphite': request.json['GraphitePort'],
+                        'period': request.json['Period']}
+            BDService.generateSparkConfig(settingsDict)
+            response = jsonify({'Status': 'Done',
+                            'Message': 'Spark properties uploaded'})
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Unsupported',
+                                'Message': 'Platform Unsupported'})
+            response.status_code = 404
+            return response
 
 
 if __name__ == '__main__':
