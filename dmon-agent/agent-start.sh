@@ -18,7 +18,7 @@ if [ $# -eq 0 ]; then
     echo "Starting dmon."
 	#. $DIR/dmonEnv/bin/activate
         python dmon-agent.py > dmon-agent.log 2>&1 &
-        echo $! | dmon-agent.pid
+        echo $! > dmon-agent.pid
 else
    echo "DMON-agent does not support commandline arguments!"
 fi

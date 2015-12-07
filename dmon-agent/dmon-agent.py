@@ -46,7 +46,7 @@ lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
 # auxList = ['collectd', 'lsf', 'jmx']
 
 app = Flask("dmon-agent")
-api = Api(app, version='0.0.2', title='DICE Monitoring Agent API',
+api = Api(app, version='0.0.3', title='DICE Monitoring Agent API',
           description="RESTful API for the DICE Monitoring Platform  Agent (dmon-agent)",
           )
 
@@ -308,7 +308,7 @@ class NodeCheck(Resource):  # TODO: implement check functionality
         return response
 
 
-@agent.route('/v1/bdp/<platform>')
+@agent.route('/v1/bdp/<platform>')  #TODO: Needs testing
 class AgentMetricsSystem(Resource):
     @api.expect(sparkProperties)
     def post(self, platform):
