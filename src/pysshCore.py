@@ -60,9 +60,9 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	- revise exceptions
 	- use jinja2 template to generate config for each defined host
 	'''
-	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
 	#create path to file
-	localCopy = os.path.join(confDir,'collectd.conf')
+	localCopy = os.path.join(confDir, 'collectd.conf')
 	try:
 		#Installing Collectd to hosts ...
 		output = client.run_command('apt-get install -y collectd', sudo=True)
@@ -73,7 +73,7 @@ def installCollectd(hostlist,userName,uPassword,confDir=confDir):
 	
 	try:	
 		print "Copying collectd conf files ....."
-		client.copy_file(localCopy,"collectd.conf")
+		client.copy_file(localCopy, "collectd.conf")
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured copying collectd.conf!"
 		raise
@@ -172,10 +172,10 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		print "Configuration dir not found!"
 
 	print "Install logstash-forwarder"
-	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	localCopyCrt = os.path.join(credDir,'logstash-forwarder.crt')
-	localCopyConf = os.path.join(confDir,'logstash-forwarder.conf')
-	localLFList = os.path.join(confDir,'logstashforwarder.list')
+	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
+	localCopyCrt = os.path.join(credDir, 'logstash-forwarder.crt')
+	localCopyConf = os.path.join(confDir, 'logstash-forwarder.conf')
+	localLFList = os.path.join(confDir, 'logstashforwarder.list')
 	try:
 		print "Creating folders..."
 		client.run_command('mkdir /opt/certs', sudo=True)
@@ -230,7 +230,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 	print "Installing Logstash-forwarder..."
 	
 	try:
-		update=client.run_command('apt-get update',sudo=True)
+		update=client.run_command('apt-get update', sudo=True)
 		listOutput(update)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while apt-get update!"
@@ -513,9 +513,9 @@ def auxCtrl(auxComp,command):
 			return response
 
 	if auxComp == "lsf":
-		qNLsf = dbNodes.query.filter_by(nLogstashForwState = cState).all()
+		qNLsf = dbNodes.query.filter_by(nLogstashForwState=cState).all()
 		if qNLsf is None:
-			response = jsonify({'Status':'No nodes in state '+cState+'!'})
+			response = jsonify({'Status': 'No nodes in state ' + cState + '!'})
 			response.status_code = 404
 			return response
 
@@ -524,11 +524,11 @@ def auxCtrl(auxComp,command):
 			node = []
 			node.append(i.nodeIP)
 			try:
-				serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', command)
+				serviceCtrl(node, i.nUser, i.nPass, 'logstash-forwarder', command)
 			except Exception as inst:
 				print >> sys.stderr, type(inst)
 				print >> sys.stderr, inst.args
-				response = jsonify({'Status':'Error exec '+command+' on LSF. Node '+ i.nodeFQDN +'!'})
+				response = jsonify({'Status': 'Error exec ' + command + ' on LSF. Node ' + i.nodeFQDN + '!'})
 				response.status_code = 500
 				return response
 
@@ -536,10 +536,77 @@ def auxCtrl(auxComp,command):
 			LsfNodes['Node'] = i.nodeFQDN
 			LsfNodes['IP'] = i.nodeIP
 			nodeLsfStopped.append(LsfNodes)
-			response = jsonify({'Status':'LSF '+command+' sucessfull','Nodes':nodeLsfdStopped})
+			response = jsonify({'Status': 'LSF ' + command + ' sucessfull', 'Nodes': nodeLsfStopped})
 			response.status_code = 200
 			return response
 
+
+def deployAgent(hostlist, userName, uPassword):
+	'''
+	:param hostlist: list of host IO
+	:param userName: username
+	:param uPassword: password
+	'''
+
+	if not os.path.isdir(credDir):
+		print "Configuration dir not found!"
+
+	print "Install logstash-forwarder"
+	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
+	localCopyCrt = os.path.join(credDir, 'logstash-forwarder.crt')
+
+	try:
+		print "Creating certificate folders..."
+		client.run_command('mkdir /opt/certs', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured creating /opt/certs!"
+		raise
+
+	print "Copying certificate..."
+
+	try:
+		client.copy_file(localCopyCrt, "logstash-forwarder.crt")
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while moving cert!"
+		raise
+
+	try:
+		print "Copying dmon-agent ..."
+		client.run_command('wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/0.0.3/dmon-agent.tar.gz')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "Error while downloading dmon-agent"
+		raise
+
+	try:
+		client.run_command('mkdir /opt/test')
+		client.run_command('mv dmon-agent.tar.gz /opt/test')
+		client.run_command('tar xvf /opt/test/dmon-agent.tar.gz')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "Error while unpacking dmon-agent"
+		raise
+
+	try:
+		client.run_command('pip install -r /opt/test/dmon-agent/requirements.txt')
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "Error while installing dmon-agent dependencies"
+		raise
+
+def startAgent(hostlist, username, password):
+	'''
+	:param hostlist:
+	:param username:
+	:param password:
+	'''
+	print "Start Agents"
+	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
+	try:
+		print "Start Agent..."
+		client.run_command('python /opt/test/dmon-agent/agent-start.sh', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occurred while starting dmon-agent!"
+		raise
+
+	
 def main(argv):
 	'''
 		This is the main function that handles command line arguments.

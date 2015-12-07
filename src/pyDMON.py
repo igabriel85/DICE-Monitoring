@@ -290,33 +290,48 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dm
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db.create_all()
 
+
+@dmon.route('/v1/log')
+class DmonLog(Resource):
+    def get(self):
+        try:
+            logfile = open(os.path.join(logDir, 'dmon.log'), 'r')
+        except EnvironmentError:
+            response = jsonify({'EnvError': 'file not found'})
+            response.status_code = 500
+            return response
+        return Response(logfile, status=200, mimetype='text/plain')
+
+
 @dmon.route('/v1/observer/applications')
 class ObsApplications(Resource):
 	def get(self):
 		return 'Returns a list of all applications from YARN.'
 
+
 @dmon.route('/v1/observer/applications/<appID>')
 class ObsAppbyID(Resource):
-	def get(self,appID):
-		return 'Returns information on a particular YARN applicaiton identified by '+appID+'!'
+	def get(self, appID):
+		return 'Returns information on a particular YARN applicaiton identified by ' + appID + '!'
+
 
 @dmon.route('/v1/observer/nodes')
 class NodesMonitored(Resource):
 	#@api.marshal_with(monNodes) # this is for response
 	def get(self):
 		nodeList = []
-		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP).all()
+		nodesAll=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP).all()
 		if nodesAll is None:
-			response = jsonify({'Status':'No monitored nodes found'})
+			response = jsonify({'Status': 'No monitored nodes found'})
 			response.status_code = 404
 			return response
 		for nl in nodesAll:
-			nodeDict= {}
+			nodeDict = {}
 			print >>sys.stderr, nl[0]
-			nodeDict.update({nl[0]:nl[1]})
+			nodeDict.update({nl[0]: nl[1]})
 			nodeList.append(nodeDict)
-		response = jsonify({'Nodes':nodeList})
-		response.status_code=200
+		response = jsonify({'Nodes': nodeList})
+		response.status_code = 200
 		return response
 
 
@@ -343,16 +358,17 @@ class NodeStatus(Resource):
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatusServices(Resource):
 	def get(self,nodeFQDN):
-		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qNode.nRoles == 'unknown':
-			response=jsonify({'Status':'No known service on '+nodeFQDN})
+			response=jsonify({'Status': 'No known service on ' + nodeFQDN})
 			response.status_code = 200
 			return response
 		else:
 			roleList = qNode.nRoles
-			response = jsonify({'Roles':roleList.split()})
+			response = jsonify({'Roles': roleList.split()})
 			response.status_code = 200
 			return response		
+
 
 @dmon.route('/v1/observer/query/<ftype>')
 @api.doc(params={'ftype':'output type'})
@@ -362,9 +378,9 @@ class QueryEsCore(Resource):
 	@api.expect(dMONQuery)# this is for payload 
 	def post(self, ftype):
 		#args = pQueryES.parse_args()#parsing query arguments in URI
-		supportType = ["csv","json","plain"]
+		supportType = ["csv", "json", "plain"]
 		if ftype not in supportType:
-			response = jsonify({'Supported types':supportType, "Submitted Type":ftype })
+			response = jsonify({'Supported types': supportType, "Submitted Type": ftype})
 			response.status_code = 415
 			return response
 
@@ -424,7 +440,7 @@ class QueryEsCore(Resource):
 				try:
 					csvfile = open(csvOut, 'r')
 				except EnvironmentError:
-					response = jsonify({'EnvError' : 'file not found'})
+					response = jsonify({'EnvError': 'file not found'})
 					response.status_code = 500
 					return response
 				return send_file(csvfile, mimetype='text/csv', as_attachment=True)
@@ -487,12 +503,12 @@ class OverlordFrameworkProperties(Resource):
 				return response
 			infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
 			propSparkInfo = template.render(infoSpark)
-			propSparkConf = open(propSparkFile,"w+")
+			propSparkConf = open(propSparkFile, "w+")
 			propSparkConf.write(propSparkInfo)
 			propSparkConf.close()
 
-			rSparkProp = open(propSparkFile,'r')
-			return send_file(rSparkProp,mimetype = 'text/x-java-properties',as_attachment = True) #TODO: Swagger returns same content each time, however sent file is correct
+			rSparkProp = open(propSparkFile, 'r')
+			return send_file(rSparkProp, mimetype='text/x-java-properties', as_attachment=True) #TODO: Swagger returns same content each time, however sent file is correct
 			
 		
 
@@ -616,6 +632,7 @@ class MonitoredNodes(Resource):
 
 	def post(self):
 		return "Bootstrap monitoring"
+
 
 @dmon.route('/v1/overlord/nodes/roles')
 class ClusterRoles(Resource):
@@ -1879,15 +1896,15 @@ class AuxStartAll(Resource):
 	def post(self, auxComp): #TODO create function that can be reused for both start and stop of all components
 		auxList = ['collectd','lsf']
 		if auxComp not in auxList:
-			response = jsonify({'Status':'No such such aux component '+ auxComp})
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
 			response.status_code = 400
 			return response
 
 		if auxComp == "collectd":
-			qNCollectd = dbNodes.query.filter_by(nCollectdState = 'Stopped').all()
+			qNCollectd = dbNodes.query.filter_by(nCollectdState='Stopped').all()
 			
 			if qNCollectd is None:
-				response = jsonify({'Status':'No nodes in state Stopped!'})
+				response = jsonify({'Status': 'No nodes in state Stopped!'})
 				response.status_code = 404
 				return response
 
@@ -1896,7 +1913,7 @@ class AuxStartAll(Resource):
 				node = []
 				node.append(i.nodeIP)
 				try:
-					serviceCtrl(node,i.nUser,i.nPass,'collectd', 'start')
+					serviceCtrl(node, i.nUser, i.nPass, 'collectd', 'start')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
@@ -1909,7 +1926,7 @@ class AuxStartAll(Resource):
 				CollectdNodes['IP'] = i.nodeIP
 				nodeCollectdStopped.append(CollectdNodes)
 				i.nCollectdState = 'Running'
-			response = jsonify({'Status':'Collectd started','Nodes':nodeCollectdStopped})
+			response = jsonify({'Status': 'Collectd started', 'Nodes': nodeCollectdStopped})
 			response.status_code = 200
 			return response
 
@@ -2363,19 +2380,19 @@ def internal_server_error(e):
 
 @app.errorhandler(405)
 def meth_not_allowed(e):
-	response=jsonify({'error':'method not allowed'})
-	response.status_code=405
-	return response
+    response = jsonify({'error': 'method not allowed'})
+    response.status_code = 405
+    return response
 
 @api.errorhandler(400)
 def bad_request(e):
-	response=jsonify({'error':'bad request'})
-	response.status_code=400
+	response = jsonify({'error': 'bad request'})
+	response.status_code = 400
 	return response
 
 @api.errorhandler(415)
 def bad_mediatype(e):
-	response=jsonify({'error':'unsupported media type'})
+	response = jsonify({'error': 'unsupported media type'})
 	response.status_code = 415
 	return response
 
