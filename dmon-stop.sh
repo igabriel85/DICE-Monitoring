@@ -10,7 +10,7 @@ elif [ $ARCH == "Darwin" ]; then
 fi
 
 echo "Stopping Kibana ..."
-if [! -f $DIR/src/pid/kibana.pid]; then
+if [ ! -f $DIR/src/pid/kibana.pid ]; then
 	echo "No Kibana instance to stop."
 else
 	kill -9  `cat $DIR/src/pid/kibana.pid`
@@ -18,7 +18,7 @@ else
 fi
 
 echo "Stopping Logstash Server ..."
-if [! -f $DIR/src/pid/logstash.pid]; then
+if [ ! -f $DIR/src/pid/logstash.pid ]; then
 	echo "No Logstash instance to stop."
 else
 	kill -9  `cat $DIR/src/pid/logstash.pid`
@@ -26,7 +26,7 @@ else
 fi
 
 echo "Stopping ElasticSearch ..."
-if [! -f $DIR/src/pid/elasticsearch.pid]; then
+if [ ! -f $DIR/src/pid/elasticsearch.pid ]; then
 	echo "No ElasticSearch instance to stop."
 else
 	kill -9  `cat $DIR/src/pid/elasticsearch.pid`
