@@ -534,7 +534,7 @@ class OverlordCoredb(Resource):
             response.status_code = 500
             return response
 
-        return send_file(dbFile, mimetype='application/x-sqlite3', as_attachement=True)
+        return send_file(dbFile, mimetype='application/x-sqlite3', as_attachment=True)
 
     def put(self):
         dbLoc = os.path.join(baseDir, 'dmon.db')
@@ -738,9 +738,9 @@ class ClusterRoles(Resource):
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class MonitoredNodeInfo(Resource):
 	def get(self, nodeFQDN):
-		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qNode is None:
-			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
+			response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found!'})
 			response.status_code = 404
 			return response
 		else:
