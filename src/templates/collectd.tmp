@@ -1,8 +1,15 @@
 FQDNLookup true
 
+PIDFile "/var/run/collectd.pid"
 #PIDFile "{{collectd_pid_file}}"
-#LogFile "{{collectd_log_file}}"
 #Interval {{poll_interval}}
+
+LoadPlugin logfile
+<Plugin "logfile">
+  LogLevel "info"
+  File "/var/log/collectd.log"
+  Timestamp true
+</Plugin>
 
 LoadPlugin cpu
 

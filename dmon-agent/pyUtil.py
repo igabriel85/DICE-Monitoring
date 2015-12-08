@@ -152,6 +152,8 @@ class AuxComponent():
         return compInstalled
 
     def controll(self, component, cmd):
+        if component == 'lsf':
+            component = 'logstash-forwarder'
         try:
             pro = subprocess.Popen('sudo service ' + component + ' ' + cmd, shell=True)
             pro.wait()
