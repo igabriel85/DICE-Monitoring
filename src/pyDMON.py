@@ -562,7 +562,7 @@ class OverlordCoreStatus(Resource):
 			esCoreUrl='http://' + qESCore.hostIP + ':' + str(qESCore.nodePort)
 			r = requests.get(esCoreUrl, timeout=2) #timeout in seconds
 		except:
-			response = jsonify({"Error": "Masteraster ES instances not reachable!"})
+			response = jsonify({"Error": "Master ES instances not reachable!"})
 			response.status_code = 500
 			return response
 
@@ -1145,7 +1145,7 @@ class KKCoreController(Resource):
 		qKBCore.conf = kbConf
 		#print >>sys.stderr, esConf
 		db.session.commit()
-		kbCoreConf = open(kbfConf,"w+")
+		kbCoreConf = open(kbfConf, "w+")
 		kbCoreConf.write(kbConf)
 		kbCoreConf.close()
 
@@ -1154,14 +1154,14 @@ class KKCoreController(Resource):
 		os.system('cp '+kbfConf+' /opt/kibana/config/kibana.yml ')
 		
 		kbPid = 0
-		FNULL = open(os.devnull,'w')
+		FNULL = open(os.devnull, 'w')
 		try:
-			kbPid = subprocess.Popen('/opt/kibana/bin/kibana',stdout=FNULL, stderr=subprocess.STDOUT).pid 
+			kbPid = subprocess.Popen('/opt/kibana/bin/kibana', stdout=FNULL, stderr=subprocess.STDOUT).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qKBCore.KBCorePID = kbPid
-		response = jsonify({'Status':'Kibana Core  PID '+str(kbPid)})
+		response = jsonify({'Status': 'Kibana Core  PID ' + str(kbPid)})
 		response.status_code = 200
 		return response
 
@@ -1647,7 +1647,7 @@ class AuxDeployThread(Resource):
 		return response
 
 	def put(self): #TODO: used to enact new configurations
-		return "something"
+		return "Reload new Configuration"
 
 	def post(self):
 		qNodes=db.session.query(dbNodes.nodeIP, dbNodes.nRoles).all()

@@ -221,6 +221,7 @@ class AuxComponent():
         confFile = open(filePath, "w+")
         confFile.write(confInfo)
         confFile.close()
+        subprocess.Popen('echo >> ' +filePath) # TODO fix this
 
     def getRoles(self):  # TODO:  implement role identification based on JPS and possibly pid files in /var/run
         return 'check vm roles using JPS!'
