@@ -20,5 +20,5 @@ if [ $# -eq 0 ]; then
         python $DIR/src/start.py
 else
    #. $DIR/dmonEnv/bin/activate
-	python $DIR/src/start.py $1 $2 $3 > /src/logs/dmon.log 2>&1 &
+	python $DIR/src/start.py $1 $2 $3 > src/logs/dmon.log 2>&1 &
 fi
