@@ -568,8 +568,8 @@ class OverlordCoreStatus(Resource):
 
 		rsp = r.json()
 		rspES = {'ElasticSearch': rsp}
-		rspLS = {'Logstash': {'Status': 'TODO', 'Version': 'TODO'}}
-		rspKB = {'Kibana': {'Status': 'TODO', 'Version': 'TODO'}}
+		rspLS = {'Logstash': {'Status': 'Running', 'Version': '4.1.2'}} # TODO
+		rspKB = {'Kibana': {'Status': 'Running', 'Version': '1.5.4'}} # TODO
 
 		rspD.update(rspES)
 		rspD.update(rspLS) #TODO
@@ -666,6 +666,11 @@ class ClusterRoles(Resource):
 			#print n["NodeName"]
 			#print n["Roles"]
 			upRoles = dbNodes.query.filter_by(nodeFQDN=n["NodeName"]).first()
+			if upRoles is None:
+				response = jsonify({'Status': 'Node Name Error',
+									'Message': 'Node' + n["NodeName"] + ' not found!'})
+				response.status_code = 404
+				return response
 			upRoles.nRoles = ', '.join(map(str, n["Roles"]))
 
 		response = jsonify({'Status': 'Done',
@@ -2001,9 +2006,9 @@ class AuxStopAll(Resource):
 			return response
 
 		if auxComp == "lsf":
-			qNLsf = dbNodes.query.filter_by(nLogstashForwState = 'Running').all()
+			qNLsf = dbNodes.query.filter_by(nLogstashForwState='Running').all()
 			if qNLsf is None:
-				response = jsonify({'Status':'No nodes in state Running!'})
+				response = jsonify({'Status': 'No nodes in state Running!'})
 				response.status_code = 404
 				return response
 
