@@ -172,6 +172,11 @@ class AuxComponent():
 
 
     def checkAux(self, component):
+        if component == 'collectd':
+            if not os.path.join(pidDir, 'collectdmon.pid'):
+                pass
+            else:
+                component = 'collectdmon'
         pidPath = os.path.join(pidDir, component + '.pid')
         if not os.path.isfile(pidPath):
             return 0
