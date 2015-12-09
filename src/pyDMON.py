@@ -1632,6 +1632,54 @@ class AuxDeploy(Resource):
 		return response			
 
 
+@dmon.route('/v2/overlord/aux/agent')  # TODO: create better variant
+class AuxAgentDeploy(Resource):
+	def get(self):
+		qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nStatus).all()
+		an = []
+		for n in qNodes:
+			nAgent = {}
+			nAgent['NodeFQDN'] = n[0]
+			nAgent['Agent'] = n[1]
+			an.append(nAgent)
+
+		response = jsonify({'Agents': an})
+		response.status_code = 200
+		return response
+
+	def post(self):  # TODO: only works if all nodes have the same authentication
+		qN = db.session.query(dbNodes.nodeIP, dbNodes.nStatus, dbNodes.nUser, dbNodes.nPass).all()
+
+		noAgent = []
+		user = ' '
+		password = ' '
+		for n in qN:
+			if not n[1]:
+				noAgent.append(n[0])
+				user = n[2]
+				password = n[3]
+		try:
+			deployAgent(noAgent, user, password)
+		except Exception as inst:
+			print >> sys.stderr, type(inst)
+			print >> sys.stderr, inst.args
+			response = jsonify({'Status': 'Agent Error',
+								'Message': 'Error while deploying agent!'})
+			response.status_code = 500
+			return response
+
+
+		for a in noAgent:
+			updateAll = dbNodes.query.filter_by(nodeIP=a).first()
+			updateAll.nStatus = 1
+
+
+		response = jsonify ({'Status': 'Done',
+							 'Message': 'Agents Deloyed!'})
+		response.status_code = 201
+		return response
+
+
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
 	def get(self):

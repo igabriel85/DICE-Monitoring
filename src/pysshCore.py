@@ -551,24 +551,24 @@ def deployAgent(hostlist, userName, uPassword):
 	if not os.path.isdir(credDir):
 		print "Configuration dir not found!"
 
-	print "Install logstash-forwarder"
+	print "Copying Certificate ...."
 	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
 	localCopyCrt = os.path.join(credDir, 'logstash-forwarder.crt')
 
 	try:
 		print "Creating certificate folders..."
-		client.run_command('mkdir /opt/certs', sudo=True)
+		client.run_command('mkdir /opt/test/certs', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured creating /opt/certs!"
+		print "An exception has occured creating /opt/test/certs!"
 		raise
 
 	print "Copying certificate..."
 
-	try:
-		client.copy_file(localCopyCrt, "logstash-forwarder.crt")
-	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured while moving cert!"
-		raise
+	# try:
+	# 	client.copy_file(localCopyCrt, "logstash-forwarder.crt")
+	# except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+	# 	print "An exception has occured while moving cert!"
+	# 	raise
 
 	try:
 		print "Copying dmon-agent ..."
@@ -578,15 +578,14 @@ def deployAgent(hostlist, userName, uPassword):
 		raise
 
 	try:
-		client.run_command('mkdir /opt/test')
-		client.run_command('mv dmon-agent.tar.gz /opt/test')
-		client.run_command('tar xvf /opt/test/dmon-agent.tar.gz')
+		client.run_command('mv dmon-agent.tar.gz /opt')
+		client.run_command('tar xvf /opt/dmon-agent.tar.gz')
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while unpacking dmon-agent"
 		raise
 
 	try:
-		client.run_command('pip install -r /opt/test/dmon-agent/requirements.txt')
+		client.run_command('pip install -r /opt/dmon-agent/requirements.txt')
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while installing dmon-agent dependencies"
 		raise
@@ -601,12 +600,12 @@ def startAgent(hostlist, username, password):
 	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
 	try:
 		print "Start Agent..."
-		client.run_command('python /opt/test/dmon-agent/agent-start.sh', sudo=True)
+		client.run_command('./opt/dmon-agent/agent-start.sh', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occurred while starting dmon-agent!"
 		raise
 
-	
+
 def main(argv):
 	'''
 		This is the main function that handles command line arguments.
