@@ -69,9 +69,15 @@ ln -sf elasticsearch-2.1.0 elasticsearch
 rm -f /opt/elasticsearch/config/elastcisearch.yml
 #ln -sf /vagrant/elasticsearch.yml /opt/elasticsearch/config/elasticsearch.yml
 
-# install Marvel (posibly obsolete afther further testing)
+# Install Marvel (posibly obsolete afther further testing)
 echo "Installing Elasticsearch plugin marvel ....."
-/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+#For version of <ES2.2.0 and <kibana 4.1.2
+#/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+/opt/elsticsearch/bin/plugin install license
+/opt/elsticsearch/bin/plugin install marvel-agent
+/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
 
 
 # Install Logstash
