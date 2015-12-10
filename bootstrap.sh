@@ -50,12 +50,20 @@ apt-get install ant -y
 #cd /tmp
 #wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
+#VM level Setings
+echo "Configuring VM level setings"
+export ES_HEAP_SIZE=2g
+sysctl -w vm.max_map_count=262144
+swapoff -a
+
+
 # Install Elasticsearch 1.7.1
 echo "Installing Elasticsearch ...."
 cd /opt
-wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.1.tar.gz
-tar zxf elasticsearch-1.7.1.tar.gz
-ln -sf elasticsearch-1.7.1 elasticsearch
+wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.1.0/elasticsearch-2.1.0.tar.gz
+#wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.1.tar.gz
+tar zxf elasticsearch-2.1.0.tar.gz
+ln -sf elasticsearch-2.1.0 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
