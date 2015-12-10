@@ -1030,7 +1030,7 @@ class ESCoreController(Resource):
 		
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
+			esPid = subprocess.Popen('./opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
