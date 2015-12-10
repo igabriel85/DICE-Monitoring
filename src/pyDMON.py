@@ -1030,7 +1030,7 @@ class ESCoreController(Resource):
 		
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
+			esPid = subprocess.Popen('ES_HEAP_SIZE=2g /opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
@@ -1314,7 +1314,7 @@ class LSCoreController(Resource):
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args		
-		qSCore.LSCorePID=lsPid
+		qSCore.LSCorePID = lsPid
 		lsPIDFileLoc = os.path.join(pidDir, 'logstash.pid')
 		try:
 			lsPIDFile = open(lsPIDFileLoc, 'w+')
@@ -1325,8 +1325,8 @@ class LSCoreController(Resource):
 			response.status_code = 500
 			return response	
 
-		response = jsonify({'Status':'Logstash Core PID '+str(lsPid)})
-		response.status_code=200
+		response = jsonify({'Status': 'Logstash Core PID ' + str(lsPid)})
+		response.status_code = 200
 		return response
 		
 

@@ -73,7 +73,8 @@ def main(argv):
 			else:
 				try:
 					print >>sys.stderr, "Bootstrapping D-Mon Core please wait..."
-					procStart = subprocess.Popen(['./bootstrap.sh'],stdout=subprocess.PIPE, stderr=subprocess.PIPE,shell=False).communicate()
+					procStart = subprocess.Popen(['./bootstrap.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False).communicate()
+					print >>sys.stderr, procStart  #added only for logging
 					print >>sys.stderr, "Bootstrap finished!"
 				except Exception as inst:
 					print >> sys.stderr, 'Error while executing bootstrap script!'
