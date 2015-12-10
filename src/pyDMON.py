@@ -1291,37 +1291,37 @@ class LSCoreController(Resource):
 
 
 		if qSCore.sslKey == 'default':
-			keyLoc = os.path.join(credDir,'logstash-forwarder.key')
+			keyLoc = os.path.join(credDir, 'logstash-forwarder.key')
 		else:
-			keyLoc = os.path.join(credDir,qSCore.sslKey+'.key') 
+			keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
 
-		infoSCore = {"sslcert":certLoc,"sslkey":keyLoc,"udpPort":qSCore.udpPort,"ESCluster":qSCore.outESclusterName}			
+		infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort, "ESCluster":qSCore.outESclusterName}
 		sConf = template.render(infoSCore)
 		qSCore.conf = sConf
 		#print >>sys.stderr, esConf
 		db.session.commit()
 
-		lsCoreConf = open(lsfCore,"w+")
+		lsCoreConf = open(lsfCore, "w+")
 		lsCoreConf.write(sConf)
 		lsCoreConf.close()
 
 		#TODO find better solution
 		#subprocess.call(['cp',lsfCore,lsCDir+'/logstash.conf'])
-		lsLogfile = os.path.join(logDir,'logstash.log')
+		lsLogfile = os.path.join(logDir, 'logstash.log')
 		lsPid = 0
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f '+lsfCore+ ' -l '+lsLogfile, shell= True).pid
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 2', shell=True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args		
 		qSCore.LSCorePID=lsPid
-		lsPIDFileLoc = os.path.join(pidDir,'logstash.pid')
+		lsPIDFileLoc = os.path.join(pidDir, 'logstash.pid')
 		try:
-			lsPIDFile = open(lsPIDFileLoc,'w+')
+			lsPIDFile = open(lsPIDFileLoc, 'w+')
 			lsPIDFile.write(str(lsPid))
 			lsPIDFile.close()
 		except IOError:
-			response = jsonify({'Error':'File I/O!'})
+			response = jsonify({'Error': 'File I/O!'})
 			response.status_code = 500
 			return response	
 
@@ -1335,9 +1335,9 @@ class LSCoreController(Resource):
 class LSCredControl(Resource):
 	def get(self):
 		credList = []
-		credAll=db.session.query(dbSCore.hostFQDN,dbSCore.hostIP,dbSCore.sslCert,dbSCore.sslKey).all()
+		credAll=db.session.query(dbSCore.hostFQDN, dbSCore.hostIP, dbSCore.sslCert, dbSCore.sslKey).all()
 		if credAll is None:
-			response = jsonify({'Status':'No credentials set!'})
+			response = jsonify({'Status': 'No credentials set!'})
 			response.status_code = 404
 			return response
 		for nl in credAll:
