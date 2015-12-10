@@ -1030,15 +1030,15 @@ class ESCoreController(Resource):
 		
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('ES_HEAP_SIZE=2g /opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
+			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qESCore.ESCorePID = esPid
 		#ES core pid location
-		pidESLoc = os.path.join(pidDir,'elasticsearch.pid')
+		pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
 		try:
-			esPIDFile = open(pidESLoc,'w+')
+			esPIDFile = open(pidESLoc, 'w+')
 			esPIDFile.write(str(esPid))
 			esPIDFile.close()
 		except IOError:

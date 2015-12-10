@@ -1,9 +1,9 @@
 #!/bin/bash
-
 ARCH=`uname -s`
 DIR=
 RE='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 RENR='^[0-9]+$'
+export ES_HEAP_SIZE=2g
 
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`

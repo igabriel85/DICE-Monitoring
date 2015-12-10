@@ -79,6 +79,7 @@ echo "Installing Elasticsearch plugin marvel ....."
 /opt/elsticsearch/bin/plugin install license
 /opt/elsticsearch/bin/plugin install marvel-agent
 /opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
+            
 
 
 # Install Logstash
