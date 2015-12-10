@@ -71,7 +71,7 @@ lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 
 
 app = Flask("D-MON")
-api = Api(app, version='0.1.3', title='DICE MONitoring API',
+api = Api(app, version='0.1.4', title='DICE MONitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
@@ -1030,7 +1030,7 @@ class ESCoreController(Resource):
 		
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',stdout=subprocess.PIPE).pid 
+			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
@@ -1057,21 +1057,21 @@ class KBCoreConfiguration(Resource):
 			response = jsonify({'Error':'Config dir not found !'})
 			response.status_code = 404
 			return response
-		if not os.path.isfile(os.path.join(cfgDir,'kibana.yaml')):
-			response = jsonify({'Error':'Config file not found !'})
+		if not os.path.isfile(os.path.join(cfgDir, 'kibana.yaml')):
+			response = jsonify({'Error': 'Config file not found !'})
 			response.status_code = 404
 			return response
 		try:
-			lsCfgfile=open(os.path.join(cfgDir,'kibana.yaml'),'r')
+			lsCfgfile = open(os.path.join(cfgDir, 'kibana.yaml'), 'r')
 		except EnvironmentError:
-			response = jsonify({'EnvError':'file not found'})
+			response = jsonify({'EnvError': 'file not found'})
 			response.status_code = 500
 			return response
-		return send_file(lsCfgfile,mimetype = 'text/yaml',as_attachment = True)
+		return send_file(lsCfgfile, mimetype='text/yaml', as_attachment=True)
 
 	@api.expect(kbCore)#TODO same for all 3 core services create one class for all
 	def put(self):
-		requiredKeys=['HostFQDN','IP']
+		requiredKeys=['HostFQDN', 'IP']
 		if not request.json:
 			abort(400)
 		for key in requiredKeys:
@@ -1095,11 +1095,12 @@ class KBCoreConfiguration(Resource):
 			return response
 		else:
 			qKBCore.hostOS = os
-			qKBCore.kbPort=request.json['KBPort']
+			qKBCore.kbPort = request.json['KBPort']
 			db.session.commit()
-			response=jsonify({'Updated':'KB config for '+ request.json["HostFQDN"]})
+			response = jsonify({'Updated': 'KB config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
+
 
 @dmon.route('/v1/overlord/core/kb')
 class KKCoreController(Resource):
@@ -1178,17 +1179,17 @@ class LSCoreConfiguration(Resource):
 			response = jsonify({'Error':'Config dir not found !'})
 			response.status_code = 404
 			return response
-		if not os.path.isfile(os.path.join(cfgDir,'logstash.conf')):
+		if not os.path.isfile(os.path.join(cfgDir, 'logstash.conf')):
 			response = jsonify({'Error':'Config file not found !'})
 			response.status_code = 404
 			return response
 		try:
-			lsCfgfile=open(os.path.join(cfgDir,'logstash.conf'),'r')
+			lsCfgfile=open(os.path.join(cfgDir, 'logstash.conf'), 'r')
 		except EnvironmentError:
-			response = jsonify({'EnvError':'file not found'})
+			response = jsonify({'EnvError': 'file not found'})
 			response.status_code = 500
 			return response
-		return send_file(lsCfgfile,mimetype = 'text/plain',as_attachment = True)
+		return send_file(lsCfgfile,mimetype='text/plain', as_attachment=True)
 
 	@api.expect(lsCore)
 	def put(self):

@@ -34,7 +34,13 @@ It is designed for:
 	* created log file directory for core components
 	* created dmon-stop script
 	* enhanced queryConstructor function to enable elasticsearch date math
-	* updated all Vagrant files  		 	
+	* updated all Vagrant files
+* v0.1.4 - Minor alpha release
+	* added log export resource
+	* added parallel processing of some requests (marked with _../v2/.._)
+	* added new dmon-agent for controlling auxiliary monitoring components
+	* added dmon-wui template to respoitory 	 	
+	  		 	
 
 ##Installation
 
@@ -129,6 +135,10 @@ The Overlord is structured into two components:
 -
 #### Monitoring Core
 
+`GET` `/v1/log`
+
+Return the log of dmon. It contains information about the last requests and the IPs from which they originated as well as status information of variouse sub components.
+
 `GET` `/v1/overlord`
 
 Returns information regarding the current version of the Monitoring Platform.
@@ -161,6 +171,13 @@ Deploys all monitoring core components provided they have values preset hosts. I
 **NOTE**: Currently the '-l' flag of the start script _dmon-start.sh_ does the same as the later option.
 
 
+`GET` `/v1/overlord/core/database`
+
+Return the current internal state of Dmon in the form of an sqlite2 database. The response has _application/x-sqlite3_ mimetype.
+
+`PUT` `/v1/overlord/core/database`
+
+Can submit a new version of the internal database to dmon. It will replace the current states with new states. The old states are backed up before applying the new ones. Database should take the form of sqlite3 database file and sent unsing the _application/x-sqlite3_ mimetype.
 
 
 `GET` `/v1/overlord/core/status`
@@ -697,6 +714,38 @@ Returns basic information about auxiliary components.
 
 ***
 
+`GET` `/v1/overlord/aux/agent`
+
+Returns the current deployment status of dmon-agents.
+
+```json
+{
+  "Agents": [
+    {
+      "Agent": false,
+      "NodeFQDN": "dice.cdh5.mng.internal"
+    },
+    {
+      "Agent": false,
+      "NodeFQDN": "dice.cdh5.w1.internal"
+    },
+    {
+      "Agent": false,
+      "NodeFQDN": "dice.cdh5.w2.internal"
+    },
+    {
+      "Agent": false,
+      "NodeFQDN": "dice.cdh5.w3.internal"
+    }
+  ]
+}
+```
+
+`POST` `/v1/overlord/aux/agent`
+
+Bootstraps the installation of dmon-agent services on nodes who are note marked as
+already active. It only works if all nodes have the same authentication.
+
 `GET` `/v1/overlord/aux/deploy`
 
 Returns monitoring component status of all nodes. 
@@ -773,6 +822,26 @@ Stops the specified auxiliary component on a specific node.
 
 
 
+__Note:__ Some resources have been redesigned with parallel processing in mind. These use greenlets (gevent) to parallelize as much as possible the first version of the resources. These paralel resources are marked with _../v2/.._. All other functionality and return functions are the same.
+
+For the sake of brevity these resources will not be detailed. Only additional functionality will be documented.
+
+
+`GET` `/v2/overlord/aux/deploy/check`
+
+
+Polls dmon-agents from the current monitored cluster.
+
+
+```json
+{
+  "Failed": [],
+  "Message": "Nodes updated!",
+  "Status": "Update"
+}
+```
+
+If nodes don't respon they are added to the _Failed_ list togheter with the appropiate HTTP error code.
 
 -
 ### Observer
