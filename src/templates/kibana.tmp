@@ -20,7 +20,7 @@ elasticsearch.url: "http://localhost:9200"
 kibana.index: ".kibana"
 
 # The default application to load.
-# kibana.defaultAppId: "discover"
+kibana.defaultAppId: "discover"
 
 # If your Elasticsearch is protected with basic auth, these are the user credentials
 # used by the Kibana server to perform maintenance on the kibana_index at startup. Your Kibana
@@ -51,7 +51,7 @@ kibana.index: ".kibana"
 
 # Time in milliseconds to wait for responses from the back end or elasticsearch.
 # This must be > 0
-# elasticsearch.requestTimeout: 300000
+elasticsearch.requestTimeout: 300000
 
 # Time in milliseconds for Elasticsearch to wait for responses from shards.
 # Set to 0 to disable.
