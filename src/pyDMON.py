@@ -1032,13 +1032,14 @@ class ESCoreController(Resource):
 		try:
 			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch -d', stdout=subprocess.PIPE).pid
 		except Exception as inst:
+			print >> sys.stderr, 'Error while starting elasticsearch'
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qESCore.ESCorePID = esPid
 		#ES core pid location
-		pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
+		pidESLoc = os.path.join(pidDir,'elasticsearch.pid')
 		try:
-			esPIDFile = open(pidESLoc, 'w+')
+			esPIDFile = open(pidESLoc,'w+')
 			esPIDFile.write(str(esPid))
 			esPIDFile.close()
 		except IOError:
