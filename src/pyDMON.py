@@ -618,7 +618,6 @@ class MonitoredNodes(Resource):
 				e = dbNodes(nodeFQDN=nodes['NodeName'], nodeIP=nodes['NodeIP'], nodeOS=nodes['NodeOS'],
 					nkey=nodes['key'], nUser=nodes['username'], nPass=nodes['password'])
 				db.session.add(e)
-				db.session.commit
 			else:
 				qNodes.nodeIP = nodes['NodeIP']
 				qNodes.nodeOS = nodes['NodeOS']
@@ -626,7 +625,7 @@ class MonitoredNodes(Resource):
 				qNodes.nUser = nodes['username']
 				qNodes.nPass = nodes['password']
 				db.session.add(qNodes)
-				db.session.commit
+			db.session.commit
 		response = jsonify({'Status': "Nodes list Updated!"})
 		response.status_code = 201
 		return response	
