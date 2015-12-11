@@ -62,7 +62,6 @@ swapoff -a
 echo "Installing Elasticsearch ...."
 cd /opt
 wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.1.0/elasticsearch-2.1.0.tar.gz
-#wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.1.tar.gz
 tar zxf elasticsearch-2.1.0.tar.gz
 ln -sf elasticsearch-2.1.0 elasticsearch
 
@@ -76,8 +75,8 @@ echo "Installing Elasticsearch plugin marvel ....."
 #For version of <ES2.2.0 and <kibana 4.1.2
 #/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
 
-/opt/elsticsearch/bin/plugin install license
-/opt/elsticsearch/bin/plugin install marvel-agent
+/opt/elasticsearch/bin/plugin install license
+/opt/elasticsearch/bin/plugin install marvel-agent
 /opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
             
 
