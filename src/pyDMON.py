@@ -626,6 +626,7 @@ class MonitoredNodes(Resource):
 				qNodes.nUser = nodes['username']
 				qNodes.nPass = nodes['password']
 				db.session.add(qNodes)
+				db.session.commit
 		response = jsonify({'Status': "Nodes list Updated!"})
 		response.status_code = 201
 		return response	
