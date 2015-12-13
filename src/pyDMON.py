@@ -1562,6 +1562,11 @@ class AuxDeploy(Resource):
 		print >> sys.stderr, confDir
 
 		qSCore = dbSCore.query.first() #TODO Change for distributed deployment
+		if qSCore is None:
+			response = jsonify({'status': 'db empty',
+								'message': 'there is no logstash instance registered!'})
+			response.status_code = 400
+			return response
 		try:
 			lsfTemplate = templateEnv.get_template(lsfTemp)
 			#print >>sys.stderr, template
