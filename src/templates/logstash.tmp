@@ -3,7 +3,6 @@
 input {
 lumberjack{
 port =>5000
-type=> "log"
 ssl_certificate => "{{sslcert}}"
 ssl_key=> "{{sslkey}}"
 }
