@@ -1311,7 +1311,7 @@ class LSCoreController(Resource):
 		lsLogfile = os.path.join(logDir, 'logstash.log')
 		lsPid = 0
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 2', shell=True).pid
+			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 10', shell=True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args		

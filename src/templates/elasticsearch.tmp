@@ -328,6 +328,10 @@ indices.fielddata.cache.size: 15%
 indices.cache.filter.size: 15%
 #indices.cache.filter.expire: 6h
 
+#Dynamic Scripting
+script.engine.groovy.inline.aggs: on
+
+
 ################################## Discovery ##################################
 
 # Discovery infrastructure ensures nodes can be found within a cluster
