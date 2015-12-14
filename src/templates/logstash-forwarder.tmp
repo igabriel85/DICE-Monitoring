@@ -1,7 +1,7 @@
 {
   "network": {
-    "servers": [ "{{ESCoreIP}}:{{LSLumberPort}}" ], 
-    "timeout": 15,
+    "servers": [ "{{ESCoreIP}}:{{LSLumberPort}}" ],
+    "timeout": 120,
     "ssl ca": "/opt/certs/logstash-forwarder.crt"
   },
 
