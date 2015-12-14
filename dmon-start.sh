@@ -3,7 +3,8 @@ ARCH=`uname -s`
 DIR=
 RE='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 RENR='^[0-9]+$'
-export ES_HEAP_SIZE=2g
+export ES_HEAP_SIZE=4g
+export LS_HEAP_SIZE=1024m
 
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`
