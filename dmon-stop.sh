@@ -13,7 +13,7 @@ echo "Stopping Kibana ..."
 if [ ! -f $DIR/src/pid/kibana.pid ]; then
 	echo "No Kibana instance to stop."
 else
-	kill -9  `cat $DIR/src/pid/kibana.pid`
+	kill -15  `cat $DIR/src/pid/kibana.pid`
 	echo "Kibana Stopped!"
 fi
 
@@ -21,7 +21,7 @@ echo "Stopping Logstash Server ..."
 if [ ! -f $DIR/src/pid/logstash.pid ]; then
 	echo "No Logstash instance to stop."
 else
-	kill -9  `cat $DIR/src/pid/logstash.pid`
+	kill -15  `cat $DIR/src/pid/logstash.pid`
 	echo "Logstash Stopped!"
 fi
 
@@ -29,11 +29,11 @@ echo "Stopping ElasticSearch ..."
 if [ ! -f $DIR/src/pid/elasticsearch.pid ]; then
 	echo "No ElasticSearch instance to stop."
 else
-	kill -9  `cat $DIR/src/pid/elasticsearch.pid`
+	kill -15  `cat $DIR/src/pid/elasticsearch.pid`
 	echo "ElasticSearch Stopped!"
 fi
 
 echo "Stopping D-Mon"
-killall -9 python #TODO need more elegant solution
+killall -15 python #TODO need more elegant solution
 
 echo "D-Mon Stopped!"
