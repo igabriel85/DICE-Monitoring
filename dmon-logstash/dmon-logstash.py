@@ -32,7 +32,11 @@ import platform
 
 tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
-logDit = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
+logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
+cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
+credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'credentials')
+lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
+logstashDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logstash')
 
 app = Flask("dmon-logstash")
 api = Api(app, version='0.0.1', title='DICE Monitoring Logstash API',
@@ -46,13 +50,33 @@ agent = api.namespace('agent', description='dmon logstash operations')
 @agent.route('/v1/host')
 class NodeInfo(Resource):
     def get(self):
-        return "Host info!"
+        mType = platform.uname()
+        response = jsonify({'System': mType[0],
+                            'Node': mType[1],
+                            'Release': mType[2],
+                            'Version': mType[3],
+                            'Machine': mType[4],
+                            'Processor': mType[5]})
+        response.status_code = 200
+        return response
 
 
 @agent.route('/v1/cert')
 class LSCertificates(Resource):
     def get(self):
-        return "List of certificates from certificate directory!"
+        dirContent = os.listdir(credDir)
+        pubFile = []
+        privateFile = []
+        for f in dirContent:
+           if os.path.splitext(f)[1] == 'crt':
+               pubFile.append(f)
+           elif os.path.splitext(f)[1] == 'key':
+               privateFile.append(f)
+
+        response = jsonify({'certificates': pubFile,
+                            'keys': privateFile})
+        response.status_code = 200
+        return response
 
     def post(self):
         return "Send new certificate!"
