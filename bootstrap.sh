@@ -21,6 +21,11 @@
 #get kibana4 and  install
 #TODO Replace wget
 
+#set FQDN for HOST
+HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')  #need to change to eth0 for non vagrant
+echo "#Auto generated DICE Monitoring FQDN
+$HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
+
 echo "Installing kibana...."
 cd ~/ 
 #wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
@@ -102,7 +107,7 @@ logrotate -s /var/log/logstatus logrotate.conf
 
 
 echo "Generating certificates for Logstash ..."
-HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
+#HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
 #backup open ssl
 cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
