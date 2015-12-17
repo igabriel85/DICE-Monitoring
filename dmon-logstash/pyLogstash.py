@@ -13,12 +13,6 @@ class pyLogstashInstance():
     lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
     pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 
-    def __init__(self, sslkey, sslcert, udp, esCluster):
-        self.sslKey = sslkey
-        self.sslcert = sslcert
-        self.udp = udp
-        self.esCluster = esCluster
-
     def generateConfig(self, settingsDict):
         templateLoader = jinja2.FileSystemLoader(searchpath="/")
         templateEnv = jinja2.Environment(loader=templateLoader)
@@ -34,7 +28,7 @@ class pyLogstashInstance():
         confFile.write(confInfo)
         confFile.close()
 
-    def start(self, worker=1):
+    def start(self, heap='512m', worker=1):
         config = os.path.join(pyLogstashInstance.cfgDir, 'logstash.conf')
         log = os.path.join(pyLogstashInstance.lockDir, 'logstash.log')
         pidFile = os.path.join(pyLogstashInstance.pidDir, 'logstash.pid')
@@ -42,7 +36,7 @@ class pyLogstashInstance():
         if pid is True:
             subprocess.call(['kill', '-9', str(pid)])
         try:
-            lspid = subprocess.Popen('/opt/dmon-logstash/logstash/bin/logstash agent -f ' + config + ' -l ' + log +
+            lspid = subprocess.Popen('LS_HEAP_SIZE=' + heap + ' /opt/dmon-logstash/logstash/bin/logstash agent -f ' + config + ' -l ' + log +
                                      ' -w '+worker, shell=True).pid
         except Exception as inst:
             print >> sys.stderr, 'Problem Starting LS!'
