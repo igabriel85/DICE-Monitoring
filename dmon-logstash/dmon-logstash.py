@@ -156,7 +156,20 @@ class LSController(Resource):
             response.status_code = 404
             return response
 
-        return request.json
+        confdict = {"sslcert": sslCert, "sslkey": sslKey, "udpPort": request.json['UDPPort'],
+                    "ESCluster": request.json['ESCluster']}
+        lsagent.generateConfig(confdict)
+        pid = lsagent.check()
+        if not pid:
+            lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorker'])
+        else:
+            subprocess.call(['kill', '-9', pid])
+            lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorker'])
+
+        response = jsonify({'Status': 'Done',
+                            'Message': 'LS config loaded'})
+        response.status_code = 200
+        return response
 
 
 @agent.route('/v1/logstash/start')
@@ -168,13 +181,28 @@ class LSControllerStart(Resource):
 @agent.route('/v1/logstash/stop')
 class LSControllerStop(Resource):
     def post(self):
-        return "Stop LS instances!"
+        pid = lsagent.check()
+        if not pid:
+            response = jsonify({'Status': 'Not Found',
+                                'Message': 'LS instance not found'})
+            response.status_code = 404
+            return response
+        else:
+            subprocess.call(['kill', '-9', pid])
+            response = jsonify({'Status': 'Done',
+                                'Message': 'LS Instance stopped'})
+            response.status_code = 200
+            return response
 
 
 @agent.route('/v1/logstash/deploy')
 class LSControllerDeploy(Resource):
     def post(self):
-        return "Install LS Config!"
+        lsagent.deploy()
+        response = jsonify({'Status': 'Done',
+                            'Message': 'Logstash installed!'})
+        response.status_code = 201
+        return response
 
 
 @agent.route('/v1/logstash/log')

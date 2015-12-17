@@ -1,5 +1,3 @@
-
-
 from jsonschema import validate
 
 class LSValidation:
@@ -26,5 +24,6 @@ class LSValidation:
     "UDPPort"
   ]
 }
+
     def validate(self, request):
         validate(request, LSValidation.config)

@@ -7,6 +7,7 @@ Flask-WTF==0.9.5
 Flask-RESTful==0.3.4
 flask-restful-swagger==0.19
 flask-restplus==0.7.2
+Flask-Inputs==0.2.0
 Jinja2==2.7.3
 Mako==1.0.0
 MarkupSafe==0.23
@@ -26,3 +27,4 @@ requests==2.4.3
 pycrypto==2.6.1
 ecdsa==0.13
 addict==0.4.0
+jsonschema==2.5.1
