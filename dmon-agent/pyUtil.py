@@ -223,7 +223,10 @@ class AuxComponent():
         try:
             template = templateEnv.get_template(tmpPath)
         except:
-            return "response"
+            response = jsonify({'Status': 'Template Error',
+                'Message': 'File not found!'})
+            response.status_code = 500
+            return response
         confInfo = template.render(settingsDict)
         confFile = open(filePath, "w+")
         confFile.write(confInfo)
