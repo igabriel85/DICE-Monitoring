@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #Preliminary sartup changed to service in later versions
-ES_HEAP_SIZE=512m /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1
+ES_HEAP_SIZE=4g /opt/elasticsearch/bin/elasticsearch -d > /dev/null 2>&1
 /opt/logstash/bin/logstash agent -f /vagrant/logstash.conf > /dev/null 2>&1 &
 
 echo "Marvel is running at http://localhost:9200/_plugin/marvel/"

@@ -29,10 +29,10 @@ $HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
 echo "Installing kibana...."
 cd ~/ 
 #wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
-wget https://download.elastic.co/kibana/kibana/kibana-4.3.0-linux-x64.tar.gz
-tar xvf kibana-4.3.0-linux-x64.tar.gz
+wget https://download.elastic.co/kibana/kibana/kibana-4.3.1-linux-x64.tar.gz
+tar xvf kibana-4.3.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
-cp -R ~/kibana-4.3.0-linux-x64/* /opt/kibana/
+cp -R ~/kibana-4.3.1-linux-x64/* /opt/kibana/
 echo "Registering Kibana as a service ...."
 cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
 chmod +x /etc/init.d/kibana4
@@ -63,7 +63,7 @@ sysctl -w vm.max_map_count=262144
 swapoff -a
 
 
-# Install Elasticsearch 1.7.1
+# Install Elasticsearch 2.1.0
 echo "Installing Elasticsearch ...."
 cd /opt
 wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.1.0/elasticsearch-2.1.0.tar.gz

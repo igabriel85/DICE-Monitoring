@@ -21,12 +21,18 @@
 #get kibana4 and  install
 #TODO Replace wget
 
+#set FQDN for HOST
+HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')  #need to change to eth0 for non vagrant
+echo "#Auto generated DICE Monitoring FQDN
+$HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
+
 echo "Installing kibana...."
-cd ~/ 
-wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
-tar xvf kibana-4.1.2-linux-x64.tar.gz
+cd ~/
+#wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
+wget https://download.elastic.co/kibana/kibana/kibana-4.3.1-linux-x64.tar.gz
+tar xvf kibana-4.3.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
-cp -R ~/kibana-4.1.2-linux-x64/* /opt/kibana/
+cp -R ~/kibana-4.3.1-linux-x64/* /opt/kibana/
 echo "Registering Kibana as a service ...."
 cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
 chmod +x /etc/init.d/kibana4
@@ -50,20 +56,34 @@ apt-get install ant -y
 #cd /tmp
 #wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
 
-# Install Elasticsearch 1.7.1
+#VM level Setings
+echo "Configuring VM level setings"
+export ES_HEAP_SIZE=2g
+sysctl -w vm.max_map_count=262144
+swapoff -a
+
+
+# Install Elasticsearch 2.1.0
 echo "Installing Elasticsearch ...."
 cd /opt
-wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.1.tar.gz
-tar zxf elasticsearch-1.7.1.tar.gz
-ln -sf elasticsearch-1.7.1 elasticsearch
+wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.1.0/elasticsearch-2.1.0.tar.gz
+tar zxf elasticsearch-2.1.0.tar.gz
+ln -sf elasticsearch-2.1.0 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
 #ln -sf /vagrant/elasticsearch.yml /opt/elasticsearch/config/elasticsearch.yml
 
-# install Marvel (posibly obsolete afther further testing)
+# Install Marvel (posibly obsolete afther further testing)
 echo "Installing Elasticsearch plugin marvel ....."
-/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+#For version of <ES2.2.0 and <kibana 4.1.2
+#/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+/opt/elasticsearch/bin/plugin install license
+/opt/elasticsearch/bin/plugin install marvel-agent
+/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
+
 
 
 # Install Logstash
@@ -87,7 +107,7 @@ logrotate -s /var/log/logstatus logrotate.conf
 
 
 echo "Generating certificates for Logstash ..."
-HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
+#HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
 #backup open ssl
 cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
 sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf

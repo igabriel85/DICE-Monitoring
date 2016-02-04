@@ -164,8 +164,8 @@ if __name__=='__main__':
 	╚═════╝       ╚═╝     ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 	'''
 
-	if len(sys.argv)==1:
-		app.run('0.0.0.0',port = 5001,debug=True)
+	if len(sys.argv) == 1:
+		app.run('0.0.0.0', port=5001, debug=True)
 		
 	else:
 		main(sys.argv[1:])

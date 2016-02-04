@@ -5,6 +5,7 @@ RE='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 RENR='^[0-9]+$'
 export ES_HEAP_SIZE=4g
 export LS_HEAP_SIZE=1024m
+export ES_USE_GC_LOGGING=yes
 
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`
