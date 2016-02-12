@@ -82,7 +82,7 @@ echo "Installing Elasticsearch plugin marvel ....."
 
 /opt/elasticsearch/bin/plugin install license
 /opt/elasticsearch/bin/plugin install marvel-agent
-/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
+/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/2.1.0
             
 
 
