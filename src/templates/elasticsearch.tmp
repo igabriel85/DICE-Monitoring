@@ -108,14 +108,14 @@ node.name: {{nodeName}}
 
 #DICE Config Shards
 
-#index.number_of_shards: 1
+index.number_of_shards: 1
 
 # Set the number of replicas (additional copies) of an index (1 by default):
 #
 #index.number_of_replicas: 1
 
 #DICE Config Replicas
-#index.number_of_replicas: 0
+index.number_of_replicas: 0
 
 # Note, that for development on a local machine, with small indices, it usually
 # makes sense to "disable" the distributed features:
