@@ -1030,7 +1030,7 @@ class ESCoreController(Resource):
 		
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid
+			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid #TODO: Try -p to set pid file location
 		except Exception as inst:
 			print >> sys.stderr, 'Error while starting elasticsearch'
 			print >> sys.stderr, type(inst)
