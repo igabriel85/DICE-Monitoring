@@ -71,7 +71,7 @@ class pyLogstashInstance():
             print >> sys.stderr, "Logstash already installed!"
         else:
             try:
-                p = subprocess.Popen('wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz', shel=True)
+                p = subprocess.Popen('wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz', shel=True)
                 p.wait()
             except Exception as inst:
                 print >> sys.stderr, "Error fetching logstash!"
@@ -80,7 +80,7 @@ class pyLogstashInstance():
 
             basedir = os.path.abspath(os.path.dirname(__file__))
 
-            if not os.path.isfile(os.path.join(basedir), 'logstash-1.5.4.tar.gz'):
+            if not os.path.isfile(os.path.join(basedir), 'logstash-2.2.1.tar.gz'):
                 print >> sys.stderr, 'Logstash tar not found!'
                 response = jsonify({'Status': 'Env Error',
                                     'Message': 'Logstash tar not found!'})
@@ -88,7 +88,7 @@ class pyLogstashInstance():
                 return response
 
             try:
-                p1 = subprocess.Popen('tar xf logstash-1.5.4.tar.gz', shel=True)
+                p1 = subprocess.Popen('tar xf logstash-2.2.1.tar.gz', shel=True)
                 p1.wait()
             except Exception as inst:
                 print >> sys.stderr, "Error extracting logstash!"
@@ -96,7 +96,7 @@ class pyLogstashInstance():
                 print >> sys.stderr, inst.args
 
             try:
-                p2 = subprocess.Popen('mv logstash-1.5.4/* logstash', shell=True)
+                p2 = subprocess.Popen('mv logstash-2.2.1/* logstash', shell=True)
                 p2.wait()
             except Exception as inst:
                 print >> sys.stderr, "Error moving logstash!"
@@ -108,10 +108,18 @@ class pyLogstashInstance():
                 return response
 
             try:
-                p3 = subprocess.Popen('rm -rf logstash-1.5.4.tar.gz', shell=True)
+                p3 = subprocess.Popen('rm -rf logstash-2.2.1.tar.gz', shell=True)
                 p3.wait()
             except Exception as inst:
                 print >> sys.stderr, "Error cleaning up logstash install dir!"
+                print >> sys.stderr, type(inst)
+                print >> sys.stderr, inst.args
+
+            try:
+                p4 = subprocess.Popen('/opt/dmon-logstash/logstash/bin/plugin install http_poller', shell=True)
+                p4.wait()
+            except Exception as inst:
+                print >> sys.stderr, "Error while installing http_poller plugin!"
                 print >> sys.stderr, type(inst)
                 print >> sys.stderr, inst.args
 

@@ -27,6 +27,8 @@ import jinja2
 import sys
 import subprocess
 import platform
+import requests
+import json
 
 from pyLogstash import *
 from jsonvalidation import *
@@ -55,8 +57,13 @@ agent = api.namespace('agent', description='dmon logstash operations')
 lsConfig = api.model('LS Configuration options', {
     'UDPPort': fields.String(required=True, default='25826', description='Port of UDP plugin from Logstash Server'),
     'ESCluster': fields.String(required=True, default='esCore', description='Name of ES cluster'),
+    'EShostIP': fields.String(required=True, default='localhost', description='ES endpoint IP'),
+    'EShostPort': fields.String(required=True, default='9200', description='ES endpoint Port'),
     'LSWorkers': fields.String(required=True, default='2', description='Number of workers'),
-    'LSHeap': fields.String(required=True, default='512m', description='Size of JVM Heap')
+    'LSHeap': fields.String(required=True, default='512m', description='Size of JVM Heap'),
+    'StormRestIP': fields.String(required=False, default='none', description='Storm REST API endpoint IP'),
+    'StormRestPort': fields.String(required=False, default='none', description='Storm REST API endpoint Port'),
+    'StormTopologyID': fields.String(required=False, default='none', description='Storm Topology')
 })
 
 lsagent = pyLogstashInstance()
@@ -156,8 +163,35 @@ class LSController(Resource):
             response.status_code = 404
             return response
 
+        if not request.json['StormRestIP']:
+            StormRestIP = 'none'
+        else:
+            StormRestIP = request.json['StormRestIP']
+
+        if not request.json['StormRestPort']:
+            StormRestPort = 'none'
+        else:
+            StormRestPort = request.json['StormRestPort']
+
+        if not request.json['StormTopologyID']:
+            if not request.json['StormRestIP']:
+                StormTopologyID = 'none'
+            else:
+                if request.json['StormTopologyID'] == 'none':
+                    StormTopologyID = 'none'
+                else:
+                    # Get first topology from storm and use this for monitoring
+                    stormTopologyURL = 'http://'+StormRestIP+':'+StormRestPort+'/api/v1/topology/'
+                    listTopologies = requests.get(stormTopologyURL + 'summary')
+                    plainText = listTopologies.text
+                    jsonPayload = json.loads(plainText)
+                    topology = jsonPayload['topologies'][0]['encodedId'] #TODO: get list of topologies instead of just the first one
+                    #getTopology = request.get(stormTopologyURL + topology)
+                    StormTopologyID = topology
+
         confdict = {"sslcert": sslCert, "sslkey": sslKey, "udpPort": request.json['UDPPort'],
-                    "ESCluster": request.json['ESCluster']}
+                    "ESCluster": request.json['ESCluster'], "EShostIP": request.json['EShostIP'], "EShostPort": request.json['EShostPort'],
+                    "StormRestIP": StormRestIP, "StormRestPort": StormRestPort, "StormTopologyID": StormTopologyID}
         lsagent.generateConfig(confdict)
         pid = lsagent.check()
         if not pid:

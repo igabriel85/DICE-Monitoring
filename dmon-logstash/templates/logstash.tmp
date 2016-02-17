@@ -17,6 +17,23 @@ type => "graphite"
     codec => collectd { } # specific Collectd codec to invoke
     type => collectd
   }
+  http_poller {
+    urls => {
+      Topology => {
+      method => get
+      url => "http://{{StormRestIP}}:{{StormRestPort}}/api/v1/topology/{{StormTopologyID}}"
+      headers => {
+      Accept => "application/json"
+      }
+      }
+    }
+    request_timeout => 60
+    interval => 60
+    codec => "json"
+    # A hash of request metadata info (timing, response headers, etc.) will be sent here
+    metadata_target => "http_poller_metadata"
+    type =>"storm"
+  }
 }
 
 filter{
@@ -26,6 +43,15 @@ if [type]=="graphite"{
   #spark metrics
   match=>["message","\A%{WORD:appID}.%{NOTSPACE:sparkMetric} %{NUMBER:Value} %{NUMBER:timestamp}"]
 }
+}
+if [type] == "storm"{
+  ruby {
+        code => "
+        event.to_hash.keys.each { |k| event[ k.gsub('.','_') ] = event.remove(k) if k.include?'.' }
+        params = event['configuration'] && event['configuration'].to_hash
+        params.keys.each { |k| params[ k.gsub('.','_') ] = params.delete(k) if k.include?'.' } unless params.nil?
+       "
+    }
 }
 if [type]=="nodemanager-metrics"{ #same as set in logstash-forwarder configuration json
   grok{
@@ -216,7 +242,8 @@ if [type]=="mrappmaster-metrics"{
 }
 output {
   elasticsearch {
-    cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name
-    protocol => http
+    #cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name; Only for LS version 1.5.x
+    #protocol => http #Only version 1.5.x
+    hosts => [{{EShostIP}}:{{EShostPort}}] #For version 2.x of logstash
   }
 }
