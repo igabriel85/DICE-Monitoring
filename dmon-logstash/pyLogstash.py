@@ -71,7 +71,7 @@ class pyLogstashInstance():
             print >> sys.stderr, "Logstash already installed!"
         else:
             try:
-                p = subprocess.Popen('wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz', shel=True)
+                p = subprocess.Popen('wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz', shell=True)
                 p.wait()
             except Exception as inst:
                 print >> sys.stderr, "Error fetching logstash!"
