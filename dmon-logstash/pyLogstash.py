@@ -80,7 +80,7 @@ class pyLogstashInstance():
 
             basedir = os.path.abspath(os.path.dirname(__file__))
 
-            if not os.path.isfile(os.path.join(basedir), 'logstash-2.2.1.tar.gz'):
+            if not os.path.isfile(os.path.join(basedir, 'logstash-2.2.1.tar.gz')):
                 print >> sys.stderr, 'Logstash tar not found!'
                 response = jsonify({'Status': 'Env Error',
                                     'Message': 'Logstash tar not found!'})
