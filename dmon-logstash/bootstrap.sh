@@ -29,7 +29,7 @@ apt-get install ant -y
 #set FQDN for HOST
 HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')  #need to change to eth0 for non vagrant
 echo "#Auto generated DICE Monitoring FQDN
-$HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
+$HostIP dice.dmon.logstash.internal dmon-logstash" >> /etc/hosts
 
 #Setup Logrotate
 echo "Setting up logrotate ..."
@@ -59,8 +59,9 @@ cd /opt/IeAT-DICE-Repository/dmon-logstash
 wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
 tar xvf logstash-2.2.1.tar.gz
 
-mv logstash-2.2.1 logstash
+mv logstash-2.2.1/* logstash
 rm -rf logstash-2.2.1.tar.gz
+rm -rf logstash-2.2.1
 
 
 echo "Installing http_poller"
