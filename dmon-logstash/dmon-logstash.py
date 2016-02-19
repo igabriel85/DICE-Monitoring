@@ -200,10 +200,10 @@ class LSController(Resource):
         lsagent.generateConfig(confdict)
         pid = lsagent.check()
         if not pid:
-            lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorker'])
+            lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorkers'])
         else:
             subprocess.call(['kill', '-9', pid])
-            lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorker'])
+            lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorkers'])
 
         response = jsonify({'Status': 'Done',
                             'Message': 'LS config loaded'})
