@@ -168,17 +168,17 @@ class LSController(Resource):
             response.status_code = 404
             return response
 
-        if not request.json['StormRestIP']:
+        if not 'StormRestIP' in request.json:
             StormRestIP = 'none'
         else:
             StormRestIP = request.json['StormRestIP']
 
-        if not request.json['StormRestPort']:
+        if not 'StormRestPort' in request.json:
             StormRestPort = 'none'
         else:
             StormRestPort = request.json['StormRestPort']
 
-        if not request.json['StormTopologyID']:
+        if not 'StormTopologyID' in request.json:
             if not request.json['StormRestIP']:
                 StormTopologyID = 'none'
             else:
