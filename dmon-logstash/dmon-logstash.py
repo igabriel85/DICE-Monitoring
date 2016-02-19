@@ -97,12 +97,12 @@ class LSCertificates(Resource):
         pubFile = []
         privateFile = []
         for f in dirContent:
-           if os.path.splitext(f)[1] == 'crt':
-               pubFile.append(f)
-               print str(pubFile)
-           if os.path.splitext(f)[1] == 'key':
-               privateFile.append(f)
-               print str(privateFile)
+            if os.path.splitext(f)[1] == 'crt':
+                pubFile.append(f)
+                print str(pubFile)
+            if os.path.splitext(f)[1] == 'key':
+                privateFile.append(f)
+                print str(privateFile)
 
         response = jsonify({'certificates': pubFile,
                             'keys': privateFile})
