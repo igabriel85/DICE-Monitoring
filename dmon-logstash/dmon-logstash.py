@@ -111,7 +111,7 @@ class LSCertificates(Resource):
         return response
 
     def post(self):
-        return "Send new certificate!"
+        return "Send new certificate!" #TODO: sending new certificates
 
 
 @agent.route('/v1/logstash')
@@ -218,7 +218,18 @@ class LSController(Resource):
 @agent.route('/v1/logstash/start')
 class LSControllerStart(Resource):
     def post(self):
-        return "Start/Restart LS instance!"
+        pid = lsagent.check()
+        if pid:
+            response = jsonify({'Status': 'Running',
+                                'Message': 'Logstash instance already running!'})
+            response.status_code = 200
+            return response
+        lsagent.start()
+        response = jsonify({'Status': 'Started',
+                            'Message': 'Logstash instance started!'})
+        response.status_code = 201
+        return response
+        #return "Start/Restart LS instance!"
 
 
 @agent.route('/v1/logstash/stop')
@@ -231,7 +242,7 @@ class LSControllerStop(Resource):
             response.status_code = 404
             return response
         else:
-            subprocess.call(['kill', '-9', pid])
+            subprocess.call(['kill', '-9', str(pid)])
             response = jsonify({'Status': 'Done',
                                 'Message': 'LS Instance stopped'})
             response.status_code = 200

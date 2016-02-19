@@ -30,7 +30,7 @@ class pyLogstashInstance():
         confFile.write(confInfo)
         confFile.close()
 
-    def start(self, heap='512m', worker=1):
+    def start(self, heap='512m', worker=4):
         config = os.path.join(pyLogstashInstance.cfgDir, 'logstash.conf')
         log = os.path.join(pyLogstashInstance.lockDir, 'logstash.log')
         pidFile = os.path.join(pyLogstashInstance.pidDir, 'logstash.pid')
