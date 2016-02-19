@@ -19,7 +19,7 @@
 
 echo "Instaling Logstash 2.2.1"
 cd /opt/IeAT-DICE-Repository/dmon-logstash
-wget 'wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
+wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
 tar xvf logstash-2.2.1.tar.gz
 
 mv logstash-2.2.1/* /logstash
