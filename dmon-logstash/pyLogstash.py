@@ -32,7 +32,7 @@ class pyLogstashInstance():
         config = os.path.join(pyLogstashInstance.cfgDir, 'logstash.conf')
         log = os.path.join(pyLogstashInstance.lockDir, 'logstash.log')
         pidFile = os.path.join(pyLogstashInstance.pidDir, 'logstash.pid')
-        pid = pyLogstashInstance.check()
+        pid = pyLogstashInstance.check
         if pid is True:
             subprocess.call(['kill', '-9', str(pid)])
         try:
