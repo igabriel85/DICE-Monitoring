@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install http_poller logstash plugin
+# Install logstash and http_poller plugin
 #
 #Copyright 2015, Institute e-Austria, Timisoara, Romania
 #    http://www.ieat.ro/
@@ -16,8 +16,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-echo "Installing http_poller"
 
+echo "Instaling Logstash 2.2.1"
+cd /opt/IeAT-DICE-Repository/dmon-logstash
+wget 'wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
+tar xvf logstash-2.2.1.tar.gz
+
+mv logstash-2.2.1/* /logstash
+rm -rf logstash-2.2.1
+
+
+echo "Installing http_poller"
 cd /opt/IeAT-DICE-Repository/dmon-logstash/logstash/bin
 
 ./plugin install http_poller
+
+echo "Installation Complete!"
