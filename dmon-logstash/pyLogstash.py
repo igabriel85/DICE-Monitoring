@@ -38,10 +38,10 @@ class pyLogstashInstance():
         if pid is True:
             subprocess.call(['kill', '-9', str(pid)])
 
-        print 'LS_HEAP_SIZE=' + heap + ' ' + pyLogstashInstance.logstashBin+'logstash agent -f ' + config + ' -l ' + log +' -w '+worker
+        print 'LS_HEAP_SIZE=' + heap + ' ' + pyLogstashInstance.logstashBin+'logstash agent -f ' + config + ' -l ' + log +' -w '+str(worker)
         try:
             lspid = subprocess.Popen('LS_HEAP_SIZE=' + heap + ' ' + pyLogstashInstance.logstashBin+'logstash agent -f ' + config + ' -l ' + log +
-                                     ' -w '+worker, shell=True).pid
+                                     ' -w '+str(worker), shell=True).pid
         except Exception as inst:
             print >> sys.stderr, 'Problem Starting LS!'
             print >> sys.stderr, type(inst)
