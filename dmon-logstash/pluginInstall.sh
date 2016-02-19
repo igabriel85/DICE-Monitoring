@@ -17,12 +17,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Instaling Logstash 2.2.1"
+echo "Installing Logstash 2.2.1"
 cd /opt/IeAT-DICE-Repository/dmon-logstash
 wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
 tar xvf logstash-2.2.1.tar.gz
 
-mv logstash-2.2.1/* /logstash
+mv logstash-2.2.1/* logstash
 rm -rf logstash-2.2.1
 
 
