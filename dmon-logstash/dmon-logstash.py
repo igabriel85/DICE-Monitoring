@@ -152,7 +152,7 @@ class LSController(Resource):
         sslCert = os.path.join(credDir, 'logstash.crt')
         sslKey = os.path.join(credDir, 'logstash.key')
 
-        if not os.path.isfile(sslCert) or os.path.isfile(sslKey):
+        if not os.path.isfile(sslCert) or not os.path.isfile(sslKey):
             response = jsonify({'Status': 'Credential Error',
                                 'Message': 'Missing keys'})
             response.status_code = 404
