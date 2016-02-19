@@ -89,7 +89,7 @@ class LSCertificates(Resource):
     def get(self):
         dirContent = os.listdir(credDir)
         print str(dirContent)
-        if dirContent == []:
+        if not dirContent:
             response = jsonify({'Status': 'Env Error',
                                 'Message': 'Credential folder empty'})
             response.status_code = 404
@@ -99,8 +99,10 @@ class LSCertificates(Resource):
         for f in dirContent:
            if os.path.splitext(f)[1] == 'crt':
                pubFile.append(f)
-           elif os.path.splitext(f)[1] == 'key':
+               print str(pubFile)
+           if os.path.splitext(f)[1] == 'key':
                privateFile.append(f)
+               print str(privateFile)
 
         response = jsonify({'certificates': pubFile,
                             'keys': privateFile})
