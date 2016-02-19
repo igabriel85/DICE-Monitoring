@@ -37,6 +37,8 @@ class pyLogstashInstance():
         pid = pyLogstashInstance.check
         if pid is True:
             subprocess.call(['kill', '-9', str(pid)])
+
+        print 'LS_HEAP_SIZE=' + heap + ' ' + pyLogstashInstance.logstashBin+'logstash agent -f ' + config + ' -l ' + log +' -w '+worker
         try:
             lspid = subprocess.Popen('LS_HEAP_SIZE=' + heap + ' ' + pyLogstashInstance.logstashBin+'logstash agent -f ' + config + ' -l ' + log +
                                      ' -w '+worker, shell=True).pid
@@ -62,7 +64,12 @@ class pyLogstashInstance():
     def stop(self):
         pid = pyLogstashInstance.check()
         if pid is True:
-            subprocess.call(['kill', '-9', str(pid)])
+            try:
+                subprocess.call(['kill', '-9', str(pid)])
+            except Exception as inst:
+                 print >> sys.stderr, 'PID not found!'
+                 print >> sys.stderr, type(inst)
+                 print >> sys.stderr, inst.args
             return 1
         else:
             return 0
