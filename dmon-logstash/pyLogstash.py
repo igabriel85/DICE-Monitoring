@@ -88,7 +88,7 @@ class pyLogstashInstance():
                 return response
 
             try:
-                p1 = subprocess.Popen('tar xf logstash-2.2.1.tar.gz', shel=True)
+                p1 = subprocess.Popen('tar xf logstash-2.2.1.tar.gz', shell=True)
                 p1.wait()
             except Exception as inst:
                 print >> sys.stderr, "Error extracting logstash!"
