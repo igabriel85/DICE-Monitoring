@@ -116,8 +116,10 @@ class pyLogstashInstance():
                 print >> sys.stderr, inst.args
 
             try:
-                p4 = subprocess.Popen('plugin install http_poller', shell=True, cwd='/opt/dmon-logstash/logstash/bin')
-                p4.wait()
+                #p4 = subprocess.Popen('plugin install http_poller', shell=True, cwd='/opt/dmon-logstash/logstash/bin')
+                #p4.wait()
+                ppi = subprocess.Popen(['./pluginInstall.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                       shell=False).communicate()
             except Exception as inst:
                 print >> sys.stderr, "Error while installing http_poller plugin!"
                 print >> sys.stderr, type(inst)
