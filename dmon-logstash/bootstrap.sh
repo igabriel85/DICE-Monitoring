@@ -68,4 +68,10 @@ cd /opt/IeAT-DICE-Repository/dmon-logstash/logstash/bin
 
 ./plugin install http_poller
 
+echo "Fixing permisions"
+cd /opt/IeAT-DICE-Repository/dmon-logstash
+chown -R ubuntu.ubuntu logstash
+chown -R ubuntu.ubuntu /opt
+mkdir -p /etc/logstash/conf.d
+
 echo "dmon-logstash bootstrapping Complete!"
