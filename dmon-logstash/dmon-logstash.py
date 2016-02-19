@@ -177,7 +177,7 @@ class LSController(Resource):
             StormRestPort = 'none'
         else:
             StormRestPort = request.json['StormRestPort']
-
+        StormTopologyID = 'none'
         if not 'StormTopologyID' in request.json:
             if not request.json['StormRestIP']:
                 StormTopologyID = 'none'
