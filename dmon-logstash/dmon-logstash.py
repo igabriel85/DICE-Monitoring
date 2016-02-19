@@ -88,6 +88,11 @@ class NodeInfo(Resource):
 class LSCertificates(Resource):
     def get(self):
         dirContent = os.listdir(credDir)
+        if dirContent == []:
+            response = jsonify({'Status': 'Env Error',
+                                'Message': 'Credential folder empty'})
+            response.status_code = 404
+            return response
         pubFile = []
         privateFile = []
         for f in dirContent:
