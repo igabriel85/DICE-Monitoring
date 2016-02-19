@@ -206,7 +206,7 @@ class LSController(Resource):
         if not pid:
             lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorkers'])
         else:
-            subprocess.call(['kill', '-9', pid])
+            subprocess.call(['kill', '-9', str(pid)])
             lsagent.start(heap=request.json['LSHeap'], worker=request.json['LSWorkers'])
 
         response = jsonify({'Status': 'Done',
