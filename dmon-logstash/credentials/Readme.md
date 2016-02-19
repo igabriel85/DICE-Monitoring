@@ -1,0 +1,1 @@
+Credential Directory for dmon-logstash

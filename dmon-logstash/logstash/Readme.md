@@ -1,0 +1,1 @@
+Log dir for dmon-logstash.
