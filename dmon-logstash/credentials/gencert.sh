@@ -24,4 +24,4 @@ sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/
 
 #generate certificates
 
-openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/dmon-logstash/certificates/logstash.key -out /opt/IeAT-DICE-Repository/dmon-logstash/certificates/logstash.crt
+openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/dmon-logstash/credentials/logstash.key -out /opt/IeAT-DICE-Repository/dmon-logstash/credentials/logstash.crt
