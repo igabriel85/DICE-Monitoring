@@ -225,8 +225,15 @@ class LSControllerStart(Resource):
             response.status_code = 200
             return response
         lsagent.start()
+        pidVal = lsagent.readPid()
+
+        if pidVal == 'none':
+            msg2 = 'Error fetching PID!'
+        else:
+            msg2 = pidVal
         response = jsonify({'Status': 'Started',
-                            'Message': 'Logstash instance started!'})
+                            'Message': 'Logstash instance started!',
+                            'PID': msg2})
         response.status_code = 201
         return response
         #return "Start/Restart LS instance!"

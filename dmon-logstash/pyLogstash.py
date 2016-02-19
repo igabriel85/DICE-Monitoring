@@ -109,6 +109,19 @@ class pyLogstashInstance():
         else:
             return pid
 
+    def readPid(self):
+        lsPIDfile = os.path.join(pyLogstashInstance.pidDir, 'logstash.pid')
+        try:
+            lsPID = open(lsPIDfile, 'r').readline()
+            pidString = lsPID.strip()
+            pid = int(pidString)
+        except Exception as inst:
+            print >> sys.stderr, type(inst)
+            print >> sys.stderr, inst.args
+            return 'none'
+        return pid
+
+
     def validate(self):  #TODO: implement
         return "validate configuration"
 
