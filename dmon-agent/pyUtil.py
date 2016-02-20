@@ -4,6 +4,7 @@ import os
 import datetime
 import time
 import jinja2
+from flask import jsonify
 
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
 pidDir = '/var/run'
