@@ -29,6 +29,7 @@ import subprocess
 import platform
 import requests
 import json
+import psutil
 
 from pyLogstash import *
 from jsonvalidation import *
@@ -249,7 +250,11 @@ class LSControllerStop(Resource):
             response.status_code = 404
             return response
         else:
-            subprocess.call(['kill', '-9', str(pid)])
+            #subprocess.call(['kill', '-9', str(pid)]) #TODO: check for more elegant solution not sigkill(9) but sigterm(15)
+            process = psutil.Process(pid)
+            for proc in process.children(recursive=True):
+                proc.kill()
+            process.kill()
             response = jsonify({'Status': 'Done',
                                 'Message': 'LS Instance stopped'})
             response.status_code = 200

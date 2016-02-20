@@ -8,3 +8,4 @@ Flask-RESTful==0.3.4
 flask-restful-swagger==0.19
 flask-restplus==0.7.2
 Jinja2==2.7.3
+psutil==4.0.0
