@@ -250,11 +250,11 @@ class LSControllerStop(Resource):
             response.status_code = 404
             return response
         else:
-            #subprocess.call(['kill', '-9', str(pid)]) #TODO: check for more elegant solution not sigkill(9) but sigterm(15)
             process = psutil.Process(pid)
             for proc in process.children(recursive=True):
                 proc.kill()
             process.kill()
+            subprocess.call(['kill', '-9', str(pid)]) #TODO: check for more elegant solution not sigkill(9) but sigterm(15)
             response = jsonify({'Status': 'Done',
                                 'Message': 'LS Instance stopped'})
             response.status_code = 200
