@@ -568,8 +568,8 @@ class OverlordCoreStatus(Resource):
 
 		rsp = r.json()
 		rspES = {'ElasticSearch': rsp}
-		rspLS = {'Logstash': {'Status': 'Running', 'Version': '4.1.2'}} # TODO
-		rspKB = {'Kibana': {'Status': 'Running', 'Version': '1.5.4'}} # TODO
+		rspLS = {'Logstash': {'Status': 'Running', 'Version': '1.5.4'}} # TODO
+		rspKB = {'Kibana': {'Status': 'Running', 'Version': '4.3.1'}} # TODO
 
 		rspD.update(rspES)
 		rspD.update(rspLS) #TODO
@@ -750,17 +750,17 @@ class MonitoredNodeInfo(Resource):
 			return response
 		else:
 			response = jsonify({
-				'NodeName':qNode.nodeFQDN,
-				'Status':qNode.nStatus,
-				'IP':qNode.nodeIP,
-				'Monitored':qNode.nMonitored,
-				'OS':qNode.nodeOS,
-				'Key':qNode.nkey,
-				'Password':qNode.nPass,
-				'User':qNode.nUser,
-				'ChefClient':"TODO",
-				'CDH':'TODO',
-				'Roles':qNode.nRoles})
+				'NodeName': qNode.nodeFQDN,
+				'Status': qNode.nStatus,
+				'IP': qNode.nodeIP,
+				'Monitored': qNode.nMonitored,
+				'OS': qNode.nodeOS,
+				'Key': qNode.nkey,
+				'Password': qNode.nPass,
+				'User': qNode.nUser,
+				'ChefClient': "TODO",
+				'CDH': 'TODO',
+				'Roles': qNode.nRoles})
 			response.status_code = 200	
 			return response
 
@@ -779,7 +779,7 @@ class MonitoredNodeInfo(Resource):
 			qNode.nkey = request.json['Key']
 			qNode.nPass = request.json['Password']
 			qNode.nUser = request.json['User']
-			response=jsonify({'Status':'Node '+ nodeFQDN+' updated!'})
+			response = jsonify({'Status': 'Node ' + nodeFQDN + ' updated!'})
 			response.status_code = 201
 			return response
 
@@ -840,21 +840,21 @@ class ClusterNodeRoles(Resource):
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/purge')
-@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+@api.doc(params={'nodeFQDN': 'Nodes FQDN'})
 class PurgeNode(Resource):
-	def delete(self,nodeFQDN):
-		qPurge = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+	def delete(self, nodeFQDN):
+		qPurge = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qPurge is None:
 			abort(404)
 
-		lPurge=[]
+		lPurge = []
 		lPurge.append(qPurge.nodeIP)
 		try:
-			serviceCtrl(lPurge,qPurge.uUser,qPurge.uPass,'logstash-forwarder', 'stop')
+			serviceCtrl(lPurge, qPurge.uUser, qPurge.uPass, 'logstash-forwarder', 'stop')
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-			response = jsonify({'Error':'Stopping LSF!'})
+			response = jsonify({'Error': 'Stopping LSF!'})
 			response.status_code = 500
 			return response
 
@@ -869,7 +869,7 @@ class PurgeNode(Resource):
 				
 		db.session.delete(qPurge)
 		db.session.commit()
-		response = jsonify ({'Status':'Node ' +nodeFQDN+ ' deleted!'})
+		response = jsonify({'Status': 'Node ' + nodeFQDN + ' deleted!'})
 		response.status_code = 200
 		return response
 
@@ -880,30 +880,30 @@ class PurgeNode(Resource):
 class ESCoreConfiguration(Resource):
 	def get(self): #TODO same for all get config file createfunction
 		if not os.path.isdir(cfgDir):
-			response = jsonify({'Error':'Config dir not found !'})
+			response = jsonify({'Error': 'Config dir not found !'})
 			response.status_code = 404
 			return response
-		if not os.path.isfile(os.path.join(cfgDir,'elasticsearch.yml')):
-			response = jsonify({'Status':'Config file not found !'})
+		if not os.path.isfile(os.path.join(cfgDir, 'elasticsearch.yml')):
+			response = jsonify({'Status': 'Config file not found !'})
 			response.status_code = 404
 			return response
 		try:
-			esCfgfile=open(os.path.join(cfgDir,'elasticsearch.yml'),'r')
+			esCfgfile = open(os.path.join(cfgDir, 'elasticsearch.yml'), 'r')
 		except EnvironmentError:
-			response = jsonify({'EnvError':'file not found'})
+			response = jsonify({'EnvError': 'file not found'})
 			response.status_code = 500
 			return response
 
-		return send_file(esCfgfile,mimetype = 'text/yaml',as_attachment = True)
+		return send_file(esCfgfile, mimetype='text/yaml', as_attachment=True)
 
 	@api.expect(esCore)	
 	def put(self):
-		requiredKeys=['ESClusterName','HostFQDN','IP','NodeName','NodePort']
+		requiredKeys=['ESClusterName', 'HostFQDN', 'IP', 'NodeName', 'NodePort']
 		if not request.json:
 			abort(400)
 		for key in requiredKeys:
 			if key not in request.json:
-				response = jsonify({'Error':'malformed request, missing key(s)'})
+				response = jsonify({'Error': 'malformed request, missing key(s)'})
 				response.status_code = 400
 				return response 
 		test = db.session.query(dbESCore.hostFQDN).all()
