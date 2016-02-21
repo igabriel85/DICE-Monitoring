@@ -15,10 +15,10 @@ fi
 
 
 if [ $# -eq 0 ]; then
-    echo "Starting dmon-agent"
+    echo "Starting dmon-logstash"
 	#. $DIR/dmonEnv/bin/activate
-        python dmon-agent.py > dmon-agent.log 2>&1 &
-        echo $! > dmon-agent.pid
+        python dmon-logstash.py > log/dmon-agent.log 2>&1 &
+        echo $! > pid/dmon-agent.pid
 else
-   echo "dmon-agent does not support commandline arguments!"
+   echo "DMON-logstash does not support commandline arguments!"
 fi
