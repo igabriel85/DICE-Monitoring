@@ -30,6 +30,8 @@ import platform
 import requests
 import json
 import psutil
+import logging
+from logging.handlers import RotatingFileHandler
 
 from pyLogstash import *
 from jsonvalidation import *
@@ -89,11 +91,15 @@ class NodeInfo(Resource):
 class LSCertificates(Resource):
     def get(self):
         dirContent = os.listdir(credDir)
-        print str(dirContent)
+        app.logger.info('[%s] : [INFO] Credential DIR Content  %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(dirContent))
+        #print str(dirContent)
         if not dirContent:
             response = jsonify({'Status': 'Env Error',
                                 'Message': 'Credential folder empty'})
             response.status_code = 404
+            app.logger.warning('[%s]: [WARN] Credential folder empty',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         pubFile = []
         privateFile = []
@@ -101,10 +107,14 @@ class LSCertificates(Resource):
             print str(os.path.splitext(f)[1])
             if os.path.splitext(f)[1] == '.crt':
                 pubFile.append(f)
-                print str(pubFile)
+                app.logger.info('[%s] : [INFO] Public Key files found: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(pubFile))
+                #print str(pubFile)
             if os.path.splitext(f)[1] == '.key':
                 privateFile.append(f)
-                print str(privateFile)
+                app.logger.info('[%s] : [INFO] Private Key files found: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(privateFile))
+                #print str(privateFile)
 
         response = jsonify({'certificates': pubFile,
                             'keys': privateFile})
@@ -123,6 +133,8 @@ class LSStatus(Resource):
             response = jsonify({'Status': 'Env Error',
                                 'Message': 'PID file not found!'})
             response.status_code = 404
+            app.logger.warning('[%s]: [WARN] NO Logstash PID file found',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         status = lsagent.check()
 
@@ -130,11 +142,15 @@ class LSStatus(Resource):
             response = jsonify({'Status': 'Stopped',
                                 'Message': 'No LS instance found'})
             response.status_code = 200
+            app.logger.info('[%s]: [INFO] No running Logstash instance found',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         else:
             response = jsonify({'Status': 'Running',
                                 'Message': 'PID ' + status})
             response.status_code = 200
+            app.logger.warning('[%s]: [INFO] Logstash instance running with PID %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(status))
             return response
 
 
@@ -146,6 +162,8 @@ class LSController(Resource):
             response = jsonify({'Status': 'Env Error',
                                 'Message': 'No config found!'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] Logstash configuration not found',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
         confFile = open(conf, 'r')
@@ -161,8 +179,12 @@ class LSController(Resource):
             response = jsonify({'Status': 'Credential Error',
                                 'Message': 'Missing keys'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] Logstash missing credentials',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         if not request.json:
+            app.logger.error('[%s] : [ERROR] Invalid content-type: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(request.content_type))
             abort(400)
 
         try:
@@ -171,6 +193,8 @@ class LSController(Resource):
             response = jsonify({'Status': 'json error',
                                 'Message': 'Malformed json'})
             response.status_code = 404
+            app.logger.error('[%s] : [ERROR] Malformed JSON',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
         if not 'StormRestIP' in request.json:
@@ -191,7 +215,7 @@ class LSController(Resource):
                     StormTopologyID = 'none'
                 else:
                     # Get first topology from storm and use this for monitoring
-                    stormTopologyURL = 'http://'+StormRestIP+':'+StormRestPort+'/api/v1/topology/'
+                    stormTopologyURL = 'http://' + StormRestIP + ':' + StormRestPort + '/api/v1/topology/'
                     listTopologies = requests.get(stormTopologyURL + 'summary')
                     plainText = listTopologies.text
                     jsonPayload = json.loads(plainText)
@@ -202,6 +226,8 @@ class LSController(Resource):
         confdict = {"sslcert": sslCert, "sslkey": sslKey, "udpPort": request.json['UDPPort'],
                     "ESCluster": request.json['ESCluster'], "EShostIP": request.json['EShostIP'], "EShostPort": request.json['EShostPort'],
                     "StormRestIP": StormRestIP, "StormRestPort": StormRestPort, "StormTopologyID": StormTopologyID}
+        app.logger.info('[%s] : [INFO] Configuration content: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(confdict))
         lsagent.generateConfig(confdict)
         pid = lsagent.check()
         if not pid:
@@ -212,6 +238,8 @@ class LSController(Resource):
 
         response = jsonify({'Status': 'Done',
                             'Message': 'LS config loaded'})
+        app.logger.info('[%s] : [INFO] Configuration loaded: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         response.status_code = 200
         return response
 
@@ -224,20 +252,25 @@ class LSControllerStart(Resource):
             response = jsonify({'Status': 'Running',
                                 'Message': 'Logstash instance already running!'})
             response.status_code = 200
+            app.logger.info('[%s] : [INFO] Logstash instance already running at: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(pid))
             return response
         lsagent.start()
         pidVal = lsagent.readPid()
 
         if pidVal == 'none':
             msg2 = 'Error fetching PID!'
+            app.logger.error('[%s] : [ERROR] Error fetching PID from file',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         else:
             msg2 = pidVal
         response = jsonify({'Status': 'Started',
                             'Message': 'Logstash instance started!',
                             'PID': msg2})
         response.status_code = 201
+        app.logger.info('[%s] : [INFO] Logstash instance started with PID: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(msg2))
         return response
-        #return "Start/Restart LS instance!"
 
 
 @agent.route('/v1/logstash/stop')
@@ -248,6 +281,8 @@ class LSControllerStop(Resource):
             response = jsonify({'Status': 'Not Found',
                                 'Message': 'LS instance not found'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No running Logstash instance found',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         else:
             process = psutil.Process(pid)
@@ -255,6 +290,8 @@ class LSControllerStop(Resource):
                 proc.kill()
             process.kill()
             subprocess.call(['kill', '-9', str(pid)]) #TODO: check for more elegant solution not sigkill(9) but sigterm(15)
+            app.logger.info('[%s] : [INFO] Killed Logstash instance with PID: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(pid))
             response = jsonify({'Status': 'Done',
                                 'Message': 'LS Instance stopped'})
             response.status_code = 200
@@ -268,6 +305,8 @@ class LSControllerDeploy(Resource):
         response = jsonify({'Status': 'Done',
                             'Message': 'Logstash installed!'})
         response.status_code = 201
+        app.logger.info('[%s] : [INFO] Logstash deployed',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return response
 
 
@@ -294,4 +333,7 @@ class LSControllerLog(Resource):
 
 
 if __name__ == '__main__':
+    handler = RotatingFileHandler(logDir +'/dmon-logstash.log', maxBytes=10000, backupCount=1)
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
     app.run(host='0.0.0.0', port=5003, debug=True)

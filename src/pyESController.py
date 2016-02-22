@@ -30,7 +30,7 @@ import sys, getopt
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 
 #Global es
-es = Elasticsearch()
+es = Elasticsearch('109.231.121.210')
 
 # class ESCoreInit:
 #   def __init__(self, IP):
@@ -217,11 +217,12 @@ def defineESCore(IP):
   return es
 if __name__=='__main__':
   #ElasticSearch object that defines the endpoint
-  es = Elasticsearch('194.102.63.78')
+  es = Elasticsearch('85.120.206.43')
   if len(sys.argv) == 1: # only for development
-    testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
-    metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
-    test, test2 = queryESCore(testQuery,allm=False,dMetrics= metrics,debug=False)
+    testQuery = queryConstructor(1438939155342, 1438940055342, "hostname:\"dice.chd5.mng.internal\" AND serviceType:\"dfs\"")
+    print testQuery
+    #metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
+    test, test2 = queryESCore(testQuery, allm=True, debug=True)
     dict2CSV(test)
     print test2
     #queryESCoreCSV(test, True)

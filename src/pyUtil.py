@@ -93,7 +93,7 @@ def checkUnique(nodeList):
 	sameCredentials = []
 	ipNode = []
 	for d in nodeList:
-		for k,v in d.iteritems():
+		for k, v in d.iteritems():
 			if v in seen:
 				ipNode.append(k)
 				sameCredentials.append(v)

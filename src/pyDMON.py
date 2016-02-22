@@ -956,19 +956,19 @@ class ESCoreRemove(Resource):
 		return response
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>')
-@api.doc(params={'hostFQDN':'Host FQDN.'})
+@api.doc(params={'hostFQDN': 'Host FQDN.'})
 class LSCoreRemove(Resource):
 	def delete(self, hostFQDN):
 		qLSCorePurge = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
 		if qLSCorePurge is None:
-			response = jsonify({'Status':'Unknown host '+ hostFQDN})
+			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
 			response.status_code = 404
 			return response
 
 		os.kill(qLSCorePurge.LSCorePID, signal.SIGTERM)
 		db.session.delete(qLSCorePurge)
 		db.session.commit()
-		response = jsonify ({'Status':'Deleted LS at host '+hostFQDN})
+		response = jsonify({'Status': 'Deleted LS at host ' + hostFQDN})
 		response.status_code = 200
 		return response
 
@@ -1177,20 +1177,20 @@ class KKCoreController(Resource):
 class LSCoreConfiguration(Resource):
 	def get(self):
 		if not os.path.isdir(cfgDir):
-			response = jsonify({'Error':'Config dir not found !'})
+			response = jsonify({'Error': 'Config dir not found !'})
 			response.status_code = 404
 			return response
 		if not os.path.isfile(os.path.join(cfgDir, 'logstash.conf')):
-			response = jsonify({'Error':'Config file not found !'})
+			response = jsonify({'Error': 'Config file not found !'})
 			response.status_code = 404
 			return response
 		try:
-			lsCfgfile=open(os.path.join(cfgDir, 'logstash.conf'), 'r')
+			lsCfgfile = open(os.path.join(cfgDir, 'logstash.conf'), 'r')
 		except EnvironmentError:
 			response = jsonify({'EnvError': 'file not found'})
 			response.status_code = 500
 			return response
-		return send_file(lsCfgfile,mimetype='text/plain', as_attachment=True)
+		return send_file(lsCfgfile, mimetype='text/plain', as_attachment=True)
 
 	@api.expect(lsCore)
 	def put(self):
@@ -1200,42 +1200,42 @@ class LSCoreConfiguration(Resource):
 		# 	#temporaryConf.write(cData)
 		# 	#temporaryConf.close()
 		# 	print cData
-		requiredKeys=['ESClusterName','HostFQDN','IP','LPort','udpPort']
+		requiredKeys = ['ESClusterName', 'HostFQDN', 'IP', 'LPort', 'udpPort']
 		if not request.json:
 			abort(400)
 		for key in requiredKeys:
 			if key not in request.json:
-				response = jsonify({'Error':'malformed request, missing key(s)'})
+				response = jsonify({'Error': 'malformed request, missing key(s)'})
 				response.status_code = 400
 				return response 
 		
 		qESCheck = dbESCore.query.filter_by(clusterName=request.json['ESClusterName'])
 		if qESCheck is None:
-			response = jsonify({'Status':'Invalid cluster name: '+request.json['ESClusterName']})
+			response = jsonify({'Status': 'Invalid cluster name: ' + request.json['ESClusterName']})
 			response.status_code = 404
 			return response		
-		qSCore = dbSCore.query.filter_by(hostIP = request.json['IP']).first()
+		qSCore = dbSCore.query.filter_by(hostIP=request.json['IP']).first()
 		if request.json["OS"] is None:
 			os = "unknown"
 		else:
-			os=request.json["OS"]
+			os = request.json["OS"]
 
 		if qSCore is None:
 			upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"],hostOS=os,
 			 outESclusterName=request.json["ESClusterName"], udpPort = request.json["udpPort"], inLumberPort=request.json['LPort'])
 			db.session.add(upS) 
 			db.session.commit()
-			response = jsonify({'Added':'LS Config for ' + request.json["HostFQDN"]})
+			response = jsonify({'Added': 'LS Config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
 		else:
 			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
 			qSCore.hostOS = os
-			qSCore.outESclusterName=request.json['ESClusterName']
-			qSCore.udpPort=request.json['udpPort']
-			qSCore.inLumberPort=request.json['LPort']
+			qSCore.outESclusterName = request.json['ESClusterName']
+			qSCore.udpPort = request.json['udpPort']
+			qSCore.inLumberPort = request.json['LPort']
 			db.session.commit()
-			response=jsonify({'Updated':'LS config for '+ request.json["HostFQDN"]})
+			response = jsonify({'Updated': 'LS config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
 		#return "Changes configuration fo logstash server"
@@ -1244,30 +1244,30 @@ class LSCoreConfiguration(Resource):
 @dmon.route('/v1/overlord/core/ls')
 class LSCoreController(Resource):
 	def get(self):
-		hostsAll=db.session.query(dbSCore.hostFQDN,dbSCore.hostIP,dbSCore.hostOS,dbSCore.inLumberPort, 
+		hostsAll = db.session.query(dbSCore.hostFQDN,dbSCore.hostIP,dbSCore.hostOS,dbSCore.inLumberPort,
 			dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName, dbSCore.LSCoreStatus).all()
-		resList=[]
+		resList = []
 		for hosts in hostsAll:
-			confDict={}
-			confDict['HostFQDN']=hosts[0]
-			confDict['IP']=hosts[1]
-			confDict['OS']=hosts[2]
-			confDict['LPort']=hosts[3]
-			confDict['udpPort']=hosts[6]
-			confDict['ESClusterName']=hosts[7]
-			confDict['Status']=hosts[8]
+			confDict = {}
+			confDict['HostFQDN'] = hosts[0]
+			confDict['IP'] = hosts[1]
+			confDict['OS'] = hosts[2]
+			confDict['LPort'] = hosts[3]
+			confDict['udpPort'] = hosts[6]
+			confDict['ESClusterName'] = hosts[7]
+			confDict['Status'] = hosts[8]
 			resList.append(confDict)
-		response = jsonify({'LS Instances':resList})
+		response = jsonify({'LS Instances': resList})
 		response.status_code = 200
 		return response
 
 	def post(self):
-		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
-		templateEnv = jinja2.Environment( loader=templateLoader )
-		lsTemp= os.path.join(tmpDir,'logstash.tmp')#tmpDir+"/collectd.tmp"
-		lsfCore= os.path.join(cfgDir,'logstash.conf')
+		templateLoader = jinja2.FileSystemLoader(searchpath="/")
+		templateEnv = jinja2.Environment(loader=templateLoader)
+		lsTemp = os.path.join(tmpDir, 'logstash.tmp')#tmpDir+"/collectd.tmp"
+		lsfCore = os.path.join(cfgDir, 'logstash.conf')
 		#qSCore = db.session.query(dbSCore.hostFQDN).first()
-		qSCore=dbSCore.query.first()# TODO: currently only one LS instance supported
+		qSCore = dbSCore.query.first()# TODO: currently only one LS instance supported
 		#return qSCore
 		if qSCore is None:
 			response = jsonify({"Status": "No LS instances registered"})
@@ -1288,7 +1288,7 @@ class LSCoreController(Resource):
 		if qSCore.sslCert == 'default':
 			certLoc = os.path.join(credDir, 'logstash-forwarder.crt')
 		else:
-			certLoc = os.path.join(credDir,qSCore.sslCert+'.crt') 
+			certLoc = os.path.join(credDir, qSCore.sslCert + '.crt')
 
 
 		if qSCore.sslKey == 'default':
@@ -1336,20 +1336,20 @@ class LSCoreController(Resource):
 class LSCredControl(Resource):
 	def get(self):
 		credList = []
-		credAll=db.session.query(dbSCore.hostFQDN, dbSCore.hostIP, dbSCore.sslCert, dbSCore.sslKey).all()
+		credAll = db.session.query(dbSCore.hostFQDN, dbSCore.hostIP, dbSCore.sslCert, dbSCore.sslKey).all()
 		if credAll is None:
 			response = jsonify({'Status': 'No credentials set!'})
 			response.status_code = 404
 			return response
 		for nl in credAll:
-			credDict= {}
+			credDict = {}
 			print >>sys.stderr, nl[0]
-			credDict['LS Host']=nl[0]
-			credDict['Certificate']=nl[2]
-			credDict['Key']=nl[3]
+			credDict['LS Host'] = nl[0]
+			credDict['Certificate'] = nl[2]
+			credDict['Key'] = nl[3]
 			credList.append(credDict)
-		response = jsonify({'Credentials':credList})
-		response.status_code=200
+		response = jsonify({'Credentials': credList})
+		response.status_code = 200
 		return response
 
 	# def post(self):
