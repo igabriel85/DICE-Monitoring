@@ -17,9 +17,8 @@ fi
 if [ $# -eq 0 ]; then
     echo "Starting dmon-logstash"
 	#. $DIR/dmonEnv/bin/activate
-        python dmon-logstash.py > log/dmon-logstash.out 2>&1 &
-        echo $! > pid/dmon-logstash.pid
-    echo "Succesfully started dmon-logstash"
+        python dmon-logstash.py > log/dmon-agent.log 2>&1 &
+        echo $! > pid/dmon-agent.pid
 else
    echo "DMON-logstash does not support commandline arguments!"
 fi
