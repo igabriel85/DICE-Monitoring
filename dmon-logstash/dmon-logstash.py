@@ -20,7 +20,7 @@ from flask import Flask
 from flask import jsonify
 from flask import send_file
 from flask import request
-from flask.ext.restplus import Api, Resource, fields
+from flask.ext.restplus import Resource, fields
 from flask import abort
 import os
 import jinja2
@@ -36,6 +36,7 @@ from logging.handlers import RotatingFileHandler
 from pyLogstash import *
 from jsonvalidation import *
 from jsonschema import *
+from app import *
 
 
 #directory location
@@ -48,14 +49,14 @@ credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'credentials'
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
 logstashDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logstash')
 
-app = Flask("dmon-logstash")
-app.config['RESTPLUS_VALIDATE'] = True
-api = Api(app, version='0.0.1', title='DICE Monitoring Logstash API',
-          description="RESTful API for the DICE Monitoring Platform  Logstash agent (dmon-logstash)",
-          )
-
-# changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
-agent = api.namespace('agent', description='dmon logstash operations')
+# app = Flask("dmon-logstash")
+# app.config['RESTPLUS_VALIDATE'] = True
+# api = Api(app, version='0.0.1', title='DICE Monitoring Logstash API',
+#           description="RESTful API for the DICE Monitoring Platform  Logstash agent (dmon-logstash)",
+#           )
+#
+# # changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
+# agent = api.namespace('agent', description='dmon logstash operations')
 
 lsConfig = api.model('LS Configuration options', {
     'UDPPort': fields.String(required=True, default='25826', description='Port of UDP plugin from Logstash Server'),
