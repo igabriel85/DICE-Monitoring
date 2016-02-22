@@ -167,7 +167,7 @@ class LSController(Resource):
                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
-        confFile = open(conf, 'r')
+        confFile = open(os.path.join(cfgDir, 'logstash.conf'), 'r')
 
         return send_file(confFile, mimetype='text/plain', as_attachment=True)
 
