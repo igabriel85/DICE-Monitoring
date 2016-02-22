@@ -334,7 +334,7 @@ class LSControllerLog(Resource):
 
 
 if __name__ == '__main__':
-    handler = RotatingFileHandler(logDir +'/dmon-logstash.out', maxBytes=10000, backupCount=1)
+    handler = RotatingFileHandler(logDir +'/dmon-logstash.log', maxBytes=10000, backupCount=1)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)
     app.run(host='0.0.0.0', port=5003, debug=True)
