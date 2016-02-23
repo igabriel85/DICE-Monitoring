@@ -24,6 +24,9 @@ if [ $# -eq 0 ]; then
     echo "Finished"
 elif [[ $1 == "stop" ]]; then
     echo "Stopping dmon-logstash"
+    killall -15 python
+    echo "Stopped dmon-logstash"
+    echo "Stopping logstash"
     if [ ! -f $DIR/pid/dmon-logstash.pid ]; then
         echo "No Logstash PID file found."
     fi
@@ -36,8 +39,6 @@ elif [[ $1 == "stop" ]]; then
             sleep 1
         done
     echo "Stopped logstash server"
-    killall -9 python
-    echo "Stopped dmon-logstash"
 else
    echo "DMON-logstash does not support this command line argument!"
 fi
