@@ -14,8 +14,6 @@ elif [ $ARCH == "Darwin" ]; then
    DIR=`python -c "$CMD"`
 fi
 
-
-
 if [ $# -eq 0 ]; then
     echo "Starting dmon-logstash"
 	#. $DIR/dmonEnv/bin/activate
@@ -42,5 +40,5 @@ elif [[ $1 == "stop" ]]; then
     kill -9 $(($PID+1)) #TODO: fix this, kill by child process
     echo "Stopped logstash server"
 else
-   echo "DMON-logstash does not support this command line argument!"
+   echo "dmon-logstash does not support this command line argument!"
 fi
