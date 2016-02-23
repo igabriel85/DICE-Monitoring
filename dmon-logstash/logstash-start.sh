@@ -22,13 +22,13 @@ if [ $# -eq 0 ]; then
         python dmon-logstash.py > log/dmon-logstash.out 2>&1 &
         echo $! > pid/dmon-logstash.pid
     echo "Finished"
-elif [ $1 == "stop" ]; then
+elif [ $2 == "stop" ]; then
     echo "Stopping dmon-logstash"
     if [ ! -f $DIR/src/pid/dmon-logstash.pid ]; then
         echo "No Logstash PID file found."
     fi
-    PID=`cat $DIR/pid/dmon-logstash.pid`
-    kill -9  `cat $DIR/pid/dmon-logstash.pid`
+    PID=`cat $DIR/pid/logstash.pid`
+    kill -9  `cat $DIR/pid/logstash.pid`
     sleep 5
     while [ kill -0  $PID ]
         do
