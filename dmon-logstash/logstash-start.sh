@@ -24,7 +24,7 @@ if [ $# -eq 0 ]; then
     echo "Finished"
 elif [[ $1 == "stop" ]]; then
     echo "Stopping dmon-logstash"
-    killall -15 python
+    killall -15 python   #TODO: fix this, kill only dmon-logstash by pid
     echo "Stopped dmon-logstash"
     echo "Stopping logstash"
     if [ ! -f $DIR/pid/dmon-logstash.pid ]; then
@@ -33,11 +33,7 @@ elif [[ $1 == "stop" ]]; then
     PID=`cat $DIR/pid/logstash.pid`
     kill -15  `cat $DIR/pid/logstash.pid`
     sleep 5
-    while  kill -0  $PID
-        do
-            kill -15  $PID
-            sleep 1
-        done
+    kill -9 $PID+1 #TODO: fix this, kill by child process
     echo "Stopped logstash server"
 else
    echo "DMON-logstash does not support this command line argument!"
