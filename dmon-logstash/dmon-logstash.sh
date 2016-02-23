@@ -23,13 +23,18 @@ if [ $# -eq 0 ]; then
         echo $! > pid/dmon-logstash.pid
     echo "Finished"
 elif [[ $1 == "stop" ]]; then
-    echo "Stopping dmon-logstash"
-    kill -15 `cat $DIR/pid/dmon-logstash.pid` #TODO: fix this, kill only dmon-logstash by pid
-    echo "Stopped dmon-logstash"
-    echo "Stopping logstash"
     if [ ! -f $DIR/pid/dmon-logstash.pid ]; then
+        echo "No dmon-logstash PID file found."
+    fi
+    echo "Stopping dmon-logstash"
+    kill -9 `cat $DIR/pid/dmon-logstash.pid` #TODO: fix this, kill only dmon-logstash by pid
+    echo "Stopped dmon-logstash"
+
+    echo "Stopping logstash"
+    if [ ! -f $DIR/pid/logstash.pid ]; then
         echo "No Logstash PID file found."
     fi
+
     PID=`cat $DIR/pid/logstash.pid`
     kill -15  `cat $DIR/pid/logstash.pid`
     sleep 5
