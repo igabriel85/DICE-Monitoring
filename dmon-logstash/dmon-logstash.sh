@@ -27,7 +27,8 @@ elif [[ $1 == "stop" ]]; then
         echo "No dmon-logstash PID file found."
     fi
     echo "Stopping dmon-logstash"
-    kill -9 `cat $DIR/pid/dmon-logstash.pid` #TODO: fix this, kill only dmon-logstash by pid
+    kill -9 `cat $DIR/pid/dmon-logstash.pid`
+    killall -9 python #TODO: fix this, kill only dmon-logstash by pid
     echo "Stopped dmon-logstash"
 
     echo "Stopping logstash"
