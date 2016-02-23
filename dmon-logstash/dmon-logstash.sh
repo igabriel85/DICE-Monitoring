@@ -24,7 +24,7 @@ if [ $# -eq 0 ]; then
     echo "Finished"
 elif [[ $1 == "stop" ]]; then
     echo "Stopping dmon-logstash"
-    killall -15 python   #TODO: fix this, kill only dmon-logstash by pid
+    kill -15 `cat $DIR/pid/dmon-logstash.pid` #TODO: fix this, kill only dmon-logstash by pid
     echo "Stopped dmon-logstash"
     echo "Stopping logstash"
     if [ ! -f $DIR/pid/dmon-logstash.pid ]; then
