@@ -33,7 +33,7 @@ elif [[ $1 == "stop" ]]; then
     PID=`cat $DIR/pid/logstash.pid`
     kill -15  `cat $DIR/pid/logstash.pid`
     sleep 5
-    kill -9 $PID+1 #TODO: fix this, kill by child process
+    kill -9 $(($PID+1)) #TODO: fix this, kill by child process
     echo "Stopped logstash server"
 else
    echo "DMON-logstash does not support this command line argument!"
