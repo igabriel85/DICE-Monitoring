@@ -16,21 +16,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from flask import Flask
-from flask import jsonify
+
 from flask import send_file
 from flask import request
-from flask.ext.restplus import Api, Resource, fields
+from flask.ext.restplus import Resource, fields
 import os
 import jinja2
 import sys
 import subprocess
 import platform
+import logging
+from logging.handlers import RotatingFileHandler
 
 from pyUtil import *
+from app import *
 
 
 # directory location
+logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
 tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 collectdlog = '/var/log/collectd.log'
@@ -45,14 +48,6 @@ lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
 # supported aux components
 # auxList = ['collectd', 'lsf', 'jmx']
 
-app = Flask("dmon-agent")
-api = Api(app, version='0.0.3', title='DICE Monitoring Agent API',
-          description="RESTful API for the DICE Monitoring Platform  Agent (dmon-agent)",
-          )
-
-
-# changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
-agent = api.namespace('agent', description='dmon agent operations')
 
 nodeRoles = api.model('query details Model', {
     'roles': fields.List(fields.String(required=False, default='hdfs',
@@ -105,14 +100,18 @@ class NodeDeploy(Resource):
         try:
             aComp = aux.install(rolesList)
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] Installing components based on roles with: %s and %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response = jsonify({'Status': 'System Error',
                                'Message': 'Error while installing components'})
             response.status_code = 500
             return response
         response = jsonify({'Status': 'Done',
                             'Components': aComp})
+        app.logger.info('[%s] : [INFO] Installed: %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(aComp))
         response.status_code = 201
         return response
 
@@ -122,8 +121,11 @@ class NodeDeployCollectd(Resource):
     @api.expect(collectdConfModel)
     def post(self):
         collectdTemp = os.path.join(tmpDir, 'collectd.tmp')
-        settingsDict = {'logstash_server_ip': request.json['LogstashIP'], 'logstash_server_port': request.json['UDPPort'],
+        settingsDict = {'logstash_server_ip': request.json['LogstashIP'],
+                        'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid'}
+        app.logger.info('[%s] : [INFO] collectd started with: %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(settingsDict))
         aux.configureComponent(settingsDict, collectdTemp, collectdConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
@@ -137,7 +139,10 @@ class NodeDeployLSF(Resource):
     @api.expect(lsfConfModel)
     def post(self):
         lsfTemp = os.path.join(tmpDir, 'logstash-forwarder.tmp')
-        settingsDict  = {'ESCoreIP': request.json['LogstashIP'], 'LSLumberPort': request.json['LumberjackPort']}
+        settingsDict = {'ESCoreIP': request.json['LogstashIP'],
+                         'LSLumberPort': request.json['LumberjackPort']}
+        app.logger.info('[%s] : [INFO] Logstash-Forwarder settings:  %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(settingsDict))
         aux.configureComponent(settingsDict, lsfTemp)
         aux.controll('logstash-forwarder', 'restart')
         response = jsonify({'Status': 'Done',
@@ -148,7 +153,7 @@ class NodeDeployLSF(Resource):
 
 @agent.route('/v1/jmx')
 class NodeDeployJMX(Resource):
-    def post(self):
+    def post(self): # TODO:  implement or remove.
         return "JMX redeploy"
 
 
@@ -158,8 +163,10 @@ class NodeMonitStartAll(Resource):
         try:
             aux.controll('collectd', 'start')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] While starting collectd with: %s and  %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response = jsonify({'Status': type(inst),
                                'Message': inst.args})
             response.status_code = 500
@@ -167,8 +174,10 @@ class NodeMonitStartAll(Resource):
         try:
             aux.controll('logstash-forwarder', 'start')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] While logstash-forwarder collectd with: %s and  %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response = jsonify({'Status': type(inst),
                                'Message': inst.args})
             response.status_code = 500
@@ -185,8 +194,10 @@ class NodeMonitStopAll(Resource):
         try:
             aux.controll('collectd', 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] While stopping collectd with: %s and  %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response = jsonify({'Status': type(inst),
                                'Message': inst.args})
             response.status_code = 500
@@ -194,8 +205,10 @@ class NodeMonitStopAll(Resource):
         try:
             aux.controll('logstash-forwarder', 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] While stopping logstash-forwarder with: %s and  %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response = jsonify({'Status': type(inst),
                                'Message': inst.args})
             response.status_code = 500
@@ -212,16 +225,20 @@ class NodeMonitStartSelective(Resource):
         if not aux.check(auxComp):
             response = jsonify({'Status': 'Parameter error',
                                 'Message': 'Unsupported Parameter' + auxComp})
+            app.logger.warning('[%s] : [WARN] Unsuported parameter: %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp))
             response.status_code = 400
             return response
 
         try:
             aux.controll(auxComp, 'start')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
             response = jsonify({'Status': type(inst),
                                'Message': inst.args})
+            app.logger.error('[%s] : [ERROR] starting collectd with:%s and %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response.status_code = 500
             return response
         response = jsonify({'Status': 'Done',
@@ -236,20 +253,24 @@ class NodeMonitStopSelective(Resource):
         if not aux.check(auxComp):
             response = jsonify({'Status': 'Parameter error',
                                 'Message': 'Unsupported Parameter' + auxComp})
+            app.logger.warning('[%s] : [WARN] Unsupported parameter: %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp))
             response.status_code = 400
             return response
 
         try:
             aux.controll(auxComp, 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] Error starting %s with : %s and %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp), type(inst), inst.args)
             response = jsonify({'Status': type(inst),
                                'Message': inst.args})
             response.status_code = 500
             return response
         response = jsonify({'Status': 'Done',
-                            'Message': 'Component '+auxComp+' stopped!'})
+                            'Message': 'Component ' + auxComp + ' stopped!'})
         response.status_code = 200
         return response
 
@@ -260,14 +281,18 @@ class NodeMonitLogs(Resource):
         if not aux.check(auxComp):
             response = jsonify({'Status': 'Parameter error',
                                 'Message': 'Unsupported Parameter' + auxComp})
+            app.logger.warning('[%s] : [WARN] Unsupported parameter: %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp))
             response.status_code = 400
             return response
         if auxComp == 'collectd':
             try:
                 clog = open(collectdlog, 'w+')
             except Exception as inst:
-                print >> sys.stderr, type(inst)
-                print >> sys.stderr, inst.args
+                # print >> sys.stderr, type(inst)
+                # print >> sys.stderr, inst.args
+                app.logger.error('[%s] : [ERROR] Opening collectd log',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 
             return send_file(clog, mimetype='text/plain', as_attachment=True)
 
@@ -278,24 +303,31 @@ class NodeMonitConf(Resource):
         if not aux.check(auxComp):
             response = jsonify({'Status': 'Parameter error',
                                 'Message': 'Unsupported Parameter' + auxComp})
+            app.logger.warning('[%s] : [WARN] Unsupported parameter: %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp))
             response.status_code = 400
             return response
         if auxComp == 'collectd':
             try:
                 cConf = open(collectdConf, 'r')
             except Exception as inst:
-                print >> sys.stderr, type(inst)
-                print >> sys.stderr, inst.args
+                # print >> sys.stderr, type(inst)
+                # print >> sys.stderr, inst.args
+                app.logger.error('[%s] : [ERROR] Opening collectd conf file',
+                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return send_file(cConf, mimetype='text/plain', as_attachment=True)
         if auxComp == 'lsf':
             try:
                 lConf = open(lsfConf, 'r')
             except Exception as inst:
-                print >> sys.stderr, type(inst)
-                print >> sys.stderr, inst.args
+                # print >> sys.stderr, type(inst)
+                # print >> sys.stderr, inst.args
+                app.logger.error('[%s] : [ERROR] Opening logstash-forwarder conf file',
+                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return send_file(lConf, mimetype='application/json', as_attachment=True)
         if auxComp == 'jmx':  # TODO: jmxtrans handeling
             return 'jmx'
+
 
 @agent.route('/v1/check')
 class NodeCheck(Resource):  # TODO: implement check functionality
@@ -315,6 +347,8 @@ class AgentMetricsSystem(Resource):
         if not request.json:
             response = jsonify({'Status': 'Request Error',
                                 'Message': 'Request body must be JSON'})
+            app.logger.warrning('[%s] : [WARN] Invalid request content-type: %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(request.content_type))
             response.status_code = 400
             return response
         BDService = BDPlatform(tmpDir)
@@ -322,14 +356,20 @@ class AgentMetricsSystem(Resource):
             if not BDService.checkRole('yarn'):
                 response = jsonify({'Status': 'Error',
                                     'Message': 'Yarn not detected!'})
+                app.logger.warning('[%s] : [WARN] No YARN detected',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 response.status_code = 404
                 return response
             if 'Period' not in request.json:
                 response = jsonify({'Status': 'Request Error',
                                 'Message': 'Must contain Period field'})
+                app.logger.error('[%s] : [ERROR] Period must be specified',
+                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 response.status_code = 400
                 return response
             settingsDict = {'metrics2_period': request.json['Period']}
+            app.logger.info('[%s] : [INFO] Period is set to: %s',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(request.json['Period']))
             BDService.generateYarnConfig(settingsDict)
             response = jsonify({'Status': 'Done',
                             'Message': 'Yarn properties uploaded'})
@@ -339,16 +379,22 @@ class AgentMetricsSystem(Resource):
             if not BDService.checkRole('spark'):
                 response = jsonify({'Status': 'Error',
                                     'Message': 'Spark not detected!'})
+                app.logger.warning('[%s] : [WARN] No Spark detected',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 response.status_code = 404
                 return response
             if 'Period' or 'LogstashIP' or 'GraphitePort' not in request.json:
                 response = jsonify({'Status': 'Request Error',
                                 'Message': 'Must contain Period, Logstash IP and Graphite Port fields'})
+                app.logger.error('[%s] : [ERROR] No period, Logstash IP or graphite port fields detected',
+                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 response.status_code = 400
                 return response
             settingsDict = {'logstashserverip': request.json['LogstashIP'],
                         'logstashportgraphite': request.json['GraphitePort'],
                         'period': request.json['Period']}
+            app.logger.info('[%s] : [INFO] Spark settings: ',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(settingsDict))
             BDService.generateSparkConfig(settingsDict)
             response = jsonify({'Status': 'Done',
                             'Message': 'Spark properties uploaded'})
@@ -357,9 +403,17 @@ class AgentMetricsSystem(Resource):
         else:
             response = jsonify({'Status': 'Unsupported',
                                 'Message': 'Platform Unsupported'})
+            app.logger.error('[%s] : [ERROR] Unsuported platform',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             response.status_code = 404
             return response
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    handler = RotatingFileHandler(logDir +'/dmon-agent.log', maxBytes=10000000, backupCount=5)
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.DEBUG)
+    log.addHandler(handler)
+    app.run(host='0.0.0.0', port=5000, debug=True)

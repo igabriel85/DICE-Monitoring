@@ -4,7 +4,7 @@ from flask.ext.restplus import Api
 
 app = Flask("dmon-logstash")
 app.config['RESTPLUS_VALIDATE'] = True
-api = Api(app, version='0.0.1', title='DICE Monitoring Logstash API',
+api = Api(app, version='0.0.2', title='DICE Monitoring Logstash API',
           description="RESTful API for the DICE Monitoring Platform  Logstash agent (dmon-logstash)",
           )
 
