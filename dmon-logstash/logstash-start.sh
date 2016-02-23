@@ -24,15 +24,15 @@ if [ $# -eq 0 ]; then
     echo "Finished"
 elif [[ $1 == "stop" ]]; then
     echo "Stopping dmon-logstash"
-    if [ ! -f $DIR/src/pid/dmon-logstash.pid ]; then
+    if [ ! -f $DIR/pid/dmon-logstash.pid ]; then
         echo "No Logstash PID file found."
     fi
     PID=`cat $DIR/pid/logstash.pid`
-    kill -9  `cat $DIR/pid/logstash.pid`
+    kill -15  `cat $DIR/pid/logstash.pid`
     sleep 5
     while  kill -0  $PID
         do
-            kill -9  $PID
+            kill -15  $PID
             sleep 1
         done
     echo "Stopped logstash server"
