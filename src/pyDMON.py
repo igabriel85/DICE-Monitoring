@@ -1675,14 +1675,11 @@ class AuxAgentDeploy(Resource):
 			response.status_code = 500
 			return response
 
-
 		for a in noAgent:
 			updateAll = dbNodes.query.filter_by(nodeIP=a).first()
 			updateAll.nStatus = 1
 
-
-		response = jsonify ({'Status': 'Done',
-							 'Message': 'Agents Deloyed!'})
+		response = jsonify({'Status': 'Done', 'Message': 'Agents Deloyed!'})
 		response.status_code = 201
 		return response
 
@@ -1796,7 +1793,7 @@ class AuxDeployCheckThread(Resource):
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
 									'Code': i['StatusCode']})
 
-		response=jsonify({'Status': 'Update',
+		response = jsonify({'Status': 'Update',
 						  'Message': 'Nodes updated!',
 						  'Failed':failedNodes})
 		response.status_code = 200
@@ -1831,70 +1828,70 @@ class AuxDeploySelective(Resource):
 			if args == 'redeploy':
 				if qAux.nCollectdState != 'Running':
 					response = jsonify({'Status:No collectd instance to restart!'})
-					response.status_code=404
+					response.status_code = 404
 					return response 
 				try:
-					serviceCtrl(node,qAux.nUser,qAux.nPass,'collectd', 'restart')
+					serviceCtrl(node, qAux.nUser, qAux.nPass, 'collectd', 'restart')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error restarting Collectd on '+ nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error restarting Collectd on ' + nodeFQDN + '!'})
 					response.status_code = 500
 					return response
-				response = jsonify({'Status':'Collectd restarted on '+nodeFQDN})
+				response = jsonify({'Status': 'Collectd restarted on ' + nodeFQDN})
 				response.status_code = 200
 				return response
 			if qAux.nCollectdState == 'None':
 				try:
-					installCollectd(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
+					installCollectd(node, qAux.nUser, qAux.nPass, confDir=cfgDir)
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Installig Collectd on '+ qAux.nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error Installig Collectd on ' + qAux.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 				#status[auxComp] = 'Running'	
 				qAux.nCollectdState = 'Running'
-				response = jsonify({'Status':'Collectd started on '+nodeFQDN+'.'})
+				response = jsonify({'Status': 'Collectd started on ' + nodeFQDN + '.'})
 				response.status_code = 201
 				return response
 			else:
-				response = jsonify({'Status':'Node '+ nodeFQDN +' collectd already started!' })
+				response = jsonify({'Status': 'Node ' + nodeFQDN + 'collectd already started!'})
 				response.status_code = 200
 				return response 
 		elif auxComp == 'lsf':
 			if args == 'redeploy':
 				if qAux.nLogstashForwState != 'Running':
 					response = jsonify({'Status:No LSF instance to restart!'})
-					response.status_code=404
+					response.status_code = 404
 					return response 
 				try:
-					serviceCtrl(node,qAux.nUser,qAux.nPass,'logstash-forwarder', 'restart')
+					serviceCtrl(node, qAux.nUser, qAux.nPass, 'logstash-forwarder', 'restart')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error restarting LSF on '+ nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error restarting LSF on ' + nodeFQDN + '!'})
 					response.status_code = 500
 					return response
-				response = jsonify({'Status':'LSF restarted on '+nodeFQDN})
+				response = jsonify({'Status': 'LSF restarted on ' + nodeFQDN})
 				response.status_code = 200
 				return response
 			if qAux.nLogstashForwState == 'None':
 				try:
-					installLogstashForwarder(node,qAux.nUser,qAux.nPass,confDir=cfgDir)
+					installLogstashForwarder(node, qAux.nUser, qAux.nPass, confDir=cfgDir)
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Installig LSF on '+qAux.nodeFQDN+'!'})
+					response = jsonify({'Status': 'Error Installig LSF on ' + qAux.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 				#status[auxComp] = 'Running'	
 				qAux.nLogstashForwState = 'Running'
-				response = jsonify({'Status':'LSF started on '+nodeFQDN+'.'})
+				response = jsonify({'Status': 'LSF started on ' + nodeFQDN + '.'})
 				response.status_code = 201
 				return response
 			else:
-				response = jsonify({'Status':'Node '+ nodeFQDN +' LSF already started!' })
+				response = jsonify({'Status': 'Node ' + nodeFQDN + ' LSF already started!'})
 				response.status_code = 200
 				return response
 
@@ -1912,36 +1909,36 @@ class AuxConfigSelective(Resource):
 	def get(self, auxComp):
 		allowed = ['collectd', 'lsf']
 		if auxComp not in allowed:
-			response = jsonify({'Status':'unrecognized aux component ' +auxComp})
+			response = jsonify({'Status': 'unrecognized aux component ' +auxComp})
 			response.status_code = 404
 			return response
 
 		if not os.path.isdir(cfgDir):
-			response = jsonify({'Error':'Config dir not found !'})
+			response = jsonify({'Error': 'Config dir not found !'})
 			response.status_code = 404
 			return response
 
 		if auxComp == 'collectd':
-			if not os.path.isfile(os.path.join(cfgDir,'collectd.conf')):
-				response = jsonify({'Error':'Config file not found !'})
+			if not os.path.isfile(os.path.join(cfgDir, 'collectd.conf')):
+				response = jsonify({'Error': 'Config file not found !'})
 				response.status_code = 404
 				return response
 			try:
-				Cfgfile=open(os.path.join(cfgDir,'collectd.conf'),'r')
+				Cfgfile = open(os.path.join(cfgDir, 'collectd.conf'), 'r')
 			except EnvironmentError:
-				response = jsonify({'EnvError':'file not found'})
+				response = jsonify({'EnvError': 'file not found'})
 				response.status_code = 500
 				return response
 		
 		if auxComp == 'lsf':
 			if not os.path.isfile(os.path.join(cfgDir, 'logstash-forwarder.conf')):
-				response = jsonify({'Error':'Config file not found !'})
+				response = jsonify({'Error': 'Config file not found !'})
 				response.status_code = 404
 				return response
 			try:
-				Cfgfile=open(os.path.join(cfgDir, 'logstash-forwarder.conf'), 'r')
+				Cfgfile = open(os.path.join(cfgDir, 'logstash-forwarder.conf'), 'r')
 			except EnvironmentError:
-				response = jsonify({'EnvError':'file not found'})
+				response = jsonify({'EnvError': 'file not found'})
 				response.status_code = 500
 				return response
 		return send_file(Cfgfile, mimetype='text/plain', as_attachment=True)
@@ -1954,7 +1951,7 @@ class AuxConfigSelective(Resource):
 @api.doc(params={'auxComp':'Aux Component'})
 class AuxStartAll(Resource):
 	def post(self, auxComp): #TODO create function that can be reused for both start and stop of all components
-		auxList = ['collectd','lsf']
+		auxList = ['collectd', 'lsf']
 		if auxComp not in auxList:
 			response = jsonify({'Status': 'No such such aux component ' + auxComp})
 			response.status_code = 400
@@ -1991,9 +1988,9 @@ class AuxStartAll(Resource):
 			return response
 
 		if auxComp == "lsf":
-			qNLsf = dbNodes.query.filter_by(nLogstashForwState = 'Stopped').all()
+			qNLsf = dbNodes.query.filter_by(nLogstashForwState='Stopped').all()
 			if qNLsf is None:
-				response = jsonify({'Status':'No nodes in state Stopped!'})
+				response = jsonify({'Status': 'No nodes in state Stopped!'})
 				response.status_code = 404
 				return response
 
@@ -2002,11 +1999,11 @@ class AuxStartAll(Resource):
 				node = []
 				node.append(i.nodeIP)
 				try:
-					serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', 'start')
+					serviceCtrl(node, i.nUser, i.nPass, 'logstash-forwarder', 'start')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Starting LSF on ' + i.nodeFQDN + '!'})
+					response = jsonify({'Status': 'Error Starting LSF on ' + i.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 
@@ -2015,7 +2012,7 @@ class AuxStartAll(Resource):
 				LsfNodes['IP'] = i.nodeIP
 				nodeLsfStopped.append(LsfNodes)
 				i.nLogstashForwState = 'Running'
-			response = jsonify({'Status':'LSF started','Nodes':nodeLsfStopped})
+			response = jsonify({'Status': 'LSF started', 'Nodes': nodeLsfStopped})
 			response.status_code = 200
 			return response	
 			#return nodeCollectdStopped
@@ -2056,7 +2053,7 @@ class AuxStopAll(Resource):
 				CollectdNodes['IP'] = i.nodeIP
 				nodeCollectdRunning.append(CollectdNodes)
 				i.nCollectdState = 'Stopped'
-			response = jsonify({'Status':'Collectd stopped','Nodes':nodeCollectdRunning})
+			response = jsonify({'Status': 'Collectd stopped', 'Nodes': nodeCollectdRunning})
 			response.status_code = 200
 			return response
 
@@ -2072,11 +2069,11 @@ class AuxStopAll(Resource):
 				node = []
 				node.append(i.nodeIP)
 				try:
-					serviceCtrl(node,i.nUser,i.nPass,'logstash-forwarder', 'stop')
+					serviceCtrl(node, i.nUser, i.nPass, 'logstash-forwarder', 'stop')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Stopping LSF on '+ i.nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error Stopping LSF on ' + i.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 
@@ -2085,7 +2082,7 @@ class AuxStopAll(Resource):
 				LsfNodes['IP'] = i.nodeIP
 				nodeLsfRunning.append(LsfNodes)
 				i.nLogstashForwState = 'Stopped'
-			response = jsonify({'Status':'LSF stopped','Nodes':nodeLsfRunning})
+			response = jsonify({'Status': 'LSF stopped', 'Nodes': nodeLsfRunning})
 			response.status_code = 200
 			return response
 
@@ -2093,17 +2090,17 @@ class AuxStopAll(Resource):
 @dmon.route('/v1/overlord/aux/<auxComp>/<nodeFQDN>/start')
 @api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
 class AuxStartSelective(Resource):
- 	def post(self, auxComp, nodeFQDN):
- 		auxList = ['collectd','lsf']
- 		if auxComp not in auxList:
-			response = jsonify({'Status':'No such such aux component '+ auxComp})
+	def post(self, auxComp, nodeFQDN):
+		auxList = ['collectd', 'lsf']
+		if auxComp not in auxList:
+			response = jsonify({'Status': 'No such such aux component ' + auxComp})
 			response.status_code = 400
 			return response
 
-		qAux =  dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
+		qAux = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qAux is None:
-			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
-			response.status_code=404
+			response = jsonify({'Status': 'Unknown node ' + nodeFQDN})
+			response.status_code = 404
 			return response
 
 		node = []
@@ -2111,14 +2108,14 @@ class AuxStartSelective(Resource):
 		if auxComp == 'collectd':
 			if qAux.nCollectdState != 'None': 
 				try:
-					serviceCtrl(node,qAux.nUser,qAux.nPass,'collectd', 'restart')
+					serviceCtrl(node, qAux.nUser, qAux.nPass, 'collectd', 'restart')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error restarting collectd on '+ nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error restarting collectd on ' + nodeFQDN + '!'})
 					response.status_code = 500
 					return response
-				response = jsonify({'Status':'Collectd restarted on '+nodeFQDN})
+				response = jsonify({'Status': 'Collectd restarted on ' + nodeFQDN})
 				response.status_code = 200
 				return response
 			else:
