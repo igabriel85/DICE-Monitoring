@@ -12,6 +12,15 @@ elif [ $ARCH == "Darwin" ]; then
    DIR=`python -c "$CMD"`
 fi
 
+if [ ! -d "$DIR/pid" ]; then
+  mkdir $DIR/pid
+fi
+
+if [ ! -d "$DIR/log" ]; then
+  mkdir $DIR/log
+fi
+
+
 if [ $# -eq 0 ]; then
     echo "Starting dmon-agent"
 	#. $DIR/dmonEnv/bin/activate
