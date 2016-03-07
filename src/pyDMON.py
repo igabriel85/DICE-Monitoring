@@ -2056,7 +2056,7 @@ class AuxStopAll(Resource):
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error Stopping collectd on ' + i.nodeFQDN + '!'})
+					response = jsonify({'Status': 'Error Stopping collectd on ' + i.nodeFQDN + '!'})
 					response.status_code = 500
 					return response
 				CollectdNodes = {}
@@ -2130,25 +2130,25 @@ class AuxStartSelective(Resource):
 				response.status_code = 200
 				return response
 			else:
-				response=jsonify({'Status':'Need to deploy collectd first!'})
-				response.status_code=403
+				response = jsonify({'Status': 'Need to deploy collectd first!'})
+				response.status_code = 403
 				return response
 
 		if auxComp == 'lsf':
 			if qAux.nLogstashForwState != 'None': 
 				try:
-					serviceCtrl(node,qAux.nUser,qAux.nPass,'logstash-forwarder', 'restart')
+					serviceCtrl(node, qAux.nUser, qAux.nPass, 'logstash-forwarder', 'restart')
 				except Exception as inst:
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
-					response = jsonify({'Status':'Error restarting LSF on '+ nodeFQDN +'!'})
+					response = jsonify({'Status': 'Error restarting LSF on ' + nodeFQDN + '!'})
 					response.status_code = 500
 					return response
-				response = jsonify({'Status':'LSF restarted on '+nodeFQDN})
+				response = jsonify({'Status': 'LSF restarted on ' + nodeFQDN})
 				response.status_code = 200
 				return response
 			else:
-				response=jsonify({'Status':'Need to deploy LSF first!'})
+				response = jsonify({'Status': 'Need to deploy LSF first!'})
 				response.status_code = 403
 				return response
 
@@ -2480,6 +2480,6 @@ if __name__ == '__main__':
 		#esDir=
 		#lsDir=
 		#kibanaDir=
-		app.run(port = 5001, debug=True, threaded=True)
+		app.run(port=5001, debug=True, threaded=True)
 	else:
-		app.run(host='0.0.0.0', port=8080, debug = True)
+		app.run(host='0.0.0.0', port=8080, debug=True)
