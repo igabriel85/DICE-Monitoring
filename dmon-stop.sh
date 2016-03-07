@@ -22,7 +22,7 @@ if [ ! -f $DIR/src/pid/logstash.pid ]; then
 	echo "No Logstash instance to stop."
 else
 	kill -15  `cat $DIR/src/pid/logstash.pid`
-	LSPID = `cat $DIR/src/pid/logstash.pid`
+	LSPID= `cat $DIR/src/pid/logstash.pid`
 	sleep 5
     kill -9 $(($LSPID+1)) #TODO: fix this, kill by child process
 	echo "Logstash Stopped!"
