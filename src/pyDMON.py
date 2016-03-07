@@ -44,6 +44,7 @@ from urlparse import urlparse
 #DICE Imports
 from pyESController import *
 from pysshCore import *
+from dmonPerfMon import *
 #from dbModel import *
 from pyUtil import *
 # from threadRequest import *
@@ -422,8 +423,9 @@ class QueryEsCore(Resource):
 				return Response(str(ListMetrics), status=200, mimetype='text/plain')
 
 			if ftype == 'oslc':
-				queryStr = request.json['DMON']['queryString']
-				return queryStr
+				#queryStr = request.json['DMON']['queryString']
+				resOSLC = jsonToPerfMon(resJson)
+				return resOSLC
 
 		else:
 			metrics = request.json['DMON']['metrics']
@@ -455,8 +457,9 @@ class QueryEsCore(Resource):
 			if ftype == 'plain':
 				return Response(str(ListMetrics), status=200, mimetype='text/plain')
 			if ftype == 'oslc':
-				queryStr = request.json['DMON']['queryString']
-				return queryStr
+				#queryStr = request.json['DMON']['queryString']
+				resOSLC = jsonToPerfMon(resJson)
+				return resOSLC
 
 
 
