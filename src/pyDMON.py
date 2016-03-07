@@ -425,7 +425,7 @@ class QueryEsCore(Resource):
 			if ftype == 'oslc':
 				#queryStr = request.json['DMON']['queryString']
 				resOSLC = jsonToPerfMon(resJson)
-				return resOSLC
+				return Response(resOSLC, mimetype='application/rdf+xml')
 
 		else:
 			metrics = request.json['DMON']['metrics']
@@ -459,7 +459,7 @@ class QueryEsCore(Resource):
 			if ftype == 'oslc':
 				#queryStr = request.json['DMON']['queryString']
 				resOSLC = jsonToPerfMon(resJson)
-				return resOSLC
+				return Response(resOSLC, mimetype='application/rdf+xml')
 
 
 
