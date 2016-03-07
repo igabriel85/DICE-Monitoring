@@ -346,10 +346,10 @@ class NodeStatus(Resource):
 			return response
 		else:
 			response = jsonify({nodeFQDN:{
-				'Status':qNode.nStatus,
-				'IP':qNode.nodeIP,
-				'Monitored':qNode.nMonitored,
-				'OS':qNode.nodeOS}})
+				'Status': qNode.nStatus,
+				'IP': qNode.nodeIP,
+				'Monitored': qNode.nMonitored,
+				'OS': qNode.nodeOS}})
 			response.status_code = 200	
 		return response
 
@@ -357,10 +357,10 @@ class NodeStatus(Resource):
 @dmon.route('/v1/observer/nodes/<nodeFQDN>/roles')
 @api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatusServices(Resource):
-	def get(self,nodeFQDN):
+	def get(self, nodeFQDN):
 		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qNode.nRoles == 'unknown':
-			response=jsonify({'Status': 'No known service on ' + nodeFQDN})
+			response = jsonify({'Status': 'No known service on ' + nodeFQDN})
 			response.status_code = 200
 			return response
 		else:
@@ -378,7 +378,7 @@ class QueryEsCore(Resource):
 	@api.expect(dMONQuery)# this is for payload 
 	def post(self, ftype):
 		#args = pQueryES.parse_args()#parsing query arguments in URI
-		supportType = ["csv", "json", "plain"]
+		supportType = ["csv", "json", "plain", "oslc"]
 		if ftype not in supportType:
 			response = jsonify({'Supported types': supportType, "Submitted Type": ftype})
 			response.status_code = 415
@@ -421,9 +421,13 @@ class QueryEsCore(Resource):
 			if ftype == 'plain':
 				return Response(str(ListMetrics), status=200, mimetype='text/plain')
 
+			if ftype == 'oslc':
+				queryStr = request.json['DMON']['queryString']
+				return queryStr
+
 		else:
 			metrics = request.json['DMON']['metrics']
-			ListMetrics, resJson = queryESCore(query, allm=False,dMetrics=metrics, debug=False)
+			ListMetrics, resJson = queryESCore(query, allm=False, dMetrics=metrics, debug=False)
 			if not ListMetrics:
 				response = jsonify({'Status': 'No results found!'})
 				response.status_code = 404
@@ -450,6 +454,10 @@ class QueryEsCore(Resource):
 				return response
 			if ftype == 'plain':
 				return Response(str(ListMetrics), status=200, mimetype='text/plain')
+			if ftype == 'oslc':
+				queryStr = request.json['DMON']['queryString']
+				return queryStr
+
 
 
 @dmon.route('/v1/overlord')
