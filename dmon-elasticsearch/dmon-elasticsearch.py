@@ -28,6 +28,8 @@ import sys
 import subprocess
 import platform
 
+from app import *
+
 #directory location
 
 tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
@@ -35,13 +37,7 @@ pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config')
 
-app = Flask("dmon-elasticsearch")
-api = Api(app, version='0.0.1', title='DICE Monitoring Elasticsearch API',
-          description="RESTful API for the DICE Monitoring Platform  Elasticsearch agent (dmon-elasticsearch)",
-          )
 
-# changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
-agent = api.namespace('agent', description='dmon elasticsearch operations')
 
 
 @agent.route('/v1/log')
@@ -70,6 +66,10 @@ class ESController(Resource):
     def get(self):
         return "Current Status of ES Core!"
 
+@agent.route('/v1/elasticsearch/state')
+class ESControllerState(Resource):
+    def get(self):
+        return "Last succesfull JSON config!"
 
 @agent.route('/v1/elasticsearch/config')
 class ESControllerConfig(Resource):
