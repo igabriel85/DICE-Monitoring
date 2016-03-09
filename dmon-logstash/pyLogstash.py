@@ -54,7 +54,7 @@ class pyLogstashInstance():
             #print >> sys.stderr, 'Problem Starting LS!'
             #print >> sys.stderr, type(inst)
             #print >> sys.stderr, inst.args
-            app.logger.error('[%s] : [ERROR] Error starting Logstash error:%s args:%s',
+            app.logger.error('[%s] : [ERROR] Error starting Logstash with:%s args:%s',
                         datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
                              inst.args)
             response = jsonify({'Error': 'Starting LS'})
@@ -75,14 +75,14 @@ class pyLogstashInstance():
         return lspid
 
     def stop(self):
-        pid = pyLogstashInstance.check()
+        pid = pyLogstashInstance.check
         if pid is True:
             try:
                 subprocess.call(['kill', '-9', str(pid)])
             except Exception as inst:
-                 print >> sys.stderr, 'PID not found!'
-                 print >> sys.stderr, type(inst)
-                 print >> sys.stderr, inst.args
+                #print >> sys.stderr, 'PID not found!'
+                #print >> sys.stderr, type(inst)
+                #print >> sys.stderr, inst.args
                  app.logger.warning('[%s] : [WARNING] No Logstash instance found with PID: %s', str(pid))
             return 1
         else:

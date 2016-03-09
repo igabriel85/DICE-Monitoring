@@ -150,7 +150,7 @@ class LSStatus(Resource):
             response = jsonify({'Status': 'Running',
                                 'Message': 'PID ' + status})
             response.status_code = 200
-            app.logger.warning('[%s]: [INFO] Logstash instance running with PID %s',
+            app.logger.info('[%s]: [INFO] Logstash instance running with PID %s',
                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(status))
             return response
 
