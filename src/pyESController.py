@@ -57,9 +57,9 @@ def queryConstructor(tstart, queryString,tstop = 'None',  size=500,ordering="des
       Function returns a dictionary of the query body required for elasticsearch.
   '''
   if tstop == 'None':
-    nestedBody = {'gte':tstart}
+    nestedBody = {'gte': tstart}
   else:
-    nestedBody = {'gte':tstart,'lte':tstop}
+    nestedBody = {'gte': tstart,'lte': tstop}
 
   queryBody= {
   "size": size,
@@ -175,7 +175,14 @@ def dict2CSV(ListValues,fileName="output"):
   csvOut = os.path.join(outDir, fileType)
   try:
     with open(csvOut, 'wb') as csvfile:
-      w = csv.DictWriter(csvfile, ListValues[0].keys())
+      uniqueColumns = set()
+      for d in ListValues:
+        # print >>sys.stderr, d.keys()
+        for e in d.keys():
+          if e not in uniqueColumns:
+            uniqueColumns.add(e)
+      csvHeaders = list(uniqueColumns)
+      w = csv.DictWriter(csvfile, csvHeaders)
       w.writeheader()
       for dictMetrics in ListValues:
         w.writerow(dictMetrics)
