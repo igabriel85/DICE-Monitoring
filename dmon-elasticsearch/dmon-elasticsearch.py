@@ -27,6 +27,7 @@ import jinja2
 import sys
 import subprocess
 import platform
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 import datetime
@@ -50,6 +51,33 @@ schema = 'dummy'
 esController = ESAgentController(configLoc=cfgDir, tempLoc=tmpDir,
                                  esLoc=esDir, pidLoc=pidDir, logLoc=logDir, schema=schema)
 
+
+esCacheModel = api.model('ES Cache Model', {
+    'fieldDataCacheSize': fields.String(required=False, default="20%", description='Cache Size for field data'),
+    'fieldDataCacheExpires': fields.String(required=False, default="6h", description='Field data expiration time'),
+    'cacheFilterSize': fields.String(required=False, default="20%", description='Cache filter size'),
+    'cacheFilterExpires': fields.String(required=False, default="6h", description='Cache filter expiration time')
+})
+
+esIndexSettingModel = api.model('ES Index Model', {
+    'bufferSize': fields.String(required=False, default="30%", description='Index Buffer Size'),
+    'minShardBufferSize': fields.String(required=False, default="12mb", description='Min Shard Index  Buffer Size'),
+    'minIndexBufferSize': fields.String(required=False, default="96mb", description='Min Index Buffer Size')
+})
+
+esConfModel = api.model('ES Conf Model', {
+    'clusterName': fields.String(required=True, default="diceMonit", description='The name given to the ES cluster'),
+    'nodeID': fields.String(required=True, default="esMaster", description='The name given to the ES node'),
+    'nodeMaster': fields.String(required=True, default="True", description='Set node as Master'),
+    'nodeData': fields.String(required=True, default="True", description='Allow node to store data'),
+    'shards': fields.Integer(required=True, default=5, description='Number of shards'),
+    'replicas': fields.Integer(required=True, default=1, description='Number of replicas'),
+    'networkHost': fields.String(required=True, default="0.0.0.0", description='Network host IP'),
+    'cacheSettings': fields.Nested(esCacheModel, description="Cache settings"),
+    'indexSettings': fields.Nested(esIndexSettingModel, description="Index settings")
+})
+
+
 @agent.route('/v1/logs')
 class NodeLogs(Resource):
     def get(self):
@@ -57,6 +85,7 @@ class NodeLogs(Resource):
         response = jsonify({'Logs': logList})
         response.status_code = 200
         return response
+
 
 @agent.route('/v1/logs/<log>')
 class NodeLog(Resource):
@@ -107,7 +136,6 @@ class ESCertificates(Resource):
 @agent.route('/v1/elasticsearch')
 class ESController(Resource):
     def get(self):
-
         if not os.path.isfile(os.path.join(pidDir, 'elasticsearch.pid')):
             response = jsonify({'Status': 'Env Error',
                                 'Message': 'PID file not found!'})
@@ -133,16 +161,19 @@ class ESController(Resource):
                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(status))
         return response
 
+
 @agent.route('/v1/elasticsearch/state')
 class ESControllerState(Resource):
     def get(self):
         return "Last succesfull JSON config!"
+
 
 @agent.route('/v1/elasticsearch/config')
 class ESControllerConfig(Resource):
     def get(self):
         return "Get current configuration"
 
+    @api.expect(esConfModel)
     def post(self):
         return "Generate new configuration"
 
@@ -169,4 +200,4 @@ if __name__ == '__main__':
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.DEBUG)
     log.addHandler(handler)
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
