@@ -20,7 +20,7 @@ wsgiref==0.1.2
 cm-api==10.0.0
 Fabric==1.10.2
 python-nmap==0.4.0
-elasticsearch==1.6.0
+elasticsearch==2.2.0
 parallel-ssh==0.70.2
 paramiko==1.15.2
 requests==2.4.3
