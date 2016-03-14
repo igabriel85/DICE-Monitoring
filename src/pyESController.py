@@ -121,7 +121,7 @@ def queryESCore(queryBody, allm=True, dMetrics=[ ], debug=False, myIndex="logsta
 
   '''
   #these are the metrics listed in the response JSON under "_source"
-  res = es.search(index=myIndex,body=queryBody)
+  res = es.search(index=myIndex, body=queryBody)
   if debug == True:
     print "%---------------------------------------------------------%"
     print "Raw JSON Ouput"
@@ -144,18 +144,18 @@ def queryESCore(queryBody, allm=True, dMetrics=[ ], debug=False, myIndex="logsta
           print "%---------------------------------------------------------%"
         termsList.append(met)
         termValues.append(doc['_source'][met]) 
-      dictValues=dict(zip(termsList,termValues))
+      dictValues=dict(zip(termsList, termValues))
     else:
       for terms in doc['_source']:
       #prints the values of the metrics defined in the metrics list
         if debug == True:
           print "%---------------------------------------------------------%"
           print "Parsed Output -> ES doc id, metrics, metrics values."
-          print("doc id %s) metric %s -> value %s" % (doc['_id'],terms,  doc['_source'][terms]))
+          print("doc id %s) metric %s -> value %s" % (doc['_id'], terms, doc['_source'][terms]))
           print "%---------------------------------------------------------%"
         termsList.append(terms)
         termValues.append(doc['_source'][terms])
-        dictValues=dict(zip(termsList,termValues))
+        dictValues = dict(zip(termsList, termValues))
     ListMetrics.append(dictValues)
   return ListMetrics, res
   
@@ -171,11 +171,11 @@ def dict2CSV(ListValues,fileName="output"):
   '''
   if not ListValues:
         sys.exit("listValues argument is empty. Please supply valid input!")
-  fileType = fileName+".csv"
-  csvOut = os.path.join(outDir,fileType)
+  fileType = fileName + ".csv"
+  csvOut = os.path.join(outDir, fileType)
   try:
-    with open(csvOut,'wb') as csvfile:
-      w=csv.DictWriter(csvfile, ListValues[0].keys())
+    with open(csvOut, 'wb') as csvfile:
+      w = csv.DictWriter(csvfile, ListValues[0].keys())
       w.writeheader()
       for dictMetrics in ListValues:
         w.writerow(dictMetrics)

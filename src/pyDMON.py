@@ -193,7 +193,7 @@ dmon = api.namespace('dmon', description='D-MON operations')
 #argument parser
 dmonAux = api.parser() 
 dmonAux.add_argument('redeploy', type=str, required=False, help='Redeploys configuration of Auxiliary components on the specified node.')
-dmonAuxAll=api.parser()
+dmonAuxAll = api.parser()
 dmonAuxAll.add_argument('redeploy-all', type=str, required=False, help='Redeploys configuration of Auxiliary components on all nodes.')
 #pQueryES.add_argument('task',type=str, required=True, help='The task details', location='form')
 
@@ -372,7 +372,7 @@ class NodeStatusServices(Resource):
 
 
 @dmon.route('/v1/observer/query/<ftype>')
-@api.doc(params={'ftype':'output type'})
+@api.doc(params={'ftype': 'output type'})
 class QueryEsCore(Resource):
 	#@api.doc(parser=pQueryES) #inst parser
 	#@api.marshal_with(dMONQuery) # this is for response
