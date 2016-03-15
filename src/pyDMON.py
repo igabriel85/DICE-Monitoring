@@ -337,12 +337,12 @@ class NodesMonitored(Resource):
 
 
 @dmon.route('/v1/observer/nodes/<nodeFQDN>')
-@api.doc(params={'nodeFQDN': 'Nodes FQDN'})
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatus(Resource):
 	def get(self, nodeFQDN):
-		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
 		if qNode is None:
-			response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found!'})
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
 			response.status_code = 404
 			return response
 		else:
@@ -356,7 +356,7 @@ class NodeStatus(Resource):
 
 
 @dmon.route('/v1/observer/nodes/<nodeFQDN>/roles')
-@api.doc(params={'nodeFQDN': 'Nodes FQDN'})
+@api.doc(params={'nodeFQDN':'Nodes FQDN'})
 class NodeStatusServices(Resource):
 	def get(self, nodeFQDN):
 		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
@@ -534,11 +534,6 @@ class OverlordBootstrap(Resource):
 	def post(self):
 		return "Deploys all monitoring core components with default configuration"
 
-
-@dmon.route('/v1/overlord/core/halt')
-class OverlordCoreHalt(Resource):
-	def post(self):
-		return "Stom all core components!"
 
 @dmon.route('/v1/overlord/core/database')
 class OverlordCoredb(Resource):
@@ -725,27 +720,27 @@ class ClusterRoles(Resource):
 				try:
 					template = templateEnv.get_template(propSparkTemp)
 				except:
-					response = jsonify({'Status': 'I/O Error', 'Message': 'Template file missing!'})
+					response = jsonify({'Status':'I/O Error', 'Message': 'Template file missing!'})
 					response.status_code = 500
 					return response
 
 				qLSCore = dbSCore.query.first() #TODO: Only works for single deployment
 				if qLSCore is None:
-					response = jsonify({'Status': 'Missing Instance', 'Message': 'No Logstash Instance Configured'})
+					response = jsonify({'Status':'Missing Instance','Message':'No Logstash Instance Configured'})
 					response.status_code = 404
 					return response
-				infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
+				infoSpark = {'logstashserverip':qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
 				propSparkInfo=template.render(infoSpark)
-				propSparkConf = open(propSparkFile, "w+")
+				propSparkConf = open(propSparkFile,"w+")
 				propSparkConf.write(propSparkInfo)
 				propSparkConf.close()
 
 				nl = []
 				nl.append(node[1])
-				uploadFile(nl, node[2], node[3], propSparkFile, 'metrics.properties', '/etc/spark/conf/metrics.properties')  # TODO better solution
+				uploadFile(nl,node[2],node[3],propSparkFile, 'metrics.properties', '/etc/spark/conf/metrics.properties')  # TODO better solution
 				sparkList.append(node[0])
 			if 'storm' in roleList:
-				stormList.append(node[0])  # TODO
+				stormList.append(node[0]) # TODO
 			
 			if 'unknown' in roleList:
 				unknownList.append(node[0])
@@ -784,9 +779,9 @@ class MonitoredNodeInfo(Resource):
 	def put(self, nodeFQDN):
 		if not request.json:
 			abort(400)
-		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
+		qNode = dbNodes.query.filter_by(nodeFQDN = nodeFQDN).first()
 		if qNode is None:
-			response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found!'})
+			response = jsonify({'Status':'Node ' +nodeFQDN+' not found!'})
 			response.status_code = 404
 			return response
 		else:
@@ -830,7 +825,7 @@ class MonitoredNodeInfo(Resource):
 		dNode.nMonitored = 0
 		dNode.nCollectdState = 'Stopped'
 		dNode.nLogstashForwState = 'Stopped'
-		response = jsonify({'Status': 'Node ' + nodeFQDN + ' monitoring stopped!'})
+		response =jsonify({'Status': 'Node ' + nodeFQDN + ' monitoring stopped!'})
 		response.status_code = 200
 		return response
 
@@ -851,7 +846,7 @@ class ClusterNodeRoles(Resource):
 			response.status_code = 201
 			return response
 
-	def post(self, nodeFQDN):
+	def post(self,nodeFQDN):
 		return 'Redeploy configuration for node ' + nodeFQDN + '!'
 
 
@@ -875,11 +870,11 @@ class PurgeNode(Resource):
 			return response
 
 		try:
-			serviceCtrl(lPurge, qPurge.uUser, qPurge.uPass, 'collectd', 'stop')
+			serviceCtrl(lPurge,qPurge.uUser,qPurge.uPass,'collectd', 'stop')
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
-			response = jsonify({'Error': 'Stopping collectd!'})
+			response = jsonify({'Error':'Stopping collectd!'})
 			response.status_code = 500
 			return response
 				
@@ -894,7 +889,7 @@ class PurgeNode(Resource):
 
 @dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload
 class ESCoreConfiguration(Resource):
-	def get(self):  #TODO same for all get config file createfunction
+	def get(self): #TODO same for all get config file createfunction
 		if not os.path.isdir(cfgDir):
 			response = jsonify({'Error': 'Config dir not found !'})
 			response.status_code = 404
@@ -932,35 +927,34 @@ class ESCoreConfiguration(Resource):
 		if request.json["OS"] is None:
 			os = "unknown"
 		else:
-			os = request.json["OS"]
+			os=request.json["OS"]
 
 		if qESCore is None:
-			upES = dbESCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os, nodeName=request.json["NodeName"],
+			upES = dbESCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os, nodeName = request.json["NodeName"],
 			 clusterName=request.json["ESClusterName"], conf = 'none', nodePort=request.json['NodePort'], MasterNode=master)
 			db.session.add(upES) 
 			db.session.commit()
-			response = jsonify({'Added': 'ES Config for ' + request.json["HostFQDN"]})
+			response = jsonify({'Added':'ES Config for '+ request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
 		else:
 			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
 			qESCore.hostOS = os
 			qESCore.nodename = request.json['NodeName']
-			qESCore.clusterName = request.json['ESClusterName']
-			qESCore.nodePort = request.json['NodePort']
+			qESCore.clusterName=request.json['ESClusterName']
+			qESCore.nodePort=request.json['NodePort']
 			db.session.commit()
-			response = jsonify({'Updated': 'ES config for ' + request.json["HostFQDN"]})
+			response=jsonify({'Updated':'ES config for '+ request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
 
-
 @dmon.route('/v1/overlord/core/es/<hostFQDN>')
-@api.doc(params={'hostFQDN': 'Host FQDN.'})
+@api.doc(params={'hostFQDN':'Host FQDN.'})
 class ESCoreRemove(Resource):
-	def delete(self, hostFQDN):
-		qESCorePurge = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
+	def delete(self,hostFQDN):
+		qESCorePurge = dbESCore.query.filter_by(hostFQDN = hostFQDN).first()
 		if qESCorePurge is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
+			response =  jsonify({'Status':'Unknown host '+hostFQDN})
 			response.status_code = 404
 			return response
 
@@ -968,10 +962,9 @@ class ESCoreRemove(Resource):
 
 		db.session.delete(qESCorePurge)
 		db.session.commit()
-		response = jsonify({'Status': 'Deleted ES at host ' + hostFQDN})
+		response = jsonify ({'Status':'Deleted ES at host '+hostFQDN})
 		response.status_code = 200
 		return response
-
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>')
 @api.doc(params={'hostFQDN': 'Host FQDN.'})
@@ -994,33 +987,33 @@ class LSCoreRemove(Resource):
 @dmon.route('/v1/overlord/core/es')
 class ESCoreController(Resource):
 	def get(self):
-		hostsAll=db.session.query(dbESCore.hostFQDN, dbESCore.hostIP, dbESCore.hostOS, dbESCore.nodeName, dbESCore.nodePort,
-			dbESCore.clusterName, dbESCore.ESCoreStatus, dbESCore.ESCorePID, dbESCore.MasterNode).all()
-		resList = []
+		hostsAll=db.session.query(dbESCore.hostFQDN,dbESCore.hostIP,dbESCore.hostOS,dbESCore.nodeName,dbESCore.nodePort,
+			dbESCore.clusterName,dbESCore.ESCoreStatus, dbESCore.ESCorePID,dbESCore.MasterNode).all()
+		resList=[]
 		for hosts in hostsAll:
-			confDict = {}
-			confDict['HostFQDN'] = hosts[0]
-			confDict['IP'] = hosts[1]
-			confDict['OS'] = hosts[2]
-			confDict['NodeName'] = hosts[3]
-			confDict['NodePort'] = hosts[4]
-			confDict['ESClusterName'] = hosts[5]
-			confDict['Status'] = hosts[6]
-			confDict['PID'] = hosts[7]
-			confDict['Master'] = hosts[8]
+			confDict={}
+			confDict['HostFQDN']=hosts[0]
+			confDict['IP']=hosts[1]
+			confDict['OS']=hosts[2]
+			confDict['NodeName']=hosts[3]
+			confDict['NodePort']=hosts[4]
+			confDict['ESClusterName']=hosts[5]
+			confDict['Status']=hosts[6]
+			confDict['PID']=hosts[7]
+			confDict['Master']=hosts[8]
 			resList.append(confDict)
-		response = jsonify({'ES Instances': resList})
+		response = jsonify({'ES Instances':resList})
 		response.status_code = 200
 		return response
 
 	def post(self):
-		templateLoader = jinja2.FileSystemLoader(searchpath="/")
-		templateEnv = jinja2.Environment(loader=templateLoader)
-		esTemp= os.path.join(tmpDir, 'elasticsearch.tmp')#tmpDir+"/collectd.tmp"
-		esfConf = os.path.join(cfgDir, 'elasticsearch.yml')
-		qESCore = dbESCore.query.filter_by(MasterNode=1).first() #TODO -> curerntly only generates config file for master node
+		templateLoader = jinja2.FileSystemLoader( searchpath="/" )
+		templateEnv = jinja2.Environment( loader=templateLoader )
+		esTemp= os.path.join(tmpDir,'elasticsearch.tmp')#tmpDir+"/collectd.tmp"
+		esfConf = os.path.join(cfgDir,'elasticsearch.yml')
+		qESCore = dbESCore.query.filter_by(MasterNode = 1).first() #TODO -> curerntly only generates config file for master node
 		if qESCore is None:
-			response = jsonify({"Status": "No master ES instances found!"})
+			response = jsonify({"Status":"No master ES instances found!"})
 			response.status_code = 500
 			return response
 
@@ -1028,127 +1021,52 @@ class ESCoreController(Resource):
 			subprocess.call(["kill", "-9", str(qESCore.ESCorePID)])
 
 		try:
-			template = templateEnv.get_template(esTemp)
+			template = templateEnv.get_template( esTemp )
 			#print >>sys.stderr, template
 		except:
 			return "Tempalte file unavailable!"
 
-		infoESCore = {"clusterName": qESCore.clusterName, "nodeName": qESCore.nodeName, "esLogDir": logDir}
+		infoESCore = {"clusterName":qESCore.clusterName,"nodeName":qESCore.nodeName, "esLogDir":logDir}			
 		esConf = template.render(infoESCore)
 		qESCore.conf = esConf
 		#print >>sys.stderr, esConf
 		db.session.commit()
-		esCoreConf = open(esfConf, "w+")
+		esCoreConf = open(esfConf,"w+")
 		esCoreConf.write(esConf)
 		esCoreConf.close()
 
 		#TODO find better solution
 		os.system('rm -rf /opt/elasticsearch/config/elasticsearch.yml')
-		os.system('cp ' + esfConf + ' /opt/elasticsearch/config/elasticsearch.yml ')
+		os.system('cp '+esfConf+' /opt/elasticsearch/config/elasticsearch.yml ')
 		
 		esPid = 0
 		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid  #TODO: Try -p to set pid file location
+			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid #TODO: Try -p to set pid file location
 		except Exception as inst:
 			print >> sys.stderr, 'Error while starting elasticsearch'
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qESCore.ESCorePID = esPid
-		qESCore.ESCoreStatus = 'Running'
 		#ES core pid location
-		pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
+		pidESLoc = os.path.join(pidDir,'elasticsearch.pid')
 		try:
-			esPIDFile = open(pidESLoc, 'w+')
+			esPIDFile = open(pidESLoc,'w+')
 			esPIDFile.write(str(esPid))
 			esPIDFile.close()
 		except IOError:
-			response = jsonify({'Error': 'File I/O!'})
+			response = jsonify({'Error':'File I/O!'})
 			response.status_code = 500
 			return response
-		response = jsonify({'Status': 'ElasticSearch Core  PID ' + str(esPid)})
+		response = jsonify({'Status':'ElasticSearch Core  PID '+str(esPid)})
 		response.status_code = 200
 		return response
 		
-
-@dmon.route('/v1/overlord/core/es/<hostFQDN>/start')
-class ESControllerStart(Resource):
-	def get(self, hostFQDN):
-		qESCoreStatus = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
-		if qESCoreStatus is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
-			response.status_code = 404
-			return response
-		response = jsonify({'Status': qESCoreStatus.ESCoreStatus,
-						  'PID': qESCoreStatus.ESCorePID})
-		response.status_code = 200
-		return response
-
-	def post(self, hostFQDN):
-		qESCoreStart = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
-		if qESCoreStart is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
-			response.status_code = 404
-			return response
-
-		if checkPID(qESCoreStart.ESCorePID) is True:
-			response = jsonify({'Status': 'ES already Running',
-								'PID': qESCoreStart.ESCorePID})
-			response.status_code = 200
-			return response
-
-		esPid = 0
-		try:
-			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid  #TODO: Try -p to set pid file location
-		except Exception as inst:
-			print >> sys.stderr, 'Error while starting elasticsearch'
-			print >> sys.stderr, type(inst)
-			print >> sys.stderr, inst.args
-		qESCoreStart.ESCorePID = esPid
-		qESCoreStart.ESCoreStatus = 'Running'
-		#ES core pid location
-		pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
-		try:
-			esPIDFile = open(pidESLoc, 'w+')
-			esPIDFile.write(str(esPid))
-			esPIDFile.close()
-		except IOError:
-			response = jsonify({'Error': 'File I/O!'})
-			response.status_code = 500
-			return response
-		response = jsonify({'Status': 'ElasticSearch Core  PID ' + str(esPid)})
-		response.status_code = 201
-		return response
-		#os.kill(qESCoreStart.ESCorePID, signal.SIGTERM)
-
-
-@dmon.route('/v1/overlord/core/es/<hostFQDN>/stop')
-class ESControllerStop(Resource):
-	def post(self, hostFQDN):
-		qESCoreStop = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
-		if qESCoreStop is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
-			response.status_code = 404
-			return response
-		if checkPID(qESCoreStop.ESCorePID) is True:
-			os.kill(qESCoreStop.ESCorePID, signal.SIGTERM)
-			qESCoreStop.ESCoreStatus = 'Stopped'
-			response = jsonify({'Status': 'Stopped',
-								'Message': 'Stopped ES instance at ' + qESCoreStop.ESCorePID})
-			response.status_code = 200
-			return response
-		else:
-			qESCoreStop.ESCoreStatus = 'unknown'
-			response = jsonify({'Status': 'No ES Instance Found',
-								'Message': 'No ES instance with PID ' + qESCoreStop.ESCorePID})
-			response.status_code = 404
-			return response
-
 
 @dmon.route('/v1/overlord/core/kb/config')
 class KBCoreConfiguration(Resource):
 	def get(self):
 		if not os.path.isdir(cfgDir):
-			response = jsonify({'Error': 'Config dir not found !'})
+			response = jsonify({'Error':'Config dir not found !'})
 			response.status_code = 404
 			return response
 		if not os.path.isfile(os.path.join(cfgDir, 'kibana.yaml')):
@@ -1165,7 +1083,7 @@ class KBCoreConfiguration(Resource):
 
 	@api.expect(kbCore)#TODO same for all 3 core services create one class for all
 	def put(self):
-		requiredKeys = ['HostFQDN', 'IP']
+		requiredKeys=['HostFQDN', 'IP']
 		if not request.json:
 			abort(400)
 		for key in requiredKeys:
@@ -1174,18 +1092,17 @@ class KBCoreConfiguration(Resource):
 				response.status_code = 400
 				return response 
 				
-		qKBCore = dbKBCore.query.filter_by(hostIP=request.json['IP']).first()
+		qKBCore = dbKBCore.query.filter_by(hostIP = request.json['IP']).first()
 		if request.json["OS"] is None:
 			os = "unknown"
 		else:
-			os = request.json["OS"]
+			os=request.json["OS"]
 
 		if qKBCore is None:
-			upKB = dbKBCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"],
-							hostOS=os, kbPort=request.json["KBPort"], KBCoreStatus='Stopped')
+			upKB = dbKBCore(hostFQDN=request.json["HostFQDN"],hostIP = request.json["IP"],hostOS=os, kbPort = request.json["KBPort"],KBCoreStatus = 'Stopped')
 			db.session.add(upKB) 
 			db.session.commit()
-			response = jsonify({'Added': 'KB Config for ' + request.json["HostFQDN"]})
+			response = jsonify({'Added':'KB Config for '+ request.json["HostFQDN"]})
 			response.status_code = 201
 			return response
 		else:
@@ -1221,7 +1138,7 @@ class KKCoreController(Resource):
 		templateEnv = jinja2.Environment(loader=templateLoader)
 		kbTemp= os.path.join(tmpDir, 'kibana.tmp')#tmpDir+"/collectd.tmp"
 		kbfConf = os.path.join(cfgDir, 'kibana.yml')
-		qKBCore = dbKBCore.query.first()  # TODO: only one instance is supported
+		qKBCore = dbKBCore.query.first() # TODO: only one instance is supported
 		if qKBCore is None:
 			response = jsonify({"Status": "No KB instance found!"})
 			response.status_code = 500
@@ -1252,7 +1169,7 @@ class KKCoreController(Resource):
 
 		#TODO find better solution
 		os.system('rm -rf /opt/kibana/config/kibana.yml')
-		os.system('cp ' + kbfConf + ' /opt/kibana/config/kibana.yml ')
+		os.system('cp '+kbfConf+' /opt/kibana/config/kibana.yml ')
 		
 		kbPid = 0
 		FNULL = open(os.devnull, 'w')
@@ -1315,9 +1232,8 @@ class LSCoreConfiguration(Resource):
 			os = request.json["OS"]
 
 		if qSCore is None:
-			upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os,
-						  outESclusterName=request.json["ESClusterName"], udpPort = request.json["udpPort"],
-						  inLumberPort=request.json['LPort'])
+			upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"],hostOS=os,
+			 outESclusterName=request.json["ESClusterName"], udpPort = request.json["udpPort"], inLumberPort=request.json['LPort'])
 			db.session.add(upS) 
 			db.session.commit()
 			response = jsonify({'Added': 'LS Config for ' + request.json["HostFQDN"]})
@@ -1339,7 +1255,7 @@ class LSCoreConfiguration(Resource):
 @dmon.route('/v1/overlord/core/ls')
 class LSCoreController(Resource):
 	def get(self):
-		hostsAll = db.session.query(dbSCore.hostFQDN, dbSCore.hostIP, dbSCore.hostOS, dbSCore.inLumberPort,
+		hostsAll = db.session.query(dbSCore.hostFQDN,dbSCore.hostIP,dbSCore.hostOS,dbSCore.inLumberPort,
 			dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName, dbSCore.LSCoreStatus).all()
 		resList = []
 		for hosts in hostsAll:
@@ -1391,7 +1307,7 @@ class LSCoreController(Resource):
 		else:
 			keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
 
-		infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort, "ESCluster": qSCore.outESclusterName}
+		infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort, "ESCluster":qSCore.outESclusterName}
 		sConf = template.render(infoSCore)
 		qSCore.conf = sConf
 		#print >>sys.stderr, esConf
@@ -1425,81 +1341,6 @@ class LSCoreController(Resource):
 		response.status_code = 200
 		return response
 		
-
-@dmon.route('/v1/overlord/core/ls/<hostFQDN>/start')
-class LSCoreCOntrollerStart(Resource):
-	def get(self, hostFQDN):
-		qLSCoreStatus = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
-		if qLSCoreStatus is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
-			response.status_code = 404
-			return response
-		response = jsonify({'Status': qLSCoreStatus.LSCoreStatus,
-						  'PID': qLSCoreStatus.LSCorePID})
-		response.status_code = 200
-		return response
-
-	def post(self, hostFQDN):
-		lsfCore = os.path.join(cfgDir, 'logstash.conf')
-		lsLogfile = os.path.join(logDir, 'logstash.log')
-		qLSCoreStart = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
-		if qLSCoreStart is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
-			response.status_code = 404
-			return response
-
-		if checkPID(qLSCoreStart.ESCorePID) is True:
-			response = jsonify({'Status': 'ES already Running',
-								'PID': qLSCoreStart.ESCorePID})
-			response.status_code = 200
-			return response
-
-		lsPid = 0
-		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 4',
-									 shell=True).pid
-		except Exception as inst:
-			print >> sys.stderr, 'Error while starting logstash'
-			print >> sys.stderr, type(inst)
-			print >> sys.stderr, inst.args
-		qLSCoreStart.LSCorePID = lsPid
-		qLSCoreStart.LSCoreStatus = 'Running'
-		#LS core pid location
-		pidLSLoc = os.path.join(pidDir, 'logstash.pid')
-		try:
-			lsPIDFile = open(pidLSLoc, 'w+')
-			lsPIDFile.write(str(lsPid))
-			lsPIDFile.close()
-		except IOError:
-			response = jsonify({'Error': 'File I/O!'})
-			response.status_code = 500
-			return response
-		response = jsonify({'Status': 'Logstash Core  PID ' + str(lsPid)})
-		response.status_code = 201
-		return response
-
-
-@dmon.route('/v1/overlord/core/ls/<hostFQDN>/stop')
-class LSCoreControllerStop(Resource):
-	def post(self, hostFQDN):
-		qLSCoreStop = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
-		if qLSCoreStop is None:
-			response = jsonify({'Status': 'Unknown host ' + hostFQDN})
-			response.status_code = 404
-			return response
-		if checkPID(qLSCoreStop.LSCorePID) is True:
-			os.kill(qLSCoreStop.LSCorePID, signal.SIGKILL)
-			qLSCoreStop.LSCoreStatus = 'Stopped'
-			response = jsonify({'Status': 'Stopped',
-								'Message': 'Stopped LS instance at ' + qLSCoreStop.LSCorePID})
-			response.status_code = 200
-			return response
-		else:
-			qLSCoreStop.LSCoreStatus = 'unknown'
-			response = jsonify({'Status': 'No ES Instance Found',
-								'Message': 'No ES instance with PID ' + qLSCoreStop.LSCorePID})
-			response.status_code = 404
-			return response
 
 
 @dmon.route('/v1/overlord/core/ls/credentials')
@@ -1555,12 +1396,12 @@ class LSCertQuery(Resource):
 			certList.append(i.hostFQDN)
 
 		if not certList:
-			response = jsonify({'Status': certName + ' not found!'})
+			response = jsonify({'Status':certName+' not found!'})
 			response.status_code = 404
 			return response
 		else:
-			response = jsonify({'Hosts': certList})
-			response.status_code = 200
+			response = jsonify({'Hosts':certList})
+			response.status_code =200
 			return response
 
 @dmon.route('/v1/overlord/core/ls/cert/<certName>/<hostFQDN>')
@@ -1568,33 +1409,33 @@ class LSCertQuery(Resource):
 	'hostFQDN':'Host FQDN'})
 class LSCertControl(Resource):
 	@api.expect(certModel)	#TODO FIX THIS
-	def put(self, certName, hostFQDN):
+	def put(self,certName,hostFQDN):
 		if request.headers['Content-Type'] == 'application/x-pem-file':
 			pemData = request.data
 		else:
 			abort(400)
-		qSCoreCert = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
+		qSCoreCert = dbSCore.query.filter_by(hostFQDN = hostFQDN).first()
 		if qSCoreCert is None:
-			response=jsonify({'Status': 'unknown host'})
+			response=jsonify({'Status':'unknown host'})
 			response.status_code = 404
 			return response
 		else:
 			if certName == 'default':
-				crtFile = os.path.join(credDir, 'logstash-forwarder.crt')
+				crtFile = os.path.join(credDir,'logstash-forwarder.crt')
 			else:
-				crtFile = os.path.join(credDir, certName + '.crt')
+				crtFile = os.path.join(credDir,certName+'.crt')
 			try:
-				cert = open(crtFile, 'w+')
+				cert = open(crtFile,'w+')
 				cert.write(pemData)
 				cert.close()
 			except IOError:
-				response = jsonify({'Error': 'File I/O!'})
+				response = jsonify({'Error':'File I/O!'})
 				response.status_code = 500
 				return response	
 
 		qSCoreCert.sslCert = certName
-		response = jsonify({'Status': 'updated certificate!'})
-		response.status_code = 201
+		response = jsonify({'Status':'updated certificate!'})
+		response.status_code=201
 		return response
 
 @dmon.route('/v1/overlord/core/ls/key/<keyName>')
@@ -1602,7 +1443,7 @@ class LSCertControl(Resource):
 class LSKeyQuery(Resource):
 	def get(self, keyName):
 		if keyName == 'default':
-			response = jsonify({'Key': 'default'})
+			response = jsonify({'Key' : 'default'})
 			response.status_code = 200
 			return response
 		qSCoreKey = dbSCore.query.filter_by(sslKey=keyName).first()
@@ -1617,9 +1458,9 @@ class LSKeyQuery(Resource):
 
 
 @dmon.route('/v1/overlord/core/ls/key/<keyName>/<hostFQDN>')
-@api.doc(params={'keyName': 'Name of the private key.', 'hostFQDN': 'Host FQDN'})
+@api.doc(params={'keyName': 'Name of the private key.','hostFQDN':'Host FQDN'})
 class LSKeyControl(Resource):
-	def put(self, keyName, hostFQDN):
+	def put(self,keyName, hostFQDN):
 		if request.headers['Content-Type'] == 'application/x-pem-file':
 			pemData = request.data
 		else:
@@ -1647,7 +1488,6 @@ class LSKeyControl(Resource):
 		response = jsonify({'Status': 'updated key!'})
 		response.status_code = 201
 		return response
-
 
 @dmon.route('/v1/overlord/aux')
 class AuxInfo(Resource):
@@ -1699,7 +1539,7 @@ class AuxDeploy(Resource):
 				#rp['User']=n[4]
 				#rp['Pass']=n[5]
 				result.append(rp) 
-		collectdList = []
+		collectdList=[]
 		LSFList = []
 		allNodes = []		
 		for res in result:
@@ -1918,7 +1758,7 @@ class AuxDeployThread(Resource):
 		return response
 
 
-@dmon.route('/v2/overlord/aux/deploy/check')  #  TODO: polls all dmon-agents for current status
+@dmon.route('/v2/overlord/aux/deploy/check')  #   TODO: polls all dmon-agents for current status
 class AuxDeployCheckThread(Resource):
 	def get(self):
 		agentPort = '5000'
@@ -1970,10 +1810,11 @@ class AuxDeployCheckThread(Resource):
 		response.status_code = 200
 
 		dmon.reset()
+
 		return response
 
 
-@dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>') #TODO check parameter redeploy functionality
+@dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>')#TODO check parameter redeploy functionality 
 @api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	@api.doc(parser=dmonAux)
@@ -1986,8 +1827,8 @@ class AuxDeploySelective(Resource):
 			return response
 		qAux = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
 		if qAux is None:
-			response = jsonify({'Status': 'Unknown node ' + nodeFQDN})
-			response.status_code = 404
+			response = jsonify({'Status':'Unknown node ' + nodeFQDN})
+			response.status_code=404
 			return response
 
 		args = dmonAux.parse_args()
