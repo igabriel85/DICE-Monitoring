@@ -191,10 +191,9 @@ def dict2CSV(ListValues,fileName="output"):
     print "ops"
 
 
-
 def main(argv):
   try:
-    opts, args=getopt.getopt(argv,"hd")
+    opts, args = getopt.getopt(argv, "hd")
   except getopt.GetoptError:
     print "%-------------------------------------------------------------------------------------------%"
     print "Invalid argument! Arguments must take the form:"
@@ -215,17 +214,15 @@ def main(argv):
         print "%-------------------------------------------------------------------------------------------%"
         sys.exit()
       elif opt in ("-d"):
-        testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
-        metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
+        testQuery = queryConstructor(1438939155342, 1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
+        metrics = ['type', '@timestamp', 'host', 'job_id', 'hostname', 'AvailableVCores']
         test, test2 = queryESCore(testQuery, debug=True)
         dict2CSV(test)
-def defineESCore(IP):
-  es = Elasticsearch(IP)
-  return es
+
 if __name__=='__main__':
   #ElasticSearch object that defines the endpoint
   es = Elasticsearch('85.120.206.43')
-  if len(sys.argv) == 1: # only for development
+  if len(sys.argv) == 1:  # only for development
     testQuery = queryConstructor(1438939155342, 1438940055342, "hostname:\"dice.chd5.mng.internal\" AND serviceType:\"dfs\"")
     print testQuery
     #metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
