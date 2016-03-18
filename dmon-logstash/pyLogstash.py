@@ -16,6 +16,7 @@ class pyLogstashInstance():
     pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
     logstashDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logstash')
     logstashBin = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logstash/bin/')
+    cred = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'credentials')
 
     def generateConfig(self, settingsDict):
         templateLoader = jinja2.FileSystemLoader(searchpath="/")
