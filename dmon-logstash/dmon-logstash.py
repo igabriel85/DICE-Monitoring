@@ -150,7 +150,7 @@ class LSCertificateGet(Resource):
             return response
 
         certFile = open(os.path.join(credDir, cname + '.' + ctype), 'r')
-        return send_file(certFile, mimetype='text/plain', as_attachment=True)
+        return send_file(certFile, mimetype='application/x-x509-ca-cert', as_attachment=True)
 
 
 @agent.route('/v1/logstash')

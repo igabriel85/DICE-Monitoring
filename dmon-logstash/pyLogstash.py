@@ -84,7 +84,7 @@ class pyLogstashInstance():
                 #print >> sys.stderr, 'PID not found!'
                 #print >> sys.stderr, type(inst)
                 #print >> sys.stderr, inst.args
-                 app.logger.warning('[%s] : [WARNING] No Logstash instance found with PID: %s', str(pid))
+                 app.logger.warning('[%s] : [WARNING] No Logstash instance found with PID: %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(pid))
             return 1
         else:
             return 0
@@ -92,7 +92,7 @@ class pyLogstashInstance():
     def deploy(self):
         lslock = os.path.join(pyLogstashInstance.lockDir, 'ls.lock')
         if os.path.isfile(lslock) is True:
-            app.logger.warning('[%s] : [WARNING] Logstash already installed')
+            app.logger.warning('[%s] : [WARNING] Logstash already installed', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             #print >> sys.stderr, "Logstash already installed!"
         else:
             try:
@@ -104,11 +104,11 @@ class pyLogstashInstance():
                 # print >> sys.stderr, "Error while bootstrapping!"
                 # print >> sys.stderr, type(inst)
                 # print >> sys.stderr, inst.args
-                app.logger.error('[%s] : [ERROR] Logstash Bootstrap failed with:  %s, %s', type(inst), inst.args)
+                app.logger.error('[%s] : [ERROR] Logstash Bootstrap failed with:  %s, %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),  type(inst), inst.args)
 
             lock = open(lslock, "w+")
             lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
-            app.logger.info('[%s] : [INFO] Created lock file')
+            app.logger.info('[%s] : [INFO] Created lock file', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             lock.close()
 
     def check(self):
@@ -120,7 +120,7 @@ class pyLogstashInstance():
         except Exception as inst:
             #print >> sys.stderr, type(inst)
             #print >> sys.stderr, inst.args
-            app.logger.error('[%s] : [ERROR] Error reading PID file with: %s, %s', type(inst), inst.args)
+            app.logger.error('[%s] : [ERROR] Error reading PID file with: %s, %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             return 0
 
         if not checkPID(pid):
@@ -137,13 +137,27 @@ class pyLogstashInstance():
         except Exception as inst:
             #print >> sys.stderr, type(inst)
             #print >> sys.stderr, inst.args
-            app.logger.warning('[%s] : [WARNING] Error reading PID file with: %s, %s', type(inst), inst.args)
+            app.logger.warning('[%s] : [WARNING] Error reading PID file with: %s, %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             return 'none'
         return pid
 
-
     def validate(self):  #TODO: implement
         return "validate configuration"
+
+    def generateCertificate(self, keyName, certName, validity=3650):
+        # openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.key -out /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.crt
+        fKey = os.path.join(pyLogstashInstance.cred, keyName + '.key')
+        fCert = os.path.join(pyLogstashInstance.cred, certName + '.crt')
+        app.logger.info('[%s] : [INFO] SSL certificate at %s and key at %s',datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fKey, fCert)
+        cmdStr = "openssl req -config /etc/ssl/openssl.cnf -x509 -days %d -batch -nodes -newkey rsa:2048 -keyout %s -out %s" %(validity, fKey, fCert)
+        try:
+            subprocess.Popen(cmdStr, shell=True).pid
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Can not generate ssl certificate and key with exception: %s, %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            return False
+        return True
 
 
 def checkPID(pid):

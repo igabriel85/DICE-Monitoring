@@ -1544,12 +1544,11 @@ class LSCredControl(Resource):
 
 
 
-
 @dmon.route('/v1/overlord/core/ls/cert/<certName>')
 @api.doc(params={'certName': 'Name of the certificate'})
 class LSCertQuery(Resource):
-	def get(self,certName):
-		qSCoreCert = dbSCore.query.filter_by(sslCert = certName).all()
+	def get(self, certName):
+		qSCoreCert = dbSCore.query.filter_by(sslCert=certName).all()
 		certList = []
 		for i in qSCoreCert:
 			certList.append(i.hostFQDN)
@@ -1563,9 +1562,10 @@ class LSCertQuery(Resource):
 			response.status_code = 200
 			return response
 
+
 @dmon.route('/v1/overlord/core/ls/cert/<certName>/<hostFQDN>')
 @api.doc(params={'certName': 'Name of the certificate',
-	'hostFQDN':'Host FQDN'})
+	'hostFQDN': 'Host FQDN'})
 class LSCertControl(Resource):
 	@api.expect(certModel)	#TODO FIX THIS
 	def put(self, certName, hostFQDN):
@@ -1658,7 +1658,7 @@ class AuxInfo(Resource):
 @dmon.route('/v1/overlord/aux/deploy')
 class AuxDeploy(Resource):
 	def get(self):
-		qNodes=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
+		qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
 			dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
 		mnList = []
 		for nm in qNodes:
@@ -1693,9 +1693,9 @@ class AuxDeploy(Resource):
 			rp = {}
 			if n[1] == False: #check if node is monitored
 				rp['Node'] = n[0]
-				rp['Collectd']=n[2]
-				rp['LSF']=n[3]
-				rp['IP']=n[6]
+				rp['Collectd'] = n[2]
+				rp['LSF'] = n[3]
+				rp['IP'] = n[6]
 				#rp['User']=n[4]
 				#rp['Pass']=n[5]
 				result.append(rp) 
@@ -1732,7 +1732,7 @@ class AuxDeploy(Resource):
 		print >> sys.stderr, credentials['User']
 		print >> sys.stderr, confDir
 
-		qSCore = dbSCore.query.first() #TODO Change for distributed deployment
+		qSCore = dbSCore.query.first()  #TODO Change for distributed deployment
 		if qSCore is None:
 			response = jsonify({'status': 'db empty',
 								'message': 'there is no logstash instance registered!'})
@@ -1764,8 +1764,6 @@ class AuxDeploy(Resource):
 		collectdConfFile = open(collectdConfLoc, "wb")
 		collectdConfFile.write(collectdConf)
 		collectdConfFile.close()
-
-		
 
 		try:
 			installCollectd(collectdList, credentials['User'], credentials['Pass'], confDir=cfgDir)
@@ -1974,7 +1972,7 @@ class AuxDeployCheckThread(Resource):
 
 
 @dmon.route('/v1/overlord/aux/deploy/<auxComp>/<nodeFQDN>') #TODO check parameter redeploy functionality
-@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})#TODO document nMonitored set to true when first started monitoring
+@api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})  #TODO document nMonitored set to true when first started monitoring
 class AuxDeploySelective(Resource):
 	@api.doc(parser=dmonAux)
 	def post(self, auxComp, nodeFQDN):
