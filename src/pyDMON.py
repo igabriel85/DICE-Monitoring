@@ -1397,7 +1397,6 @@ class LSCoreController(Resource):
 		else:
 			certLoc = os.path.join(credDir, qSCore.sslCert + '.crt')
 
-
 		if qSCore.sslKey == 'default':
 			keyLoc = os.path.join(credDir, 'logstash-forwarder.key')
 		else:
@@ -1421,7 +1420,8 @@ class LSCoreController(Resource):
 			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 4', shell=True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
-			print >> sys.stderr, inst.args		
+			print >> sys.stderr, inst.args
+			qSCore.LSCoreStatus = 'unknown'
 		qSCore.LSCorePID = lsPid
 		lsPIDFileLoc = os.path.join(pidDir, 'logstash.pid')
 		try:
@@ -1432,7 +1432,7 @@ class LSCoreController(Resource):
 			response = jsonify({'Error': 'File I/O!'})
 			response.status_code = 500
 			return response	
-
+		qSCore.LSCoreStatus = 'Running'
 		response = jsonify({'Status': 'Logstash Core PID ' + str(lsPid)})
 		response.status_code = 200
 		return response
