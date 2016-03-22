@@ -52,6 +52,7 @@ from greenletThreads import *
 # import Queue
 # from threading import Thread
 import requests
+import psutil
 
 
 #directory Location
@@ -1500,6 +1501,10 @@ class LSCoreControllerStop(Resource):
 			response.status_code = 404
 			return response
 		if checkPID(qLSCoreStop.LSCorePID) is True:
+			parent = psutil.Process(qLSCoreStop.LSCorePID)
+			for c in parent.children(recursive=True):
+				c.kill()
+			parent.kill()
 			os.kill(qLSCoreStop.LSCorePID, signal.SIGKILL)
 			qLSCoreStop.LSCoreStatus = 'Stopped'
 			response = jsonify({'Status': 'Stopped',
