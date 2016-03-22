@@ -1104,10 +1104,14 @@ class ESControllerStart(Resource):
 			return response
 
 		if checkPID(qESCoreStart.ESCorePID) is True:
-			response = jsonify({'Status': 'ES already Running',
+			proc = psutil.Process(qESCoreStart.ESCorePID)
+			if proc.status() == psutil.STATUS_ZOMBIE:
+				print >> sys.stderr, 'Process ' + str(qESCoreStart.ESCorePID) + ' is zombie!'
+			else:
+				response = jsonify({'Status': 'ES already Running',
 								'PID': str(qESCoreStart.ESCorePID)})
-			response.status_code = 200
-			return response
+				response.status_code = 200
+				return response
 
 		esPid = 0
 		try:
