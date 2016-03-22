@@ -1460,9 +1460,9 @@ class LSCoreCOntrollerStart(Resource):
 			response.status_code = 404
 			return response
 
-		if checkPID(qLSCoreStart.ESCorePID) is True:
-			response = jsonify({'Status': 'ES already Running',
-								'PID': qLSCoreStart.ESCorePID})
+		if checkPID(qLSCoreStart.LSCorePID) is True:
+			response = jsonify({'Status': 'LS already Running',
+								'PID': qLSCoreStart.LSCorePID})
 			response.status_code = 200
 			return response
 
