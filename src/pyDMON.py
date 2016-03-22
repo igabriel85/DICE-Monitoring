@@ -581,28 +581,40 @@ class OverlordCoreStatus(Resource):
 			response = jsonify({"Error": "Master ES instances not reachable!"})
 			response.status_code = 500
 			return response
+		qLSCore = dbSCore.query.first() #TODO: -> only works for single LS deployment
+		if qLSCore is None:
+			response = jsonify({"Status": "No LS instances found!"})
+			response.status_code = 500
+			return response
 
+		qKBCore = dbKBCore.query.first()
+		if qKBCore is None:
+			response = jsonify({"Status": "No KB instances found!"})
+			response.status_code = 500
+			return response
 		rsp = r.json()
 		rspES = {'ElasticSearch': rsp}
-		rspLS = {'Logstash': {'Status': 'Running', 'Version': '1.5.4'}} # TODO
-		rspKB = {'Kibana': {'Status': 'Running', 'Version': '4.3.1'}} # TODO
+		rspLS = {'Logstash': {'Status': qLSCore.LSCoreStatus, 'Version': '1.5.4'}}  # TODO dynamic Version
+		rspKB = {'Kibana': {'Status': qKBCore.KBCoreStatus, 'Version': '4.3.1'}}  # # TODO dynamic Version
 
 		rspD.update(rspES)
-		rspD.update(rspLS) #TODO
-		rspD.update(rspKB) #TODO
+		rspD.update(rspLS)
+		rspD.update(rspKB)
 		response = jsonify(rspD)
 		response.status_code = 200
 		return response
 
-@dmon.route('/v1/overlord/core/chef')
-class ChefClientStatus(Resource):
-	def get(self):
-		return "Monitoring Core Chef Client status"
 
-@dmon.route('/v1/overlord/nodes/chef')
-class ChefClientNodes(Resource):
-	def get(self):
-		return "Chef client status of monitored Nodes"
+# @dmon.route('/v1/overlord/core/chef')
+# class ChefClientStatus(Resource):
+# 	def get(self):
+# 		return "Monitoring Core Chef Client status"
+#
+#
+# @dmon.route('/v1/overlord/nodes/chef')
+# class ChefClientNodes(Resource):
+# 	def get(self):
+# 		return "Chef client status of monitored Nodes"
 
 
 @dmon.route('/v1/overlord/nodes') #TODO -checkOS and -checkRoles
