@@ -1462,10 +1462,14 @@ class LSCoreCOntrollerStart(Resource):
 			return response
 
 		if checkPID(qLSCoreStart.LSCorePID) is True:
-			response = jsonify({'Status': 'LS already Running',
-								'PID': qLSCoreStart.LSCorePID})
-			response.status_code = 200
-			return response
+			proc = psutil.Process(qLSCoreStart.LSCorePID)
+			if proc.status() == psutil.STATUS_ZOMBIE:
+				pass
+			else:
+				response = jsonify({'Status': 'LS already Running',
+									'PID': qLSCoreStart.LSCorePID})
+				response.status_code = 200
+				return response
 
 		lsPid = 0
 		try:
