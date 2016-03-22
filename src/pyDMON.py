@@ -1464,7 +1464,7 @@ class LSCoreCOntrollerStart(Resource):
 		if checkPID(qLSCoreStart.LSCorePID) is True:
 			proc = psutil.Process(qLSCoreStart.LSCorePID)
 			if proc.status() == psutil.STATUS_ZOMBIE:
-				pass
+				print >> sys.stderr, 'Process ' + str(qLSCoreStart.LSCorePID) + ' is zombie!'
 			else:
 				response = jsonify({'Status': 'LS already Running',
 									'PID': qLSCoreStart.LSCorePID})
