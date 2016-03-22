@@ -1104,7 +1104,7 @@ class ESControllerStart(Resource):
 
 		if checkPID(qESCoreStart.ESCorePID) is True:
 			response = jsonify({'Status': 'ES already Running',
-								'PID': qESCoreStart.ESCorePID})
+								'PID': str(qESCoreStart.ESCorePID)})
 			response.status_code = 200
 			return response
 
@@ -1145,13 +1145,13 @@ class ESControllerStop(Resource):
 			os.kill(qESCoreStop.ESCorePID, signal.SIGTERM)
 			qESCoreStop.ESCoreStatus = 'Stopped'
 			response = jsonify({'Status': 'Stopped',
-								'Message': 'Stopped ES instance at ' + qESCoreStop.ESCorePID})
+								'Message': 'Stopped ES instance at ' + str(qESCoreStop.ESCorePID)})
 			response.status_code = 200
 			return response
 		else:
 			qESCoreStop.ESCoreStatus = 'unknown'
 			response = jsonify({'Status': 'No ES Instance Found',
-								'Message': 'No ES instance with PID ' + qESCoreStop.ESCorePID})
+								'Message': 'No ES instance with PID ' + str(qESCoreStop.ESCorePID)})
 			response.status_code = 404
 			return response
 
@@ -1503,13 +1503,13 @@ class LSCoreControllerStop(Resource):
 			os.kill(qLSCoreStop.LSCorePID, signal.SIGKILL)
 			qLSCoreStop.LSCoreStatus = 'Stopped'
 			response = jsonify({'Status': 'Stopped',
-								'Message': 'Stopped LS instance at ' + qLSCoreStop.LSCorePID})
+								'Message': 'Stopped LS instance at ' + str(qLSCoreStop.LSCorePID)})
 			response.status_code = 200
 			return response
 		else:
 			qLSCoreStop.LSCoreStatus = 'unknown'
 			response = jsonify({'Status': 'No ES Instance Found',
-								'Message': 'No ES instance with PID ' + qLSCoreStop.LSCorePID})
+								'Message': 'No ES instance with PID ' + str(qLSCoreStop.LSCorePID)})
 			response.status_code = 404
 			return response
 
