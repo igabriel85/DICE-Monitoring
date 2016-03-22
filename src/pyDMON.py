@@ -1279,6 +1279,7 @@ class KKCoreController(Resource):
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
 		qKBCore.KBCorePID = kbPid
+		qKBCore.KBCoreStatus = 'Running'
 		response = jsonify({'Status': 'Kibana Core  PID ' + str(kbPid)})
 		response.status_code = 200
 		return response
