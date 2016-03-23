@@ -1497,7 +1497,7 @@ class LSCoreController(Resource):
 			response = jsonify({"Status": "No LS instances registered"})
 			response.status_code = 500
 			return response
-		qESCore = dbESCore.query.filter_by(MasterNode=1)  # TODO: only works with the master node
+		qESCore = dbESCore.query.filter_by(MasterNode=1).first()  # TODO: only works with the master node
 		if qESCore is None:
 			response = jsonify({"Status": "No ES instances registered"})
 			response.status_code = 500
@@ -1525,7 +1525,7 @@ class LSCoreController(Resource):
 			keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
 
 		StormRestIP = ''
-		if qESCore.LSCoreStormEndpoint == 'none':
+		if qESCore.LSCoreStormEndpoint == 'None':
 			StormRestIP = 'None'
 		else:
 			StormRestIP = qESCore.LSCoreStormEndpoint
