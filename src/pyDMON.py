@@ -1525,15 +1525,15 @@ class LSCoreController(Resource):
 			keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
 
 		StormRestIP = ''
-		if qESCore.LSCoreStormEndpoint == 'None':
+		if qSCore.LSCoreStormEndpoint == 'None':
 			StormRestIP = 'None'
 		else:
-			StormRestIP = qESCore.LSCoreStormEndpoint
+			StormRestIP = qSCore.LSCoreStormEndpoint
 
 		infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort,
 					 "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
 					 "EShostPort": qESCore.nodePort,
-					 "StormRestIP": StormRestIP, "StormRestPort": qESCore.LSCoreStormPort, "StormTopologyID": qESCore.LSCoreStormTopology}
+					 "StormRestIP": StormRestIP, "StormRestPort": qSCore.LSCoreStormPort, "StormTopologyID": qSCore.LSCoreStormTopology}
 		sConf = template.render(infoSCore)
 		qSCore.conf = sConf
 		#print >>sys.stderr, esConf
