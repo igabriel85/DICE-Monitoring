@@ -1081,7 +1081,57 @@ class ESCoreController(Resource):
 		response = jsonify({'Status': 'ElasticSearch Core  PID ' + str(esPid)})
 		response.status_code = 200
 		return response
-		
+
+@dmon.route('/v1/overlord/core/es/status/<intComp>/property/<intProp>')
+class ESCOntrollerStatus(Resource):
+	def get(self, intComp, intProp):
+
+		compList = ['cluster', 'shards']
+		propList = ['health', 'stats', 'pending_tasks', 'list']
+
+		if intComp not in compList:
+			response = jsonify({'Status': 'Invalid argument',
+								'Message': 'Argument ' + intComp + ' not supported'})
+			response.status_code = 400
+			return response
+
+		if intProp not in propList:
+			response = jsonify({'Status': 'Invalid argument',
+								'Message': 'Argument ' + intProp + ' not supported'})
+			response.status_code = 400
+			return response
+		data = ''
+		qESCore = dbESCore.query.filter_by(MasterNode=1).first()
+		if qESCore is None:
+			response = jsonify({"Status": "No master ES instances found!"})
+			response.status_code = 500
+			return response
+		if intComp == 'cluster':
+			try:
+				esCoreUrl = 'http://%s:%s/%s/%s' % (qESCore.hostIP, qESCore.nodePort, '_cluster', intProp)
+				print >> sys.stderr, esCoreUrl
+				r = requests.get(esCoreUrl, timeout=2) #timeout in seconds
+				data = r.json()
+			except:
+				response = jsonify({"Error": "Master ES instances not reachable!"})
+				response.status_code = 500
+				return response
+		elif intComp == 'shards' and intProp == 'list':
+			try:
+				shardUrl = 'http://%s:%s/%s/%s' % (qESCore.hostIP, qESCore.nodePort, '_cat', intComp)
+				print >> sys.stderr, shardUrl
+				r = requests.get(shardUrl, timeout=2)
+				data = r.json()
+			except:
+				response = jsonify({"Error": "Master ES instances not reachable!"})
+				response.status_code = 500
+				return response
+		else:
+			response = jsonify({"Status": "Mallformed"})
+			response.status_code = 400
+			return response
+		return data
+
 
 @dmon.route('/v1/overlord/core/es/<hostFQDN>/start')
 class ESControllerStart(Resource):
@@ -1522,8 +1572,8 @@ class LSCoreControllerStop(Resource):
 			return response
 		else:
 			qLSCoreStop.LSCoreStatus = 'unknown'
-			response = jsonify({'Status': 'No ES Instance Found',
-								'Message': 'No ES instance with PID ' + str(qLSCoreStop.LSCorePID)})
+			response = jsonify({'Status': 'No LS Instance Found',
+								'Message': 'No LS instance with PID ' + str(qLSCoreStop.LSCorePID)})
 			response.status_code = 404
 			return response
 
