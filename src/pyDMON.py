@@ -1121,7 +1121,7 @@ class ESCOntrollerStatus(Resource):
 				shardUrl = 'http://%s:%s/%s/%s' % (qESCore.hostIP, qESCore.nodePort, '_cat', intComp)
 				print >> sys.stderr, shardUrl
 				r = requests.get(shardUrl, timeout=2)
-				data = r.json()
+				data = r.text
 			except:
 				response = jsonify({"Error": "Master ES instances not reachable!"})
 				response.status_code = 500
