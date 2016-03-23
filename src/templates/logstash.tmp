@@ -17,6 +17,27 @@ type => "graphite"
     codec => collectd { } # specific Collectd codec to invoke
     type => collectd
   }
+  {% if StormRestIP == "None"%}
+    #No Storm set
+  {% else %}
+    http_poller {
+      urls => {
+        Topology => {
+        method => get
+        url => "http://{{StormRestIP}}:{{StormRestPort}}/api/v1/topology/{{StormTopologyID}}"
+        headers => {
+        Accept => "application/json"
+        }
+        }
+      }
+      request_timeout => 60
+      interval => 60
+      codec => "json"
+      # A hash of request metadata info (timing, response headers, etc.) will be sent here
+      metadata_target => "http_poller_metadata"
+      type =>"storm"
+    }
+  {% endif %}
 }
 
 filter{
@@ -216,7 +237,8 @@ if [type]=="mrappmaster-metrics"{
 }
 output {
   elasticsearch {
-    cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name
-    protocol => http
+     #cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name; Only for LS version 1.5.x
+     #protocol => http #Only version 1.5.x
+     hosts => ["{{EShostIP}}:{{EShostPort}}"] #For version 2.x of logstash
   }
 }

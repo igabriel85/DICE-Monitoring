@@ -80,6 +80,7 @@ api = Api(app, version='0.1.4', title='DICE MONitoring API',
 
 db = SQLAlchemy(app)
 # %--------------------------------------------------------------------%
+
 class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
@@ -94,6 +95,7 @@ class dbNodes(db.Model):
     nMonitored = db.Column(db.Boolean, index=True, unique=False, default='0')
     nCollectdState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
     nLogstashForwState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
+    nLogstashInstance = db.Column(db.String(64), index=True, unique=False, default='None')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     # ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
@@ -109,14 +111,25 @@ class dbESCore(db.Model):
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
     nodeName = db.Column(db.String(64), index=True, unique=True)
-    nodePort = db.Column(db.Integer, index=True, unique=False,default=9200)
+    nodePort = db.Column(db.Integer, index=True, unique=False, default=9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
     conf = db.Column(db.LargeBinary, index=True, unique=False)
     ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)  # Running, Pending, Stopped, unknown
     ESCorePID = db.Column(db.Integer, index=True, default=0, unique=False)  # pid of current running process
-    MasterNode = db.Column(db.Boolean, index=True, unique=False)  # which node is master
+    ESCoreHeap = db.Column(db.String(64), index=True, unique=False, default='4g')
+    MasterNode = db.Column(db.Boolean, index=True, unique=False, default=True)  # which node is master
+    DataNode = db.Column(db.Boolean, index=True, unique=False, default=True)
+    NumOfShards = db.Column(db.Integer, index=True, default=5, unique=False)
+    NumOfReplicas = db.Column(db.Integer, index=True, default=1, unique=False)
+    FieldDataCacheSize = db.Column(db.String(64), index=True, unique=False, default='20%')
+    FieldDataCacheExpires = db.Column(db.String(64), index=True, unique=False, default='6h')
+    FieldDataCacheFilterSize = db.Column(db.String(64), index=True, unique=False, default='20%')
+    FieldDataCacheFilterExpires = db.Column(db.String(64), index=True, unique=False, default='6h')
+    IndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='30%')
+    MinShardIndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='12mb')
+    MinIndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='96mb')
+    ESCoreDebug = db.Column(db.String(64), index=True, unique=False, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-   
 
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -134,11 +147,16 @@ class dbSCore(db.Model):
     sslKey = db.Column(db.String(120), index=True, unique=False, default='default')
     udpPort = db.Column(db.Integer, index=True, unique=False, default=25826)  # collectd port same as collectd conf
     outESclusterName = db.Column(db.String(64), index=True, unique=False)  # same as ESCore clusterName
-    outKafka = db.Column(db.String(64), index=True, unique=False, default='unknown') # output kafka details
+    outKafka = db.Column(db.String(64), index=True, unique=False, default='unknown')  # output kafka details
     outKafkaPort = db.Column(db.Integer, index=True, unique=False, default='unknown')
     conf = db.Column(db.String(140), index=True, unique=False)
-    LSCoreStatus = db.Column(db.String(64), index=True, unique=False, default='unknown')#Running, Pending, Stopped, None
+    LSCoreStatus = db.Column(db.String(64), index=True, unique=False, default='unknown')  # Running, Pending, Stopped, None
     LSCorePID = db.Column(db.Integer, index=True, unique=False, default=0)
+    LSCoreStormEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
+    LSCoreStormPort = db.Column(db.String(64), index=True, unique=False, default='None')
+    LSCoreStormTopology = db.Column(db.String(64), index=True, unique=False, default='None')
+    LSCoreSparkEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
+    LSCoreSparkPort = db.Column(db.String(64), index=True, unique=False, default='None')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -211,25 +229,27 @@ queryES = api.model('query details Model', {
     'metrics': fields.List(fields.String(required=False, default=' ', description='Desired Metrics'))
 
 })
+
 #Nested JSON input 
 dMONQuery = api.model('queryES Model', {
 	'DMON':fields.Nested(queryES, description="Query details")
 	})
 
 
-nodeSubmitCont = api.model('Submit Node Model Info',{
+nodeSubmitCont = api.model('Submit Node Model Info', {
 	'NodeName': fields.String(required=True, description="Node FQDN"),
 	'NodeIP': fields.String(required=True, description="Node IP"),
 	'NodeOS': fields.String(required=False, description="Node OS"),
 	'key': fields.String(required=False, description="Node Pubilc key"),
 	'username': fields.String(required=False, description="Node User Name"),
 	'password': fields.String(required=False, description="Node Password"),
-	})
+	'LogstashInstance': fields.String(required=False, description='Logstash Server Endpoint')
+})
 
 
 nodeSubmit = api.model('Submit Node Model', {
 	'Nodes': fields.List(fields.Nested(nodeSubmitCont, required=True, description="Submit Node details"))
-	})
+})
 
 
 esCore = api.model('Submit ES conf', {
@@ -238,27 +258,40 @@ esCore = api.model('Submit ES conf', {
 	'OS': fields.String(required=False, default='unknown', description='Host OS'),
 	'NodeName': fields.String(required=True, description='ES Host Name'),
 	'NodePort': fields.Integer(required=False, default=9200, description='ES Port'),
-	'ESClusterName': fields.String(required=True, description='ES Host Name')
-	})
+	'ESClusterName': fields.String(required=True, description='ES Host Name'),
+	'ESCoreHeap': fields.String(required=False, default='4g', description='ES Heap size'),
+	'MasterNode': fields.Boolean(required=False, description='ES Master'),
+	'DataNode': fields.Boolean(required=False, description='ES Data'),
+	'NumOfShards': fields.Integer(required=False, default=1, description='Number of shards'),
+	'NumOfReplicas': fields.Integer(required=False, default=0, description='Number of replicas'),
+	'FieldDataCacheSize': fields.String(required=False, default='20%', description='Field cache  size'),
+	'FieldDataCacheExpires': fields.String(required=False, default='6h', description='Field cache expiration'),
+	'FieldDataCacheFilterSize': fields.String(required=False, default='20%', description='Field cache filter size'),
+	'FieldDataCacheFilterExpires': fields.String(required=False, default='6h', description='Field cache filter expiration'),
+	'IndexBufferSize': fields.String(required=False, default='30%', description='Index buffer size'),
+	'MinShardIndexBufferSize': fields.String(required=False, default='12mb', description='Min Shard index buffer size'),
+	'MinIndexBufferSize': fields.String(required=False, default='96mb', description='Min index buffer size'),
+	'ESCoreDebug': fields.Boolean(required=False, default=1, description='Debug logs')
+})
 
 kbCore = api.model('Submit KB conf', {
 	'HostFQDN': fields.String(required=True, description='Host FQDN'),
 	'IP': fields.String(required=True, description='Host IP'),
 	'OS': fields.String(required=False, default='unknown', description='Host OS'),
 	'KBPort': fields.Integer(required=False, default=5601, description='KB Port'),
-	})
+})
 
 nodeUpdate = api.model('Update Node Model Info', {
 	'IP': fields.String(required=True, description="Node IP"),
 	'OS': fields.String(required=False, description="Node OS"),
-	'Key': fields.String(required=False, description="Node Pubilc key"),
+	'Key': fields.String(required=False, description="Node Public key"),
 	'User': fields.String(required=False, description="Node User Name"),
 	'Password': fields.String(required=False, description="Node Password")
-	})
+})
 
 nodeRoles = api.model('Update Node Role Model Info', {
 	'Roles': fields.List(fields.String(required=True, default='yarn', description='Node Roles'))
-	})
+})
 
 listNodesRolesInternal = api.model('Update List Node Role Model Info Nested', {
 	"NodeName": fields.String(required=True, description="Node FQDN"),
@@ -269,14 +302,19 @@ listNodeRoles = api.model('Update List Node Role Model Info', {
 	"Nodes": fields.List(fields.Nested(listNodesRolesInternal, required=True, description='List of nodes and their roles'))
 })
 
-lsCore = api.model('Submit LS conf',{
+lsCore = api.model('Submit LS conf', {
 	'HostFQDN': fields.String(required=True, description='Host FQDN'),
 	'IP': fields.String(required=True, description='Host IP'),
 	'OS': fields.String(required=False, description='Host OS'),
 	'LPort': fields.Integer(required=True, description='Lumberjack port'),
 	'udpPort': fields.String(required=True, default=25826, description='UDP Collectd Port'),
-	'ESClusterName': fields.String(required=True, description='ES cluster name') # TODO: use as foreign key same as ClusterName in esCore
-	})
+	'ESClusterName': fields.String(required=True, description='ES cluster name'),   # TODO: use as foreign key same as ClusterName in esCore
+	'LSCoreStormEndpoint': fields.String(required=False, default='None', description='Storm REST Endpoint'),
+	'LSCoreStormPort': fields.String(required=False, default='None', description='Storm REST Port'),
+	'LSCoreStormTopology': fields.String(required=False, default='None', description='Storm Topology ID'),
+	'LSCoreSparkEndpoint': fields.String(required=False, default='None', description='Spark REST Endpoint'),
+	'LSCoreSparkPort': fields.String(required=False, default='None', description='Spark REST Port')
+})
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
 # 	})
@@ -286,7 +324,7 @@ lsCore = api.model('Submit LS conf',{
 
 certModel = api.model('Update Cert', {
 	'Certificate': fields.String(required=False, description='Certificate')
-	})
+})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
@@ -307,14 +345,14 @@ class DmonLog(Resource):
 
 @dmon.route('/v1/observer/applications')
 class ObsApplications(Resource):
-	def get(self):
-		return 'Returns a list of all applications from YARN.'
+    def get(self):
+        return 'Returns a list of all applications from YARN.'
 
 
 @dmon.route('/v1/observer/applications/<appID>')
 class ObsAppbyID(Resource):
-	def get(self, appID):
-		return 'Returns information on a particular YARN applicaiton identified by ' + appID + '!'
+    def get(self, appID):
+        return 'Returns information on a particular YARN applicaiton identified by ' + appID + '!'
 
 
 @dmon.route('/v1/observer/nodes')
@@ -393,7 +431,7 @@ class QueryEsCore(Resource):
 			query = queryConstructor(tstart=request.json['DMON']['tstart'], tstop=request.json['DMON']['tstop'],
 				queryString=request.json['DMON']['queryString'], size=request.json['DMON']['size'], ordering=request.json['DMON']['ordering'])
 		
-		if not 'metrics'  in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
+		if not 'metrics' in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
 			ListMetrics, resJson = queryESCore(query, debug=False) #TODO enclose in Try Catch if es instance unreachable
 			if not ListMetrics:
 				response = jsonify({'Status': 'No results found!'})
@@ -410,7 +448,7 @@ class QueryEsCore(Resource):
 
 				csvOut = os.path.join(outDir, fileName)
 				try:
-					csvfile=open(csvOut, 'r')
+					csvfile = open(csvOut, 'r')
 				except EnvironmentError:
 					response = jsonify({'EnvError': 'file not found'})
 					response.status_code = 500
@@ -540,6 +578,7 @@ class OverlordBootstrap(Resource):
 class OverlordCoreHalt(Resource):
 	def post(self):
 		return "Stom all core components!"
+
 
 @dmon.route('/v1/overlord/core/database')
 class OverlordCoredb(Resource):
@@ -769,7 +808,7 @@ class ClusterRoles(Resource):
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
-@api.doc(params={'nodeFQDN':'Nodes FQDN'})
+@api.doc(params={'nodeFQDN': 'Nodes FQDN'})
 class MonitoredNodeInfo(Resource):
 	def get(self, nodeFQDN):
 		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
@@ -1008,7 +1047,12 @@ class LSCoreRemove(Resource):
 class ESCoreController(Resource):
 	def get(self):
 		hostsAll=db.session.query(dbESCore.hostFQDN, dbESCore.hostIP, dbESCore.hostOS, dbESCore.nodeName, dbESCore.nodePort,
-			dbESCore.clusterName, dbESCore.ESCoreStatus, dbESCore.ESCorePID, dbESCore.MasterNode).all()
+			dbESCore.clusterName, dbESCore.ESCoreStatus, dbESCore.ESCorePID, dbESCore.MasterNode, dbESCore.DataNode,
+			dbESCore.NumOfShards, dbESCore.NumOfReplicas, dbESCore.FieldDataCacheSize,
+			dbESCore.FieldDataCacheExpires, dbESCore.FieldDataCacheFilterSize,
+			dbESCore.FieldDataCacheFilterExpires, dbESCore.IndexBufferSize,
+			dbESCore.MinShardIndexBufferSize, dbESCore.MinIndexBufferSize,
+			dbESCore.ESCoreDebug).all()
 		resList = []
 		for hosts in hostsAll:
 			confDict = {}
@@ -1021,6 +1065,17 @@ class ESCoreController(Resource):
 			confDict['Status'] = hosts[6]
 			confDict['PID'] = hosts[7]
 			confDict['Master'] = hosts[8]
+			confDict['Data'] = hosts[9]
+			confDict['Shards'] = hosts[10]
+			confDict['Replicas'] = hosts[11]
+			confDict['FieldDataCacheSize'] = hosts[12]
+			confDict['FieldDataCacheExpire'] = hosts[13]
+			confDict['FieldDataCacheFilterSize'] = hosts[14]
+			confDict['FieldDataCacheFilterExpires'] = hosts[15]
+			confDict['IndexBufferSize'] = hosts[16]
+			confDict['MinShardIndexBufferSize'] = hosts[17]
+			confDict['MinIndexBufferSize'] = hosts[18]
+			confDict['Debug'] = hosts[19]
 			resList.append(confDict)
 		response = jsonify({'ES Instances': resList})
 		response.status_code = 200
@@ -1408,7 +1463,9 @@ class LSCoreConfiguration(Resource):
 class LSCoreController(Resource):
 	def get(self):
 		hostsAll = db.session.query(dbSCore.hostFQDN, dbSCore.hostIP, dbSCore.hostOS, dbSCore.inLumberPort,
-			dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName, dbSCore.LSCoreStatus).all()
+			dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName, dbSCore.LSCoreStatus,
+			dbSCore.LSCoreStormEndpoint, dbSCore.LSCoreStormPort, dbSCore.LSCoreStormTopology,
+			dbSCore.LSCoreSparkEndpoint, dbSCore.LSCoreSparkPort).all()
 		resList = []
 		for hosts in hostsAll:
 			confDict = {}
@@ -1418,7 +1475,11 @@ class LSCoreController(Resource):
 			confDict['LPort'] = hosts[3]
 			confDict['udpPort'] = hosts[6]
 			confDict['ESClusterName'] = hosts[7]
-			confDict['Status'] = hosts[8]
+			confDict['StormRestIP'] = hosts[9]
+			confDict['StormRestPort'] = hosts[10]
+			confDict['StormTopology'] = hosts[11]
+			confDict['SparkRestIP'] = hosts[12]
+			confDict['SparkRestPort'] = hosts[13]
 			resList.append(confDict)
 		response = jsonify({'LS Instances': resList})
 		response.status_code = 200
@@ -1436,6 +1497,11 @@ class LSCoreController(Resource):
 			response = jsonify({"Status": "No LS instances registered"})
 			response.status_code = 500
 			return response
+		qESCore = dbESCore.query.filter_by(MasterNode=1)  # TODO: only works with the master node
+		if qESCore is None:
+			response = jsonify({"Status": "No ES instances registered"})
+			response.status_code = 500
+			return response
 
 		if checkPID(qSCore.LSCorePID) is True:
 			subprocess.call(['kill', '-9', str(qSCore.LSCorePID)])
@@ -1444,9 +1510,9 @@ class LSCoreController(Resource):
 			template = templateEnv.get_template(lsTemp)
 			#print >>sys.stderr, template
 		except Exception as inst:
-			return "LS Tempalte file unavailable!"
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
+			return "LS Tempalte file unavailable!"
 
 		if qSCore.sslCert == 'default':
 			certLoc = os.path.join(credDir, 'logstash-forwarder.crt')
@@ -1458,7 +1524,16 @@ class LSCoreController(Resource):
 		else:
 			keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
 
-		infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort, "ESCluster": qSCore.outESclusterName}
+		StormRestIP = ''
+		if qESCore.LSCoreStormEndpoint == 'none':
+			StormRestIP = 'None'
+		else:
+			StormRestIP = qESCore.LSCoreStormEndpoint
+
+		infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort,
+					 "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
+					 "EShostPort": qESCore.nodePort,
+					 "StormRestIP": StormRestIP, "StormRestPort": qESCore.LSCoreStormPort, "StormTopologyID": qESCore.LSCoreStormTopology}
 		sConf = template.render(infoSCore)
 		qSCore.conf = sConf
 		#print >>sys.stderr, esConf
@@ -1468,8 +1543,6 @@ class LSCoreController(Resource):
 		lsCoreConf.write(sConf)
 		lsCoreConf.close()
 
-		#TODO find better solution
-		#subprocess.call(['cp',lsfCore,lsCDir+'/logstash.conf'])
 		lsLogfile = os.path.join(logDir, 'logstash.log')
 		lsPid = 0
 		try:
@@ -1619,7 +1692,6 @@ class LSCredControl(Resource):
 	# 	osslFile.close()
 
 
-
 @dmon.route('/v1/overlord/core/ls/cert/<certName>')
 @api.doc(params={'certName': 'Name of the certificate'})
 class LSCertQuery(Resource):
@@ -1672,6 +1744,7 @@ class LSCertControl(Resource):
 		response = jsonify({'Status': 'updated certificate!'})
 		response.status_code = 201
 		return response
+
 
 @dmon.route('/v1/overlord/core/ls/key/<keyName>')
 @api.doc(params={'keyName': 'Name of the private key.'})
@@ -1986,9 +2059,7 @@ class AuxDeployThread(Resource):
 							'Message': NodeDict,
 							'Failed': failedNodes})
 		response.status_code = 200
-
 		dmon.reset()
-
 		return response
 
 

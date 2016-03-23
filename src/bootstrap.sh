@@ -63,12 +63,12 @@ sysctl -w vm.max_map_count=262144
 swapoff -a
 
 
-# Install Elasticsearch 2.1.0
+# Install Elasticsearch 2.2.0
 echo "Installing Elasticsearch ...."
 cd /opt
-wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.1.0/elasticsearch-2.1.0.tar.gz
-tar zxf elasticsearch-2.1.0.tar.gz
-ln -sf elasticsearch-2.1.0 elasticsearch
+wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.2.0/elasticsearch-2.2.0.tar.gz
+tar zxf elasticsearch-2.2.0.tar.gz
+ln -sf elasticsearch-2.2.0 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
@@ -89,9 +89,9 @@ echo "Installing Elasticsearch plugin marvel ....."
 # Install Logstash
 echo "Installing Logstash..."
 cd /opt
-wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
-tar zxf logstash-1.5.4.tar.gz
-ln -sf logstash-1.5.4 logstash
+wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
+tar zxf logstash-2.2.1.tar.gz
+ln -sf logstash-2.2.1 logstash
 
 #Setup Logrotate
 echo "Setting up logrotate ..."
@@ -124,8 +124,8 @@ chown -R ubuntu.ubuntu /opt
 
 echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
-rm -rf /opt/logstash-1.5.4.tar.gz
-rm -rf /opt/elasticsearch-1.4.4.tar.gz
+rm -rf /opt/logstash-2.2.1.tar.gz
+rm -rf /opt/elasticsearch-2.2.0.tar.gz
 
 
 echo "Bootstrapping done!"

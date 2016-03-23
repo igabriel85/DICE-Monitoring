@@ -56,6 +56,7 @@ def portScan(addrs,ports):
 	
 	print 'Scanning Complete in: ', total
 
+
 def checkPID(pid):
 	"""
 	Check For the existence of a unix pid.
@@ -69,6 +70,7 @@ def checkPID(pid):
 		return False
 	else:
 		return True
+
 
 def startLocalProcess(command):
 	'''
