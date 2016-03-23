@@ -1103,7 +1103,7 @@ class ESCoreController(Resource):
 
 		infoESCore = {"clusterName": qESCore.clusterName, "nodeName": qESCore.nodeName, "esLogDir": logDir,
 					  "MasterNode": qESCore.MasterNode, "DataNode": qESCore.DataNode,
-					  "NumberOfShards": qESCore.NumberOfShards, "NumberOfReplicas": qESCore.NumberOfReplicas,
+					  "NumberOfShards": qESCore.NumOfShards, "NumberOfReplicas": qESCore.NumOfReplicas,
 					  "IndexBufferSize": qESCore.IndexBufferSize,
 					  "MinShardIndexBufferSize": qESCore.MinShardIndexBufferSize,
 					  "MinIndexBufferSize": qESCore.MinIndexBufferSize,
