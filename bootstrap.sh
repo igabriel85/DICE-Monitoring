@@ -29,10 +29,10 @@ $HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
 echo "Installing kibana...."
 cd ~/ 
 #wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
-wget https://download.elastic.co/kibana/kibana/kibana-4.3.1-linux-x64.tar.gz
-tar xvf kibana-4.3.1-linux-x64.tar.gz
+wget https://download.elastic.co/kibana/kibana/kibana-4.4.1-linux-x64.tar.gz
+tar xvf kibana-4.4.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
-cp -R ~/kibana-4.3.1-linux-x64/* /opt/kibana/
+cp -R ~/kibana-4.4.1-linux-x64/* /opt/kibana/
 echo "Registering Kibana as a service ...."
 cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
 chmod +x /etc/init.d/kibana4
@@ -58,17 +58,17 @@ apt-get install ant -y
 
 #VM level Setings
 echo "Configuring VM level setings"
-export ES_HEAP_SIZE=2g
+export ES_HEAP_SIZE=4g
 sysctl -w vm.max_map_count=262144
 swapoff -a
 
 
-# Install Elasticsearch 2.1.0
+# Install Elasticsearch 2.2.0
 echo "Installing Elasticsearch ...."
 cd /opt
-wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.1.0/elasticsearch-2.1.0.tar.gz
-tar zxf elasticsearch-2.1.0.tar.gz
-ln -sf elasticsearch-2.1.0 elasticsearch
+wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.2.0/elasticsearch-2.2.0.tar.gz
+tar zxf elasticsearch-2.2.0.tar.gz
+ln -sf elasticsearch-2.2.0 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
@@ -82,16 +82,16 @@ echo "Installing Elasticsearch plugin marvel ....."
 
 /opt/elasticsearch/bin/plugin install license
 /opt/elasticsearch/bin/plugin install marvel-agent
-/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/2.1.0
+/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/2.2.0
             
 
 
 # Install Logstash
 echo "Installing Logstash..."
 cd /opt
-wget https://download.elastic.co/logstash/logstash/logstash-1.5.4.tar.gz
-tar zxf logstash-1.5.4.tar.gz
-ln -sf logstash-1.5.4 logstash
+wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
+tar zxf logstash-2.2.1.tar.gz
+ln -sf logstash-2.2.1 logstash
 
 #Setup Logrotate
 echo "Setting up logrotate ..."
@@ -124,8 +124,8 @@ chown -R ubuntu.ubuntu /opt
 
 echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
-rm -rf /opt/logstash-1.5.4.tar.gz
-rm -rf /opt/elasticsearch-1.4.4.tar.gz
+rm -rf /opt/logstash-2.2.1.tar.gz
+rm -rf /opt/elasticsearch-2.2.0.tar.gz
 
 
 echo "Bootstrapping done!"
