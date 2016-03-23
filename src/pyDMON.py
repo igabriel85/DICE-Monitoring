@@ -1101,7 +1101,17 @@ class ESCoreController(Resource):
 		except:
 			return "Tempalte file unavailable!"
 
-		infoESCore = {"clusterName": qESCore.clusterName, "nodeName": qESCore.nodeName, "esLogDir": logDir}
+		infoESCore = {"clusterName": qESCore.clusterName, "nodeName": qESCore.nodeName, "esLogDir": logDir,
+					  "MasterNode": qESCore.MasterNode, "DataNode": qESCore.DataNode,
+					  "NumberOfShards": qESCore.NumberOfShards, "NumberOfReplicas": qESCore.NumberOfReplicas,
+					  "IndexBufferSize": qESCore.IndexBufferSize,
+					  "MinShardIndexBufferSize": qESCore.MinShardIndexBufferSize,
+					  "MinIndexBufferSize": qESCore.MinIndexBufferSize,
+					  "FieldDataCacheSize": qESCore.FieldDataCacheSize,
+					  "FieldDataCacheExpires": qESCore.FieldDataCacheExpires,
+					  "FieldDataCacheFilterSize": qESCore.FieldDataCacheFilterSize,
+					  "FieldDataCacheFilterExpires": qESCore.FieldDataCacheFilterExpires,
+					  "ESCoreDebug": qESCore.ESCoreDebug}
 		esConf = template.render(infoESCore)
 		qESCore.conf = esConf
 		#print >>sys.stderr, esConf
@@ -1922,7 +1932,7 @@ class AuxDeploy(Resource):
 			response = jsonify({'Status': 'Error Installing collectd!'})
 			response.status_code = 500
 			return response
-
+		#TODO Assign logsash server instance to each node
 		try:
 			installLogstashForwarder(LSFList, userName=credentials['User'], uPassword=credentials['Pass'], confDir=cfgDir)
 		except Exception as inst:
