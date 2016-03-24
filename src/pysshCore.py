@@ -31,7 +31,7 @@ sys.setdefaultencoding('utf8')
 #folder locations
 basedir = os.path.abspath(os.path.dirname(__file__))
 confDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
-credDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
+credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 #monitoring endpoints
 #logstashsip = ''
@@ -51,7 +51,8 @@ def listOutput(out):
 		for line in out[host]['stdout']:
 			print line
 
-def installCollectd(hostlist,userName,uPassword,confDir=confDir):
+
+def installCollectd(hostlist, userName, uPassword, confDir=confDir):
 	'''
 	Installs and uploads a conf file to selected hosts.
 
@@ -149,9 +150,6 @@ def installJmxtrans(hostlist,userName,uPassword,confDir,confName):
 		raise
 
 
-
-
-
 	#http://jmxtrans.googlecode.com/files/jmxtrans_250-1_all.deb
 	
 def installLogstashForwarder(hostlist,userName,uPassword,confDir):
@@ -192,7 +190,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		raise
 
 	try:	
-		client.run_command('mv logstash-forwarder.crt /opt/certs',sudo=True)
+		client.run_command('mv logstash-forwarder.crt /opt/certs', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while moving cert to /opt/certs"
 		raise
@@ -207,7 +205,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		raise
 
 	try:
-		client.run_command('mv logstashforwarder.list /etc/apt/sources.list.d/logstashforwarder.list',sudo=True)
+		client.run_command('mv logstashforwarder.list /etc/apt/sources.list.d/logstashforwarder.list', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while adding lsf list to sourcelist!"
 		raise
@@ -276,6 +274,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 # except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 # 	print "Stff"
 
+
 def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
 	'''
 		Uploads a specified file to target servers via ssh.
@@ -311,12 +310,12 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 
 	'''
 	
-	if command not in ['status','stop','start','force-start']:
+	if command not in ['status', 'stop', 'start', 'force-start']:
 		print "Command "+ command +" unsupported!"
 		exit()
 	try:
-		client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-		cmdStr = 'nohup service ' + serviceName +' ' + command
+		client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
+		cmdStr = 'nohup service ' + serviceName + ' ' + command
 		output = client.run_command(cmdStr, sudo=True)
 		for host in output:
 			for line in output[host]['stdout']:
@@ -497,18 +496,18 @@ def auxCtrl(auxComp,command):
 			node = []
 			node.append(i.nodeIP)
 			try:
-				serviceCtrl(node,i.nUser,i.nPass,'collectd', command)
+				serviceCtrl(node, i.nUser, i.nPass, 'collectd', command)
 			except Exception as inst:
 				print >> sys.stderr, type(inst)
 				print >> sys.stderr, inst.args
-				response = jsonify({'Status':'Error exec '+command+' on collectd. Node '+ i.nodeFQDN +'!'})
+				response = jsonify({'Status': 'Error exec ' + command + ' on collectd. Node ' + i.nodeFQDN + '!'})
 				response.status_code = 500
 				return response
 			CollectdNodes = {}
 			CollectdNodes['Node'] = i.nodeFQDN
 			CollectdNodes['IP'] = i.nodeIP
 			nodeCollectdStopped.append(CollectdNodes)
-			response = jsonify({'Status':'Collectd '+command+' successfull','Nodes':nodeCollectdStopped})
+			response = jsonify({'Status': 'Collectd ' + command + ' successfull', 'Nodes': nodeCollectdStopped})
 			response.status_code = 200
 			return response
 

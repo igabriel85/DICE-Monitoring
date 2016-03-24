@@ -182,15 +182,15 @@ class dbKBCore(db.Model):
 
 #Not Used Yet
 class dbApp(db.Model):
-	id = db.Column(db.Integer, primary_key=True)
-	appName = db.Column(db.String(64), index=True, unique=False)
-	appVersion = db.Column(db.String(64), index=True, unique=False)
-	jobID = db.Column(db.String(64), index=True, unique=True)
-	startTime = db.Column(db.String(64), index=True, unique=False)
-	stopTime = db.Column(db.String(64), index=True, unique=False)
-	timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-	def __repr__(self):
-		return '<dbApp %r>' % (self.body)
+    id = db.Column(db.Integer, primary_key=True)
+    appName = db.Column(db.String(64), index=True, unique=False)
+    appVersion = db.Column(db.String(64), index=True, unique=False)
+    jobID = db.Column(db.String(64), index=True, unique=True)
+    startTime = db.Column(db.String(64), index=True, unique=False)
+    stopTime = db.Column(db.String(64), index=True, unique=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    def __repr__(self):
+        return '<dbApp %r>' % (self.body)
 
 class dbCDHMng(db.Model):
 	id = db.Column(db.Integer, primary_key=True)
@@ -286,7 +286,8 @@ nodeUpdate = api.model('Update Node Model Info', {
 	'OS': fields.String(required=False, description="Node OS"),
 	'Key': fields.String(required=False, description="Node Public key"),
 	'User': fields.String(required=False, description="Node User Name"),
-	'Password': fields.String(required=False, description="Node Password")
+	'Password': fields.String(required=False, description="Node Password"),
+	'LogstashInstance': fields.String(required=False, description='Logstash Server Endpoint')
 })
 
 nodeRoles = api.model('Update Node Role Model Info', {
@@ -333,14 +334,14 @@ db.create_all()
 
 @dmon.route('/v1/log')
 class DmonLog(Resource):
-    def get(self):
-        try:
-            logfile = open(os.path.join(logDir, 'dmon.log'), 'r')
-        except EnvironmentError:
-            response = jsonify({'EnvError': 'file not found'})
-            response.status_code = 500
-            return response
-        return Response(logfile, status=200, mimetype='text/plain')
+	def get(self):
+		try:
+			logfile = open(os.path.join(logDir, 'dmon.log'), 'r')
+		except EnvironmentError:
+			response = jsonify({'EnvError': 'file not found'})
+			response.status_code = 500
+			return response
+		return Response(logfile, status=200, mimetype='text/plain')
 
 
 @dmon.route('/v1/observer/applications')
@@ -389,7 +390,9 @@ class NodeStatus(Resource):
 				'Status': qNode.nStatus,
 				'IP': qNode.nodeIP,
 				'Monitored': qNode.nMonitored,
-				'OS': qNode.nodeOS}})
+				'OS': qNode.nodeOS,
+			    'LSInstance': qNode.nLogstashInstance
+			}})
 			response.status_code = 200	
 		return response
 
@@ -661,18 +664,18 @@ class OverlordCoreStatus(Resource):
 class MonitoredNodes(Resource):
 	def get(self):
 		nodeList = []
-		nodesAll=db.session.query(dbNodes.nodeFQDN,dbNodes.nodeIP).all()
+		nodesAll=db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP).all()
 		if nodesAll is None:
-			response = jsonify({'Status':'No monitored nodes found'})
+			response = jsonify({'Status': 'No monitored nodes found'})
 			response.status_code = 404
 			return response
 		for nl in nodesAll:
 			nodeDict= {}
 			print >>sys.stderr, nl[0]
-			nodeDict.update({nl[0]:nl[1]})
+			nodeDict.update({nl[0]: nl[1]})
 			nodeList.append(nodeDict)
-		response = jsonify({'Nodes':nodeList})
-		response.status_code=200
+		response = jsonify({'Nodes': nodeList})
+		response.status_code = 200
 		return response
 
 	@api.expect(nodeSubmit)	
@@ -680,11 +683,26 @@ class MonitoredNodes(Resource):
 		if not request.json:
 			abort(400)
 		listN = []
+		if "Nodes" not in request.json:
+			response = jsonify({'Status': 'Malformed request',
+								'Message': 'JSON payload malformed'})
+			response.status_code = 400
+			return response
+		nLSI = ''
 		for nodes in request.json['Nodes']:
 			qNodes = dbNodes.query.filter_by(nodeFQDN=nodes['NodeName']).first()
+			qNodeLSinstance = dbSCore.query.first()
 			if qNodes is None:
+				if 'LogstashInstance' not in nodes:
+					if qNodeLSinstance is None:
+						nLSI = 'None'
+					else:
+						nLSI = qNodeLSinstance.hostIP
+				else:
+					nLSI = nodes['LogstashInstance']
+
 				e = dbNodes(nodeFQDN=nodes['NodeName'], nodeIP=nodes['NodeIP'], nodeOS=nodes['NodeOS'],
-					nkey=nodes['key'], nUser=nodes['username'], nPass=nodes['password'])
+					nkey=nodes['key'], nUser=nodes['username'], nPass=nodes['password'], nLogstashInstance=nLSI)
 				db.session.add(e)
 			else:
 				qNodes.nodeIP = nodes['NodeIP']
@@ -692,6 +710,11 @@ class MonitoredNodes(Resource):
 				qNodes.nkey = nodes['key']
 				qNodes.nUser = nodes['username']
 				qNodes.nPass = nodes['password']
+				if 'LogstashInstance' not in nodes:
+					nLSI = qNodeLSinstance.hostIP
+				else:
+					nLSI = nodes['LogstashInstance']
+				qNodes.nLogstashInstance = nLSI
 				db.session.add(qNodes)
 			db.session.commit
 		response = jsonify({'Status': "Nodes list Updated!"})
@@ -825,10 +848,10 @@ class MonitoredNodeInfo(Resource):
 				'OS': qNode.nodeOS,
 				'Key': qNode.nkey,
 				'Password': qNode.nPass,
-				'User': qNode.nUser,
-				'ChefClient': "TODO",
-				'CDH': 'TODO',
-				'Roles': qNode.nRoles})
+				'User': qNode.nUser, #TODO Chef client status, and CDH status
+				'Roles': qNode.nRoles,
+			    'LSInstance': qNode.nLogstashInstance
+			})
 			response.status_code = 200	
 			return response
 
@@ -837,6 +860,7 @@ class MonitoredNodeInfo(Resource):
 		if not request.json:
 			abort(400)
 		qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
+		nLSI = ''
 		if qNode is None:
 			response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found!'})
 			response.status_code = 404
@@ -847,7 +871,16 @@ class MonitoredNodeInfo(Resource):
 			qNode.nkey = request.json['Key']
 			qNode.nPass = request.json['Password']
 			qNode.nUser = request.json['User']
+			if 'LogstashInstance' not in request.json:
+				qLSCore = dbNodes.query.first()
+				if qLSCore is None:
+					nLSI = 'None'
+				else:
+					nLSI = qLSCore.hostIP
+			else:
+				nLSI = request.json['LogstashInstance']
 			response = jsonify({'Status': 'Node ' + nodeFQDN + ' updated!'})
+			qNode.nLogstashInstance = nLSI
 			response.status_code = 201
 			return response
 
@@ -1818,7 +1851,7 @@ class AuxInfo(Resource):
 class AuxDeploy(Resource):
 	def get(self):
 		qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
-			dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
+			dbNodes.nCollectdState, dbNodes.nLogstashForwState, dbNodes.nLogstashInstance).all()
 		mnList = []
 		for nm in qNodes:
 			mNode = {}
@@ -1827,6 +1860,7 @@ class AuxDeploy(Resource):
 			mNode['Monitored'] = nm[2]
 			mNode['Collectd'] = nm[3]
 			mNode['LSF'] = nm[4]
+			mNode['LSInstance'] = nm[5]
 			mnList.append(mNode)
 			#print >> sys.stderr, nm
 		response = jsonify({'Aux Status': mnList})
@@ -1842,7 +1876,7 @@ class AuxDeploy(Resource):
 		collectdConfLoc = os.path.join(cfgDir, 'collectd.conf')
 		lsfConfLoc = os.path.join(cfgDir, 'logstash-forwarder.conf')
 		qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nMonitored,
-			dbNodes.nCollectdState, dbNodes.nLogstashForwState, dbNodes.nUser, dbNodes.nPass, dbNodes.nodeIP).all()
+			dbNodes.nCollectdState, dbNodes.nLogstashForwState, dbNodes.nUser, dbNodes.nPass, dbNodes.nodeIP, dbNodes.nLogstashInstance).all()
 		result = []
 		credentials ={}
 		for n in qNodes:
@@ -1855,6 +1889,7 @@ class AuxDeploy(Resource):
 				rp['Collectd'] = n[2]
 				rp['LSF'] = n[3]
 				rp['IP'] = n[6]
+				rp['LSInstance'] = n[7]
 				#rp['User']=n[4]
 				#rp['Pass']=n[5]
 				result.append(rp) 
@@ -1893,8 +1928,8 @@ class AuxDeploy(Resource):
 
 		qSCore = dbSCore.query.first()  #TODO Change for distributed deployment
 		if qSCore is None:
-			response = jsonify({'status': 'db empty',
-								'message': 'there is no logstash instance registered!'})
+			response = jsonify({'Status': 'DB empty',
+								'Message': 'There is no logstash instance registered!'})
 			response.status_code = 400
 			return response
 		try:
