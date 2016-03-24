@@ -442,7 +442,8 @@ class QueryEsCore(Resource):
 		if not 'metrics' in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
 			ListMetrics, resJson = queryESCore(query, debug=False, myIndex=myIndex) #TODO enclose in Try Catch if es instance unreachable
 			if not ListMetrics:
-				response = jsonify({'Status': 'No results found!'})
+				response = jsonify({'Status': 'No results found',
+									'Message': 'Please check time interval and index'})
 				response.status_code = 404
 				return response
 
