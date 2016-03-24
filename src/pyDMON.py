@@ -226,8 +226,8 @@ queryES = api.model('query details Model', {
     	,description='ElasticSearc Query'),
     'tstart': fields.Integer(required=True, default="now-1d", description='Start Date'),
     'tstop': fields.Integer(required=False, default="None", description='Stop Date'),
-    'metrics': fields.List(fields.String(required=False, default=' ', description='Desired Metrics'))
-
+    'metrics': fields.List(fields.String(required=False, default=' ', description='Desired Metrics')),
+	'index': fields.String(required=False, default='logstash-*', description='Name of ES Core index')
 })
 
 #Nested JSON input 
@@ -429,13 +429,18 @@ class QueryEsCore(Resource):
 
 		if 'tstop'not in request.json['DMON']:
 			query = queryConstructor(tstart=request.json['DMON']['tstart'], queryString=request.json['DMON']['queryString'],
-				size=request.json['DMON']['size'],ordering=request.json['DMON']['ordering'])
+				size=request.json['DMON']['size'], ordering=request.json['DMON']['ordering'])
 		else:
 			query = queryConstructor(tstart=request.json['DMON']['tstart'], tstop=request.json['DMON']['tstop'],
 				queryString=request.json['DMON']['queryString'], size=request.json['DMON']['size'], ordering=request.json['DMON']['ordering'])
+
+		if 'index' not in request.json['DMON']:
+			myIndex = 'logstash-*'
+		else:
+			myIndex = request.json['DMON']['index']
 		
 		if not 'metrics' in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
-			ListMetrics, resJson = queryESCore(query, debug=False) #TODO enclose in Try Catch if es instance unreachable
+			ListMetrics, resJson = queryESCore(query, debug=False, myIndex=myIndex) #TODO enclose in Try Catch if es instance unreachable
 			if not ListMetrics:
 				response = jsonify({'Status': 'No results found!'})
 				response.status_code = 404
@@ -471,7 +476,7 @@ class QueryEsCore(Resource):
 
 		else:
 			metrics = request.json['DMON']['metrics']
-			ListMetrics, resJson = queryESCore(query, allm=False, dMetrics=metrics, debug=False)
+			ListMetrics, resJson = queryESCore(query, allm=False, dMetrics=metrics, debug=False, myIndex=myIndex)
 			if not ListMetrics:
 				response = jsonify({'Status': 'No results found!'})
 				response.status_code = 404
