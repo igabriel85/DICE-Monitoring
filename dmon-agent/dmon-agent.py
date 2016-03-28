@@ -36,10 +36,11 @@ from app import *
 logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
 tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
+agentlog = os.path.join(logDir, 'dmon-agent.log')
 collectdlog = '/var/log/collectd.log'
 collectdpid = os.path.join(pidDir, 'collectd.pid')
 lsflog = '/var/log/logstash-fowarder/logstash-fowarder.log'
-lsferr = 'var/log/logstash-fowarder/logstash-fowarder.err'
+lsferr = '/var/log/logstash-fowarder/logstash-fowarder.err'
 collectdConf = '/etc/collectd/collectd.conf'
 lsfConf = '/etc/logstash-forwarder.conf'
 lsfList = os.path.join(tmpDir, 'logstashforwarder.list')
@@ -261,8 +262,6 @@ class NodeMonitStopSelective(Resource):
         try:
             aux.controll(auxComp, 'stop')
         except Exception as inst:
-            # print >> sys.stderr, type(inst)
-            # print >> sys.stderr, inst.args
             app.logger.error('[%s] : [ERROR] Error starting %s with : %s and %s',
                              datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp), type(inst), inst.args)
             response = jsonify({'Status': type(inst),
@@ -275,7 +274,22 @@ class NodeMonitStopSelective(Resource):
         return response
 
 
-@agent.route('/v1/logs/<auxComp>')
+@agent.route('/v1/log')
+class NodeLog(Resource):
+    def get(self):
+        try:
+            log = open(agentlog,'w+')
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Opening log with %s and %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'File Error',
+                                    'Message': 'Cannot open log file'})
+            response.status_code = 500
+            return response
+        return send_file(log, mimetype='text/plain', as_attachment=True)
+
+
+@agent.route('/v1/log/component/<auxComp>')
 class NodeMonitLogs(Resource):
     def get(self, auxComp):
         if not aux.check(auxComp):
@@ -289,12 +303,24 @@ class NodeMonitLogs(Resource):
             try:
                 clog = open(collectdlog, 'w+')
             except Exception as inst:
-                # print >> sys.stderr, type(inst)
-                # print >> sys.stderr, inst.args
-                app.logger.error('[%s] : [ERROR] Opening collectd log',
-                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                app.logger.error('[%s] : [ERROR] Opening collectd log with %s and %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'File Error',
+                                    'Message': 'Cannot open log file'})
+                response.status_code = 500
+                return response
+        if auxComp == 'lsf':
+            try:
+                clog = open(lsflog, 'w+')
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Opening lsf log with %s and %s',
+                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'File Error',
+                                    'Message': 'Cannot open log file'})
+                response.status_code = 500
+                return response
 
-            return send_file(clog, mimetype='text/plain', as_attachment=True)
+        return send_file(clog, mimetype='text/plain', as_attachment=True)
 
 
 @agent.route('/v1/conf/<auxComp>')
