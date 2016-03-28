@@ -6,7 +6,7 @@ RENR='^[0-9]+$'
 export ES_HEAP_SIZE=4g
 export LS_HEAP_SIZE=1024m
 export ES_USE_GC_LOGGING=yes
-export DMON_AGENT="https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/0.0.3/dmon-agent.tar.gz"
+export DMON_AGENT="https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz"
 
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`

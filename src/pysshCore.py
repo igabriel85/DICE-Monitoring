@@ -563,7 +563,7 @@ def deployAgent(hostlist, userName, uPassword):
 
 	print "Copying certificate..."
 
-	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT', 'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/0.0.3/dmon-agent.tar.gz'))
+	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT', 'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz'))
 
 	# try:
 	# 	client.copy_file(localCopyCrt, "logstash-forwarder.crt")
