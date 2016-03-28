@@ -563,6 +563,8 @@ def deployAgent(hostlist, userName, uPassword):
 
 	print "Copying certificate..."
 
+	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT', 'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/0.0.3/dmon-agent.tar.gz'))
+
 	# try:
 	# 	client.copy_file(localCopyCrt, "logstash-forwarder.crt")
 	# except (AuthenticationException, UnknownHostException, ConnectionErrorException):
@@ -571,7 +573,7 @@ def deployAgent(hostlist, userName, uPassword):
 
 	try:
 		print "Copying dmon-agent ..."
-		client.run_command('wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/0.0.3/dmon-agent.tar.gz')
+		client.run_command(agentUrl)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while downloading dmon-agent"
 		raise
