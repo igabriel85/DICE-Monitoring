@@ -150,6 +150,8 @@ class dbSCore(db.Model):
     outKafka = db.Column(db.String(64), index=True, unique=False, default='unknown')  # output kafka details
     outKafkaPort = db.Column(db.Integer, index=True, unique=False, default='unknown')
     conf = db.Column(db.String(140), index=True, unique=False)
+    LSCoreHeap = db.Column(db.String(120), index=True, unique=False, default='512m')
+    LSCoreWorkers = db.Column(db.String(120), index=True, unique=False, default='4')
     LSCoreStatus = db.Column(db.String(64), index=True, unique=False, default='unknown')  # Running, Pending, Stopped, None
     LSCorePID = db.Column(db.Integer, index=True, unique=False, default=0)
     LSCoreStormEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
@@ -309,6 +311,8 @@ lsCore = api.model('Submit LS conf', {
 	'OS': fields.String(required=False, description='Host OS'),
 	'LPort': fields.Integer(required=True, description='Lumberjack port'),
 	'udpPort': fields.String(required=True, default=25826, description='UDP Collectd Port'),
+	'LSCoreHeap': fields.String(required=False, default='512m', description='Heap size for LS server'),
+	'LSCoreWorkers': fields.String(required=False, default='4', description='Number of workers for LS server'),
 	'ESClusterName': fields.String(required=True, description='ES cluster name'),   # TODO: use as foreign key same as ClusterName in esCore
 	'LSCoreStormEndpoint': fields.String(required=False, default='None', description='Storm REST Endpoint'),
 	'LSCoreStormPort': fields.String(required=False, default='None', description='Storm REST Port'),
@@ -1012,22 +1016,83 @@ class ESCoreConfiguration(Resource):
 			if key not in request.json:
 				response = jsonify({'Error': 'malformed request, missing key(s)'})
 				response.status_code = 400
-				return response 
-		test = db.session.query(dbESCore.hostFQDN).all()
-		if not test:
-			master = 1
-		else:
-			master = 0
-				
-		qESCore = dbESCore.query.filter_by(hostIP = request.json['IP']).first()
+				return response
+
+		qESCore = dbESCore.query.filter_by(hostIP=request.json['IP']).first()
 		if request.json["OS"] is None:
 			os = "unknown"
 		else:
 			os = request.json["OS"]
 
+		if request.json['ESCoreHeap'] is None:
+			ESHeap = '4g'
+		else:
+			ESHeap = request.json['ESCoreHeap']
+
+		if request.json['DataNode'] is None:
+			data = 1
+		else:
+			data = request.json['DataNode']
+
+		if request.json['NumOfShards'] is None:
+			shards = 1
+		else:
+			shards = request.json['NumOfShards']
+
+		if request.json['NumOfReplicas'] is None:
+			rep = 0
+		else:
+			rep = request.json['NumOfReplicas']
+
+		if request.json['FieldDataCacheSize'] is None:
+			fdcs = '20%'
+		else:
+			fdcs = request.json['FieldDataCacheSize']
+
+		if request.json['FieldDataCacheExpires'] is None:
+			fdce = '6h'
+		else:
+			fdce = request.json['FieldDataCacheExpires']
+
+		if request.json['FieldDataCacheFilterSize'] is None:
+			fdcfs = '20%'
+		else:
+			fdcfs = request.json['FieldDataCacheFilterSize']
+
+		if request.json['FieldDataCacheFilterExpires'] is None:
+			fdcfe = '6h'
+		else:
+			fdcfe = request.json['FieldDataCacheFilterExpires']
+
+		if request.json['IndexBufferSize'] is None:
+			ibs = '30%'
+		else:
+			ibs = request.json['IndexBufferSize']
+
+		if request.json['MinShardIndexBufferSize'] is None:
+			msibs = '12mb'
+		else:
+			msibs = request.json['MinShardIndexBufferSize']
+
+		if request.json['MinIndexBufferSize'] is None:
+			mibs = '96mb'
+		else:
+			mibs = request.json['MinIndexBufferSize']
+
+		test = db.session.query(dbESCore.hostFQDN).all() #TODO: it always sets the first node to master need to fix future version
+		if not test:
+			master = 1
+		else:
+			master = 0
+
 		if qESCore is None:
-			upES = dbESCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os, nodeName=request.json["NodeName"],
-			 clusterName=request.json["ESClusterName"], conf = 'none', nodePort=request.json['NodePort'], MasterNode=master)
+			upES = dbESCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os,
+							nodeName=request.json["NodeName"], clusterName=request.json["ESClusterName"],
+							conf='None', nodePort=request.json['NodePort'], MasterNode=master, DataNode=data,
+							ESCoreHeap=ESHeap, NumOfShards=shards, NumOfReplicas=rep, FieldDataCacheSize=fdcs,
+							FieldDataCacheExpires=fdce, FieldDataCacheFilterSize=fdcfs,
+							FieldDataCacheFilterExpires=fdcfe, IndexBufferSize=ibs, MinShardIndexBufferSize=msibs,
+							MinIndexBufferSize=mibs)
 			db.session.add(upES) 
 			db.session.commit()
 			response = jsonify({'Added': 'ES Config for ' + request.json["HostFQDN"]})
@@ -1039,6 +1104,28 @@ class ESCoreConfiguration(Resource):
 			qESCore.nodename = request.json['NodeName']
 			qESCore.clusterName = request.json['ESClusterName']
 			qESCore.nodePort = request.json['NodePort']
+			if request.json['DataNode'] == data:
+				qESCore.DataNode = data
+			if request.json['ESCoreHeap'] == ESHeap:
+				qESCore.ESCoreHeap = ESHeap
+			if request.json['NumOfShards'] == shards:
+				qESCore.NumOfShards = shards
+			if request.json['NumOfReplicas'] == rep:
+				qESCore.NumOfReplicas = rep
+			if request.json['FieldDataCacheSize'] == fdcs:
+				qESCore.FieldDataCacheSize = fdcs
+			if request.json['FieldDataCacheExpires'] == fdce:
+				qESCore.FieldDataCacheExpires = fdce
+			if request.json['FieldDataCacheFilterSize'] == fdcfs:
+				qESCore.FieldDataCacheFilterSize = fdcfs
+			if request.json['FieldDataCacheFilterExpires'] == fdcfe:
+				qESCore.FieldDataCacheFilterExpires = fdcfe
+			if request.json['IndexBufferSize'] == ibs:
+				qESCore.IndexBufferSize = ibs
+			if request.json['MinShardIndexBufferSize'] == msibs:
+				qESCore.MinShardIndexBufferSize = msibs
+			if request.json['MinIndexBufferSize'] ==mibs:
+				qESCore.MinIndexBufferSize = mibs
 			db.session.commit()
 			response = jsonify({'Updated': 'ES config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
@@ -1046,7 +1133,7 @@ class ESCoreConfiguration(Resource):
 
 
 @dmon.route('/v1/overlord/core/es/<hostFQDN>')
-@api.doc(params={'hostFQDN': 'Host FQDN.'})
+@api.doc(params={'hostFQDN': 'Host FQDN'})
 class ESCoreRemove(Resource):
 	def delete(self, hostFQDN):
 		qESCorePurge = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
@@ -1132,7 +1219,7 @@ class ESCoreController(Resource):
 			return response
 
 		if checkPID(qESCore.ESCorePID) is True:
-			subprocess.call(["kill", "-9", str(qESCore.ESCorePID)])
+			subprocess.call(["kill", "-15", str(qESCore.ESCorePID)])
 
 		try:
 			template = templateEnv.get_template(esTemp)
@@ -1162,7 +1249,9 @@ class ESCoreController(Resource):
 		#TODO find better solution
 		os.system('rm -rf /opt/elasticsearch/config/elasticsearch.yml')
 		os.system('cp ' + esfConf + ' /opt/elasticsearch/config/elasticsearch.yml ')
-		
+
+		os.environ['ES_HEAP_SIZE'] = qESCore.ESCoreHeap
+
 		esPid = 0
 		try:
 			esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch', stdout=subprocess.PIPE).pid  #TODO: Try -p to set pid file location
@@ -1486,10 +1575,47 @@ class LSCoreConfiguration(Resource):
 		else:
 			os = request.json["OS"]
 
+		if request.json["LSCoreHeap"] is None:
+			lsHeap = '4g'
+		else:
+			lsHeap = request.json["LSCoreHeap"]
+
+		if request.json["LSCoreWorkers"] is None:
+			lsWorkers = '4'
+		else:
+			lsWorkers = request.json["LsCoreWorkers"]
+
+		if request.json['LSCoreStormEndpoint'] is None:
+			StormEnd = 'None'
+		else:
+			StormEnd = request.json['LSCoreStormEndpoint']
+
+		if request.json['LSCoreStormPort'] is None:
+			StormPort = 'None'
+		else:
+			StormPort = request.json['LSCoreStormPort']
+
+		if request.json['LSCoreStormTopology'] is None:
+			StormTopo = 'None'
+		else:
+			StormTopo = request.json['LSCoreStormTopology']
+
+		if request.json['LSCoreSparkEndpoint'] is None:
+			SparkEnd = 'None'
+		else:
+			SparkEnd = request.json['LSCoreSparkEndpoint']
+
+		if request.json['LSCoreSparkPort'] is None:
+			SparkPort = 'None'
+		else:
+			SparkPort = request.json['LSCoreSparkPort']
+
 		if qSCore is None:
 			upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os,
 						  outESclusterName=request.json["ESClusterName"], udpPort = request.json["udpPort"],
-						  inLumberPort=request.json['LPort'])
+						  inLumberPort=request.json['LPort'], LSCoreWorkers = lsWorkers, LSCoreHeap = lsHeap,
+						  LSCoreStormEndpoint = StormEnd, LSCoreStormPort = StormPort, LSCoreStormTopology = StormTopo,
+						  LSCoreSparkEndpoint = SparkEnd, LSCoreSparkPort = SparkPort)
 			db.session.add(upS) 
 			db.session.commit()
 			response = jsonify({'Added': 'LS Config for ' + request.json["HostFQDN"]})
@@ -1498,9 +1624,21 @@ class LSCoreConfiguration(Resource):
 		else:
 			#qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
 			qSCore.hostOS = os
+			qSCore.LSCoreWorkers = lsWorkers
+			qSCore.LSCoreHeap = lsHeap
 			qSCore.outESclusterName = request.json['ESClusterName']
 			qSCore.udpPort = request.json['udpPort']
 			qSCore.inLumberPort = request.json['LPort']
+			if StormEnd != 'None':
+				qSCore.LSCoreStormEndpoint = StormEnd
+			if StormPort != 'None':
+				qSCore.LSCoreStormPort = StormPort
+			if StormTopo != 'None':
+				qSCore.LSCoreStormTopology = StormTopo
+			if SparkEnd != 'None':
+				qSCore.LSCoreSparkEndpoint = SparkEnd
+			if SparkPort != 'None':
+				qSCore.LSCoreSparkPort = SparkPort
 			db.session.commit()
 			response = jsonify({'Updated': 'LS config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
@@ -1592,10 +1730,13 @@ class LSCoreController(Resource):
 		lsCoreConf.write(sConf)
 		lsCoreConf.close()
 
+		os.environ['LS_HEAP_SIZE'] = os.getenv('LS_HEAP_SIZE', qSCore.LSCoreHeap) #TODO: if heap size set in env then use it if not use db one
+
 		lsLogfile = os.path.join(logDir, 'logstash.log')
 		lsPid = 0
+		LSServerCmd = '/opt/logstash/bin/logstash agent  -f %s -l %s -w %s' %(lsfCore, lsLogfile, qSCore.LSCoreWorkers)
 		try:
-			lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 4', shell=True).pid
+			lsPid = subprocess.Popen(LSServerCmd, shell=True).pid
 		except Exception as inst:
 			print >> sys.stderr, type(inst)
 			print >> sys.stderr, inst.args
