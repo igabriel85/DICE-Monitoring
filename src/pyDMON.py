@@ -986,8 +986,6 @@ class PurgeNode(Resource):
 		return response
 
 
-
-
 @dmon.route('/v1/overlord/core/es/config')#TODO use args for unsafe cfg file upload
 class ESCoreConfiguration(Resource):
 	def get(self):  #TODO same for all get config file createfunction
@@ -2195,6 +2193,42 @@ class AuxAgentDeploy(Resource):
 		return response
 
 
+@dmon.route('/v2/overlord/agent/start')
+class AuxAgentStart(Resource):
+	def post(self):
+		qNodeStatus = dbNodes.query.filter_by(nStatus=1).all()
+		if qNodeStatus is None:
+			response = jsonify({'Status': 'Agent Exception',
+								'Message': 'No agents are registered'})
+			response.status_code = 404
+			return response
+		dnode = []
+		for ns in qNodeStatus:
+			node = []
+			if ns.nMonitored is True:
+				break
+			else:
+				node.append(ns.nodeIP)
+
+			try:
+				startAgent(node, ns.nUser, ns.nPass)
+			except Exception as inst:
+				print >> sys.stderr, type(inst)
+				print >> sys.stderr, inst.args
+				response = jsonify({'Status': 'Error Starting agent on  ' + ns.nodeFQDN + '!'})
+				response.status_code = 500
+				return response
+			AgentNodes = {}
+			AgentNodes['Node'] = ns.nodeFQDN
+			AgentNodes['IP'] = ns.nodeIP
+			dnode.append(AgentNodes)
+			ns.nMonitored = 1
+		response = jsonify({'Status': 'Agents Started',
+							'Nodes': dnode})
+		response.status_code = 200
+		return response
+
+
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
 	def get(self):
@@ -2243,7 +2277,7 @@ class AuxDeployThread(Resource):
 		for n in nodeRes:
 			nodeIP = urlparse(n['Node'])
 			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
-			qNode.nStatus = 1  # TODO: Recheck nStatus and nMonitored roles when are they true and when are they false
+			qNode.nMonitored = 1  # TODO: Recheck nStatus and nMonitored roles when are they true and when are they false
 			if n['StatusCode'] != 201:
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
 									'Code': n['StatusCode']})
@@ -2303,7 +2337,7 @@ class AuxDeployCheckThread(Resource):
 			else:
 				qNode.nLogstashForwState = "None"
 				qNode.nCollectdState = "None"
-				qNode.nStatus = 0
+				qNode.nMonitored = 0
 
 			if i['StatusCode'] != 200:
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
