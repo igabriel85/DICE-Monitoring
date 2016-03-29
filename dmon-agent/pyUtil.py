@@ -165,7 +165,7 @@ class AuxComponent():
 
     def collectdStop(self):
         try:
-            cPid = open('/var/run/collectd.pid','r').readline()
+            cPid = open('/var/run/collectd.pid', 'r').readline()
             pidString = cPid.strip()
             pid = int(pidString)
         except IOError:

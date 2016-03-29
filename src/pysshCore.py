@@ -275,7 +275,7 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 # 	print "Stff"
 
 
-def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
+def uploadFile(hostlist, userName, password, fileLoc, fileName, upLoc):
 	'''
 		Uploads a specified file to target servers via ssh.
 
@@ -287,20 +287,21 @@ def uploadFile(hostlist,userName,password,fileLoc,fileName, upLoc):
 		upLoc    -> absolute path where the file needs to be saved in the target host
 
 	'''
-	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
-	cmdMove = 'mv '+fileName+' '+upLoc
+	client = ParallelSSHClient(hostlist, user=userName, password=password)
+	cmdMove = 'mv ' + fileName + ' ' + upLoc
 	try:	
-		client.copy_file(fileLoc,fileName)
+		client.copy_file(fileLoc, fileName)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while uploading file!"
 	try:	
-		client.run_command(cmdMove,sudo=True)
-		client.run_command('echo >> '+upLoc,sudo=True) #TODO replace ugly fix
+		client.run_command(cmdMove, sudo=True)
+		client.run_command('echo >> ' + upLoc, sudo=True) #TODO replace ugly fix
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured while moving file"
 		raise
 
-def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
+
+def serviceCtrl(hostlist, userName, uPassword, serviceName, command):
 	'''
 		Checks the status of aservice on remote servers.
 		Only supported commands are start, stop, status
@@ -311,7 +312,7 @@ def serviceCtrl(hostlist,userName,uPassword,serviceName, command):
 	'''
 	
 	if command not in ['status', 'stop', 'start', 'force-start']:
-		print "Command "+ command +" unsupported!"
+		print "Command " + command + " unsupported!"
 		exit()
 	try:
 		client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
@@ -349,7 +350,7 @@ def hostsScan(hostlist):
 	badHosts = []
 	
 	for host in hostlist:
-		response = os.system( "ping -c 1 " + host)
+		response = os.system("ping -c 1 " + host)
 		if response == 0:
 			print host, 'is up!'
 		else:
@@ -423,21 +424,20 @@ def nmapScan(hostlist, port='22-443'):
 
 def detectOS(hostlist, userName, uPassword):
 	hostOS = {}
-	client = ParallelSSHClient(hostlist, user=userName,password=uPassword)
+	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
 	cmdStr = "uname -a"
 	try:
 		output = client.run_command(cmdStr)
 		for host in output:
 			for line in output[host]['stdout']:
 				if 'Ubuntu' in line or 'ubuntu' in line:
-					hostOS.update({host:'Ubuntu'})
+					hostOS.update({host: 'Ubuntu'})
 				else:
-					hostOS.update({host:'Unknown'})
+					hostOS.update({host: 'Unknown'})
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
 		raise
 	return hostOS
-
 
 
 def checkSetup():
@@ -556,21 +556,26 @@ def deployAgent(hostlist, userName, uPassword):
 
 	try:
 		print "Creating certificate folders..."
-		client.run_command('mkdir /opt/dmo/certs', sudo=True) #TODO: handle duplicate certs
+		client.run_command('mkdir /opt/certs', sudo=True) #TODO: handle duplicate certs
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured creating /opt/test/certs!"
+		print "An exception has occured creating /opt/certs!"
 		raise
 
 	print "Copying certificate..."
 
+	try:
+		client.copy_file(localCopyCrt, "logstash-forwarder.crt")
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occured while uploading cert!"
+		raise
+
+	try:
+		client.run_command('mv logstash-forwarder.crt /opt/certs', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print 'An exception occured while copying cert!'
+		raise
+
 	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT', 'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz'))
-
-	# try:
-	# 	client.copy_file(localCopyCrt, "logstash-forwarder.crt")
-	# except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-	# 	print "An exception has occured while moving cert!"
-	# 	raise
-
 	try:
 		print "Copying dmon-agent ..."
 		client.run_command(agentUrl)
@@ -585,11 +590,11 @@ def deployAgent(hostlist, userName, uPassword):
 		print "Error while unpacking dmon-agent"
 		raise
 
-	try:
-		client.run_command('pip install -r /opt/dmon-agent/requirements.txt', sudo=True)
-	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "Error while installing dmon-agent dependencies"
-		raise
+	# try:
+	# 	client.run_command('pip install -r /opt/dmon-agent/requirements.txt', sudo=True)
+	# except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+	# 	print "Error while installing dmon-agent dependencies"
+	# 	raise
 
 
 def startAgent(hostlist, username, password):

@@ -65,7 +65,7 @@ def main(argv):
 			print" start.py -i -p 8088 -e 127.0.0.1 "
 			print "%-------------------------------------------------------------------------------------------%"
 			sys.exit()
-		if opt in ("-i","--core-install"):
+		if opt in ("-i", "--core-install"):
 			#hostfile=arg
 			if os.path.isfile('dmon.lock') is True: 
 				print >>sys.stderr, "D-Mon Core already installed!"
@@ -80,7 +80,7 @@ def main(argv):
 					print >> sys.stderr, type(inst)
 					print >> sys.stderr, inst.args
 					sys.exit(2)
-				lock =  open('dmon.lock',"w+")
+				lock =  open('dmon.lock', "w+")
 				lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				lock.close()
 				sys.exit(0) #exit when done
@@ -90,19 +90,19 @@ def main(argv):
 				sys.exit(2)
 			port = int(arg)
 		if opt in ("-e", "--endpoint-ip"):
-			if isinstance(arg,str) is not True:
+			if isinstance(arg, str) is not True:
 				print >> sys.stderr, "Argument must be string!"
 			ip = arg
 		if opt in ("-l", "--local"):#TODO add the ability to define local IP
 			if os.environ.get("WERKZEUG_RUN_MAIN") == "true":		
 				if opt in ("-l", "--local"):
-					if isinstance(arg,str) is not True:
+					if isinstance(arg, str) is not True:
 						print >> sys.stderr, "Argument must be string!"
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
 					print >> sys.stderr, chkESCoreDB
 					if chkESCoreDB is not None:
 						corePopES = dbESCore(hostFQDN=socket.getfqdn(), hostIP='127.0.0.1', hostOS='ubuntu', nodeName='esCoreMaster',
-							clusterName='diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1)
+							clusterName = 'diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1)
 						db.session.add(corePopES)
 						try:
 							db.session.commit() 
@@ -115,7 +115,7 @@ def main(argv):
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkLSCoreDB is not None:
-						corePopLS=dbSCore(hostFQDN=socket.getfqdn(),hostIP=socket.gethostbyname(socket.gethostname()),
+						corePopLS = dbSCore(hostFQDN=socket.getfqdn(),hostIP=socket.gethostbyname(socket.gethostname()),
 										  hostOS='ubuntu', outESclusterName='diceMonit', udpPort=25680,
 										  inLumberPort=5000)
 						db.session.add(corePopLS) 
@@ -145,7 +145,7 @@ def main(argv):
 
 	app.run(host = ip,port=port,debug=True)
 
-if __name__=='__main__':
+if __name__ == '__main__':
 	#directory locations
 	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 	tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
@@ -154,7 +154,7 @@ if __name__=='__main__':
 	pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 	#TODO add escore and lscore executable locations
 	
-	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir, 'dmon.db')
+	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 	db.create_all()
 	

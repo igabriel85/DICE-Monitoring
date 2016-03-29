@@ -4,6 +4,7 @@ ARCH=`uname -s`
 DIR=
 RE='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 RENR='^[0-9]+$'
+currentDate=$(date "+%Y.%m.%d-%H.%M.%S")
 
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`
@@ -20,6 +21,18 @@ if [ ! -d "$DIR/log" ]; then
   mkdir $DIR/log
 fi
 
+if [ ! -d "$DIR/cert" ]; then
+  mkdir $DIR/cert
+fi
+
+if [ ! -d "$DIR/lock" ]; then
+  mkdir $DIR/lock
+fi
+
+if [ ! -f "$DIR/lock/agent.lock" ]; then
+  apt-get install -y python-dev python-pip && pip install -r $DIR/requirements.txt
+  echo "Installed on: $currentDate" >> $DIR/lock/agent.lock
+fi
 
 if [ $# -eq 0 ]; then
     echo "Starting dmon-agent"

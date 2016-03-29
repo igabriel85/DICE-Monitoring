@@ -45,6 +45,7 @@ collectdConf = '/etc/collectd/collectd.conf'
 lsfConf = '/etc/logstash-forwarder.conf'
 lsfList = os.path.join(tmpDir, 'logstashforwarder.list')
 lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
+certLoc = '/opt/certs/logstash-forwarder.crt'
 
 # supported aux components
 # auxList = ['collectd', 'lsf', 'jmx']
@@ -144,6 +145,13 @@ class NodeDeployLSF(Resource):
                          'LSLumberPort': request.json['LumberjackPort']}
         app.logger.info('[%s] : [INFO] Logstash-Forwarder settings:  %s',
                         datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(settingsDict))
+        if not os.path.isfile(certLoc):
+            app.logger.warning('[%s] : [WARN] Logstash Server certificate not detected',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Env Error',
+                                'Message': 'LS Server certificate is missing'})
+            response.status_code = 404
+            return response
         aux.configureComponent(settingsDict, lsfTemp)
         aux.controll('logstash-forwarder', 'restart')
         response = jsonify({'Status': 'Done',
@@ -154,7 +162,7 @@ class NodeDeployLSF(Resource):
 
 @agent.route('/v1/jmx')
 class NodeDeployJMX(Resource):
-    def post(self): # TODO:  implement or remove.
+    def post(self):  # TODO:  implement or remove.
         return "JMX redeploy"
 
 
