@@ -229,6 +229,7 @@ class NodeMonitStopAll(Resource):
 
 
 @agent.route('/v1/start/<auxComp>')
+@api.doc(params={'auxComp': 'Can be collectd or lsf'})
 class NodeMonitStartSelective(Resource):
     def post(self, auxComp):
         if not aux.check(auxComp):
@@ -257,6 +258,7 @@ class NodeMonitStartSelective(Resource):
 
 
 @agent.route('/v1/stop/<auxComp>')
+@api.doc(params={'auxComp': 'Can be collectd or lsf'})
 class NodeMonitStopSelective(Resource):
     def post(self, auxComp):
         if not aux.check(auxComp):
@@ -298,6 +300,7 @@ class NodeLog(Resource):
 
 
 @agent.route('/v1/log/component/<auxComp>')
+@api.doc(params={'auxComp': 'Can be collectd or lsf'})
 class NodeMonitLogs(Resource):
     def get(self, auxComp):
         if not aux.check(auxComp):
@@ -332,6 +335,7 @@ class NodeMonitLogs(Resource):
 
 
 @agent.route('/v1/conf/<auxComp>')
+@api.doc(params={'auxComp': 'Can be collectd or lsf'})
 class NodeMonitConf(Resource):
     def get(self, auxComp):
         if not aux.check(auxComp):
@@ -375,6 +379,7 @@ class NodeCheck(Resource):  # TODO: implement check functionality
 
 
 @agent.route('/v1/bdp/<platform>')  #TODO: Needs testing
+@api.doc(params={'platform': 'Can be yarn or spark'})
 class AgentMetricsSystem(Resource):
     @api.expect(sparkProperties)
     def post(self, platform):
