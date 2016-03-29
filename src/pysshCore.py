@@ -470,10 +470,10 @@ def auxCtrl(auxComp,command):
     command -> Command to be executed on the auxiliary components.
     		   Can be start or stop
 	'''
-	auxList = ['collectd','lsf']
+	auxList = ['collectd', 'lsf']
 	cState = ''
 	if auxComp not in auxList:
-		response = jsonify({'Status':'No such such aux component '+ auxComp})
+		response = jsonify({'Status': 'No such such aux component ' + auxComp})
 		response.status_code = 400
 		return response
 
@@ -601,7 +601,7 @@ def startAgent(hostlist, username, password):
 	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
 	try:
 		print "Start Agent..."
-		client.run_command('./opt/dmon-agent/agent-start.sh', sudo=True)
+		client.run_command('./opt/dmon-agent/dmon-agent.sh', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occurred while starting dmon-agent!"
 		raise
@@ -618,7 +618,8 @@ def main(argv):
 	uPassword = ''
 	uKey = ' ' #location of secret key
 	try:
-		opts, args=getopt.getopt(argv,"hi:u:p:k:tdc",["hostFile","username","password","key","test","deploy","check"])
+		opts, args = getopt.getopt(argv, "hi:u:p:k:tdc", ["hostFile", "username",
+														  "password", "key", "test", "deploy", "check"])
 	except getopt.GetoptError:
 		print "%-------------------------------------------------------------------------------------------%"
 		print "Invalid argument! Arguments must take the form:"
@@ -636,10 +637,10 @@ def main(argv):
 			print "Usage Example:"
 			print "pysshCore -i <hostfile> -u <username> -p <password> -k <key>"
 			print"                                                                                              "
- 			print "NOTE: Secret key not yet suported only user and password auth!"
+			print "NOTE: Secret key not yet suported only user and password auth!"
 			print "%-------------------------------------------------------------------------------------------%"
 			sys.exit()
-		elif opt in ("-i","--hostFile"):
+		elif opt in ("-i", "--hostFile"):
 			#hostfile=arg
 			if os.path.isfile(arg) is not True:
 				print "ERROR: No such file", arg
@@ -653,14 +654,14 @@ def main(argv):
 					#print "&--------------------&"
 			except:
 				print "Caught Exception while opening file", arg
-		elif opt in ("-u","--username"):
+		elif opt in ("-u", "--username"):
 			userName=arg
 			#print userName
-		elif opt in ("-p","--password"):
+		elif opt in ("-p", "--password"):
 			uPassword = arg
 			#print uPassword
-		elif opt in ("-t","--test"):
-			if len(userName)==0 or len(uPassword)==0:
+		elif opt in ("-t", "--test"):
+			if len(userName) == 0 or len(uPassword)==0:
 				print "Must specify valid User Name and Password!"
 			else:
 				#Scan listed hosts
@@ -677,16 +678,16 @@ def main(argv):
 				#passing only active nodes to nmap
 				nmapScan(good)
 				print "%-------------------------------------------------------------------------------------------%"
-		elif opt in ("-d","--deploy"):
-			if len(userName)==0 or len(uPassword)==0:
+		elif opt in ("-d", "--deploy"):
+			if len(userName) == 0 or len(uPassword) == 0:
 				print "Must specify valid User Name and Password!"
 			else:
 				print "%-------------------------------------------------------------------------------------------%"
 				print "Starting Collectd deployment on hosts."
-				installCollectd(hostlist,userName,uPassword,confDir)
+				installCollectd(hostlist, userName, uPassword, confDir)
 				print ""
 				print "Starting Logstash-Forwarder deployment on hosts."
-				installLogstashForwarder(hostlist,userName,uPassword,confDir)
+				installLogstashForwarder(hostlist, userName, uPassword, confDir)
 				print ""
 				print "Deployment DONE!"
 				print "%-------------------------------------------------------------------------------------------%"
