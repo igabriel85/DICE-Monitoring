@@ -2248,7 +2248,12 @@ class AuxDeployThread(Resource):
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
 									'Code': n['StatusCode']})
 			print >> sys.stderr, str(n['Data']['Components'])
-			NodeDict[nodeIP.hostname] = n['Data']['Components']
+			try:
+				NodeDict[nodeIP.hostname] = n['Data']['Components']
+			except Exception as inst:
+				print >> sys.stderr, type(inst)
+				print >> sys.stderr, inst.args
+				NodeDict[nodeIP.hostname] = "Failed"
 		response = jsonify({'Status': 'Installed Aux ',
 							'Message': NodeDict,
 							'Failed': failedNodes})
