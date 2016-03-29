@@ -556,7 +556,7 @@ def deployAgent(hostlist, userName, uPassword):
 
 	try:
 		print "Creating certificate folders..."
-		client.run_command('mkdir /opt/test/certs', sudo=True)
+		client.run_command('mkdir /opt/dmo/certs', sudo=True) #TODO: handle duplicate certs
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured creating /opt/test/certs!"
 		raise

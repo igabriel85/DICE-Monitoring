@@ -45,6 +45,7 @@ from urlparse import urlparse
 from pyESController import *
 from pysshCore import *
 from dmonPerfMon import *
+from app import *
 #from dbModel import *
 from pyUtil import *
 # from threadRequest import *
@@ -72,14 +73,15 @@ lsCDir = '/etc/logstash/conf.d/'
 lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 
 
-app = Flask("D-MON")
-api = Api(app, version='0.2.0', title='DICE MONitoring API',
-    description='RESTful API for the DICE Monitoring Platform  (D-MON)',
-)
+# app = Flask("D-MON")
+# api = Api(app, version='0.2.0', title='DICE MONitoring API',
+#     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
+# )
 
 
 db = SQLAlchemy(app)
 # %--------------------------------------------------------------------%
+
 
 class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -209,7 +211,7 @@ class dbCDHMng(db.Model):
 #%--------------------------------------------------------------------%
 
 #changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
-dmon = api.namespace('dmon', description='D-MON operations')
+#dmon = api.namespace('dmon', description='D-MON operations')
 
 #argument parser
 dmonAux = api.parser() 
@@ -573,7 +575,6 @@ class OverlordFrameworkProperties(Resource):
 			rSparkProp = open(propSparkFile, 'r')
 			return send_file(rSparkProp, mimetype='text/x-java-properties', as_attachment=True) #TODO: Swagger returns same content each time, however sent file is correct
 			
-		
 
 @dmon.route('/v1/overlord/applicaiton/<appID>')
 class OverlordAppSubmit(Resource):
@@ -2189,7 +2190,7 @@ class AuxAgentDeploy(Resource):
 			updateAll = dbNodes.query.filter_by(nodeIP=a).first()
 			updateAll.nStatus = 1
 
-		response = jsonify({'Status': 'Done', 'Message': 'Agents Deloyed!'})
+		response = jsonify({'Status': 'Done', 'Message': 'Agents Installed!'})
 		response.status_code = 201
 		return response
 
