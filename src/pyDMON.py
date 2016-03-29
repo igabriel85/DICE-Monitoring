@@ -2322,6 +2322,7 @@ class AuxDeployCheckThread(Resource):
 
 			if i['Data'] != 'n/a':
 				qNode.nMonitored = 1
+				qNode.nStatus = 1
 				if i['Data']['LSF'] == 1:
 					qNode.nLogstashForwState = "Running"
 				elif i['Data']['LSF'] == 0:
