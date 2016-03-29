@@ -130,7 +130,9 @@ def main(argv):
 					chkKBCoreDB = db.session.query(dbKBCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkKBCoreDB is not None:
-						corePopKB = dbKBCore(hostFQDN=socket.getfqdn(),hostIP = socket.gethostbyname(socket.gethostname()), hostOS='ubuntu', kbPort = 5601)
+						corePopKB = dbKBCore(hostFQDN=socket.getfqdn(),
+											 hostIP=socket.gethostbyname(socket.gethostname()), hostOS='ubuntu',
+											 kbPort=5601)
 						db.session.add(corePopKB) 
 						try:
 							db.session.commit() 
@@ -146,13 +148,13 @@ def main(argv):
 if __name__=='__main__':
 	#directory locations
 	outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
-	tmpDir  = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+	tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 	cfgDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'conf')
 	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 	pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 	#TODO add escore and lscore executable locations
 	
-	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
+	app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir, 'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 	db.create_all()
 	

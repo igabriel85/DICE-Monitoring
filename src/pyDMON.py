@@ -73,7 +73,7 @@ lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 
 
 app = Flask("D-MON")
-api = Api(app, version='0.1.4', title='DICE MONitoring API',
+api = Api(app, version='0.2.0', title='DICE MONitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
@@ -2813,7 +2813,7 @@ class AuxStopSelectiveThreaded(Resource):
 							'Message': 'Component ' + auxComp + ' stopped!'})
 		response.status_code = 200
 		return response
-		return "same as v1"  # TODO: stop selected component
+		#return "same as v1"  # TODO: stop selected component
 
 
 @dmon.route('/v2/overlord/aux/<auxComp>/start')
@@ -2910,7 +2910,6 @@ class AuxStopAllThreaded(Resource):
 		response.status_code = 200
 
 		dmon.reset()
-
 		return response
 
 
@@ -2922,31 +2921,29 @@ Custom errot Handling
 
 @app.errorhandler(403)
 def forbidden(e):
-    response = jsonify({'error': 'forbidden'})
-    response.status_code = 403
-    return response
+	response = jsonify({'error': 'forbidden'})
+	response.status_code = 403
+	return response
 
 
 @app.errorhandler(404)
 def page_not_found(e):
-    response = jsonify({'error': 'not found'})
-    response.status_code = 404
-    return response
-   
+	response = jsonify({'error': 'not found'})
+	response.status_code = 404
+	return response
 
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    response = jsonify({'error': 'internal server error'})
-    response.status_code = 500
-    return response
-   
+	response = jsonify({'error': 'internal server error'})
+	response.status_code = 500
+	return response
 
 @app.errorhandler(405)
 def meth_not_allowed(e):
-    response = jsonify({'error': 'method not allowed'})
-    response.status_code = 405
-    return response
+	response = jsonify({'error': 'method not allowed'})
+	response.status_code = 405
+	return response
 
 @api.errorhandler(400)
 def bad_request(e):
