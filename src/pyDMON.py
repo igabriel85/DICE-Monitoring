@@ -2247,6 +2247,7 @@ class AuxDeployThread(Resource):
 			if n['StatusCode'] != 201:
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
 									'Code': n['StatusCode']})
+			print >> sys.stderr, str(n['Data']['Components'])
 			NodeDict[nodeIP.hostname] = n['Data']['Components']
 		response = jsonify({'Status': 'Installed Aux ',
 							'Message': NodeDict,
