@@ -607,7 +607,7 @@ def startAgent(hostlist, username, password):
 	client = ParallelSSHClient(hostlist, user=username, password=password)
 	try:
 		print "Start Agent..."
-		client.run_command('./opt/dmon-agent/dmon-agent.sh', sudo=True)
+		client.run_command('bash /opt/dmon-agent/dmon-agent.sh', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occurred while starting dmon-agent!"
 		raise
@@ -624,7 +624,7 @@ def stopAgent(hostlist, username, password):
 	client = ParallelSSHClient(hostlist, user=username, password=password)
 	try:
 		print "Stop Agent..."
-		client.run_command('./opt/dmon-agent/dmon-agent.sh stop', sudo=True)
+		client.run_command('bash /opt/dmon-agent/dmon-agent.sh stop', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occurred while stopping dmon-agent!"
 		raise
