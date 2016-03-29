@@ -2237,7 +2237,7 @@ class AuxDeployThread(Resource):
 
 		dmon = GreenletRequests(resFin)
 		nodeRes = dmon.parallelPost(None)
-
+		print >> sys.stderr, str(nodeRes)
 		failedNodes = []
 		NodeDict = {}
 		for n in nodeRes:
