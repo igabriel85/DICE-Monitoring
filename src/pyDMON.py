@@ -2321,6 +2321,7 @@ class AuxDeployCheckThread(Resource):
 			qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
 
 			if i['Data'] != 'n/a':
+				qNode.nMonitored = 1
 				if i['Data']['LSF'] == 1:
 					qNode.nLogstashForwState = "Running"
 				elif i['Data']['LSF'] == 0:
@@ -2337,11 +2338,11 @@ class AuxDeployCheckThread(Resource):
 			else:
 				qNode.nLogstashForwState = "None"
 				qNode.nCollectdState = "None"
-				qNode.nMonitored = 0
 
 			if i['StatusCode'] != 200:
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
 									'Code': i['StatusCode']})
+				qNode.nMonitored = 0
 
 		response = jsonify({'Status': 'Update',
 						  'Message': 'Nodes updated!',
