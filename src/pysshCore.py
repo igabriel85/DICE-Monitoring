@@ -579,17 +579,18 @@ def deployAgent(hostlist, userName, uPassword):
 		raise
 
 	try:
-		client.run_command('mv dmon-agent.tar.gz /opt')
-		client.run_command('tar xvf /opt/dmon-agent.tar.gz')
+		client.run_command('mv dmon-agent.tar.gz /opt', sudo=True)
+		client.run_command('tar xvf /opt/dmon-agent.tar.gz', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while unpacking dmon-agent"
 		raise
 
 	try:
-		client.run_command('pip install -r /opt/dmon-agent/requirements.txt')
+		client.run_command('pip install -r /opt/dmon-agent/requirements.txt', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while installing dmon-agent dependencies"
 		raise
+
 
 def startAgent(hostlist, username, password):
 	'''
