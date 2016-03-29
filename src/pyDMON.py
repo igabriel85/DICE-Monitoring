@@ -2298,6 +2298,7 @@ class AuxDeployCheckThread(Resource):
 			else:
 				qNode.nLogstashForwState = "None"
 				qNode.nCollectdState = "None"
+				qNode.nStatus = 0
 
 			if i['StatusCode'] != 200:
 				failedNodes.append({'NodeIP': str(nodeIP.hostname),
