@@ -35,7 +35,7 @@ def installLsf(listLocation, lsfGPG):
         print >> sys.stderr, "Logstash-forwarder already installed!"
     else:
         try:
-            p1 = subprocess.Popen('sudo mv ' + listLocation + ' /etc/apt/source.list.d/logstashforwarder.list',
+            p1 = subprocess.Popen('sudo mv ' + listLocation + ' /etc/apt/source.list.d/',
                                   shell=True)
             p1.wait()
         except Exception as inst:
