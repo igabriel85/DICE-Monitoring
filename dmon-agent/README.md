@@ -52,8 +52,51 @@ sudo ./dmon-agent.sh stop
 ###Using DICE Monitoring Controller (dmon-controller)
 Monitoring agents can be installed using the dmon-controller by first registering the nodes into the monitoring platform. 
 
+First we can  check if monitoring agents are alrady installed on the registered nodes using:
+
+`GET` `/dmon/v2/overlord/aux/agent`
+
+Then we can install _dmon-agents_ on all registered nodes which don't yet have the agent installed.
+
+`POST` `/dmon/v2/overlord/aux/agent`
+
+We can also check the current status of the agent. By this we mean if the agent is installed but not started and the current status of collectd and logstash-forwarder.
+
+`GET` `/dmon/v2/overlord/aux/deploy`
+
+Which returns:
+
+```json
+{
+  "Aux Status": [
+    {
+      "Collectd": "<cd_status>",
+      "LSF": "<lsf_status>",
+      "Monitored": "<true|false>",
+      "NodeFQDN": "<node_fqdn>",
+      "NodeIP": "<node_ip>"
+    }
+  ]
+}
+```
+
+**Note:** Monitored is set to _true_ of dmon-agent is detected on that node otherwise it is set to _false_.
+
+Whe then can deploy configurations to allnodes (config based on their roles) or on specific nodes identified by their _FQDN_.
+
+For all nodes use:
+
+`POST` `/dmon/v2/overlord/aux/deploy`
+
+For specific nodes use:
+
+`POST` `/dmon/v2/overlord/aux/deploy/<auxComp>/<nodeFQDN>`
+
+
+
 ###Using DICE Deployment Service
-__TODO__
+
+**NOTE:** Note schedueled for M12.
 
 ##REST API Structure
 **NOTE:** This is a preliminary structure of the REST API. It may be subject to changes!
