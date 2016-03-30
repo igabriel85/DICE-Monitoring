@@ -570,7 +570,7 @@ def deployAgent(hostlist, userName, uPassword):
 		raise
 
 	try:
-		client.run_command('mv logstash-forwarder.crt /opt/certs', sudo=True)
+		client.run_command('mv logstash-forwarder.crt /opt/certs/', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print 'An exception occured while copying cert!'
 		raise
@@ -584,7 +584,7 @@ def deployAgent(hostlist, userName, uPassword):
 		raise
 
 	try:
-		client.run_command('mv dmon-agent.tar.gz /opt', sudo=True)
+		client.run_command('mv dmon-agent.tar.gz /opt/', sudo=True)
 		client.run_command('tar xvf /opt/dmon-agent.tar.gz -C /opt', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while unpacking dmon-agent"

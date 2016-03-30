@@ -5,6 +5,7 @@ import datetime
 import time
 import jinja2
 from flask import jsonify
+from app import *
 
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
 pidDir = '/var/run'
@@ -15,14 +16,20 @@ def installCollectd():
     '''
     collectdLock = os.path.join(lockDir, 'collectd.lock')
     if os.path.isfile(collectdLock) is True:
-        print >> sys.stderr, "Collectd already installed!"
+        # print >> sys.stderr, "Collectd already installed!"
+        app.logger.warning('[%s] : [WANR] Collectd alrady installed',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
     else:
         try:
             p1 = subprocess.Popen('sudo apt-get install -y collectd', shell=True)
             p1.wait()
+            app.logger.info('[%s] : [INFO] Done installing collectd',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [WARN] Cannot install collectd: %s with %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
         lock = open(collectdLock, "w+")
         lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
@@ -32,44 +39,66 @@ def installCollectd():
 def installLsf(listLocation, lsfGPG):
     lsfLock = os.path.join(lockDir, 'lsf.lock')
     if os.path.isfile(lsfLock) is True:
-        print >> sys.stderr, "Logstash-forwarder already installed!"
+        # print >> sys.stderr, "Logstash-forwarder already installed!"
+        app.logger.warning('[%s] : [WARN] LSF already installed!',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
     else:
         try:
             p1 = subprocess.Popen('sudo mv ' + listLocation + ' /etc/apt/source.list.d/',
                                   shell=True)
             p1.wait()
+            app.logger.info('[%s] : [INFO] Moved sourcelist for lsf',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [WARN] Cannot copy lsf sourcelist: %s with %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
         try:
             pro = subprocess.Popen('wget http://packages.elasticsearch.org/GPG-KEY-elasticsearch -O ' + lsfGPG,
                                    shell=True)
             pro.wait()
+            app.logger.info('[%s] : [INFO] Done moving GPG key to %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), lsfGPG)
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [WARN] Cannot download GPG key for elasticsearch: %s with %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
         try:
             p2 = subprocess.Popen('sudo apt-key add ' + lsfGPG, shell=True)
             p2.wait()
+            app.logger.info('[%s] : [INFO] Added Elasticsearch GPG Key',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [WARN] Cannot add lsf to application repository: %s with %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
         try:
             p3 = subprocess.Popen('sudo apt-get update', shell=True)
             p3.wait()
+            app.logger.info('[%s] : [INFO] Finished updating repository',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [WARN] Cannot update application repository: %s with %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
         try:
             p4 = subprocess.Popen('sudo apt-get install -y logstash-forwarder', shell=True)
             p4.wait()
+            app.logger.info('[%s] : [INFO] Finished installing logstash-forwarder',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [WARN] Cannot install logstash-forwarder: %s with %s',
+                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
         lock = open(lsfLock, "w+")
         lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
@@ -92,6 +121,7 @@ def checkPID(pid):
 		return 0
 	else:
 		return 1
+
 
 class AuxComponent():
     """Controlling auxiliary monitoring components
@@ -171,28 +201,34 @@ class AuxComponent():
         except IOError:
             return 0
 
-
     def checkAux(self, component):
         if component == 'collectd':
-            if not os.path.join(pidDir, 'collectdmon.pid'):
-                pass
-            else:
+            if os.path.isfile(os.path.join(pidDir, 'collectdmon.pid')):
+                app.logger.info('[%s] : [INFO] collectdmon pid file found',
+                                   datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 component = 'collectdmon'
         pidPath = os.path.join(pidDir, component + '.pid')
+        app.logger.info('[%s] : [INFO] Component name - %s pid file location  %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), component, pidPath)
         if not os.path.isfile(pidPath):
+            app.logger.info('[%s] : [INFO] collectd pid file not found',
+                                   datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return 0
 
         try:
             pid = open(pidPath).readline()
             pidString = pid.strip()
-            print pidString
             pidint = int(pidString)
+            app.logger.info('[%s] : [INFO] Collectd started with PID: %s',
+                                   datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), pidString)
         except IOError:
             return 0
 
         try:
             os.kill(pidint, 0)
         except OSError:
+            app.logger.warning('[%s] : [WARN] PID check failed for %s',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), component)
             return 0
         else:
             return 1
