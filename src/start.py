@@ -30,6 +30,7 @@ from sqlalchemy import desc
 import sqlite3, os
 import socket
 from flask.ext.sqlalchemy import SQLAlchemy
+from logging.handlers import RotatingFileHandler
 
 
 def main(argv):
@@ -39,7 +40,7 @@ def main(argv):
 	port = 5001
 	ip = '0.0.0.0'
 	try:
-		opts, args=getopt.getopt(argv,"hi:p:e:l:",["core-install","port","endpoint-ip","local"])
+		opts, args = getopt.getopt(argv, "hi:p:e:l:", ["core-install", "port", "endpoint-ip", "local"])
 	except getopt.GetoptError:
 		print "%-------------------------------------------------------------------------------------------%"
 		print "Invalid argument! Arguments must take the form:"
@@ -85,7 +86,7 @@ def main(argv):
 				lock.close()
 				sys.exit(0) #exit when done
 		if opt in ("-p", "--port"):
-			if isinstance(int(arg),int) is not True:
+			if isinstance(int(arg), int) is not True:
 				print >> sys.stderr, "Argument must be an integer!"
 				sys.exit(2)
 			port = int(arg)
@@ -115,7 +116,7 @@ def main(argv):
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
 					print >> sys.stderr, chkLSCoreDB
 					if chkLSCoreDB is not None:
-						corePopLS = dbSCore(hostFQDN=socket.getfqdn(),hostIP=socket.gethostbyname(socket.gethostname()),
+						corePopLS = dbSCore(hostFQDN=socket.getfqdn(), hostIP=socket.gethostbyname(socket.gethostname()),
 										  hostOS='ubuntu', outESclusterName='diceMonit', udpPort=25680,
 										  inLumberPort=5000)
 						db.session.add(corePopLS) 
@@ -142,8 +143,7 @@ def main(argv):
 							print >> sys.stderr, inst.args
 							pass
 
-
-	app.run(host = ip,port=port,debug=True)
+	app.run(host=ip, port=port, debug=True)
 
 if __name__ == '__main__':
 	#directory locations
@@ -157,7 +157,12 @@ if __name__ == '__main__':
 	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 	db.create_all()
-	
+	handler = RotatingFileHandler(logDir + '/dmon-controller.log', maxBytes=10000000, backupCount=5)
+	handler.setLevel(logging.INFO)
+	app.logger.addHandler(handler)
+	log = logging.getLogger('werkzeug')
+	log.setLevel(logging.DEBUG)
+	log.addHandler(handler)
 	print '''
 	██████╗       ███╗   ███╗ ██████╗ ███╗   ██╗
 	██╔══██╗      ████╗ ████║██╔═══██╗████╗  ██║

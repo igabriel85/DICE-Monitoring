@@ -668,7 +668,7 @@ def main(argv):
 				print "ERROR: No such file", arg
 				sys.exit(2)
 			try:
-				with open(arg,'r') as f:
+				with open(arg, 'r') as f:
 					hostlist = [line.strip() for line in f] #strip new line char from end of file
 					#print "These are the submitted hosts:"
 					#print hostlist
