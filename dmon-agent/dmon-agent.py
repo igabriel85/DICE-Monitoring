@@ -99,6 +99,8 @@ class NodeDeploy(Resource):
     @api.expect(nodeRoles)
     def post(self):
         rolesList = request.json['roles']
+        app.logger.info('[%s] : [INFO] Role list received: %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(rolesList))
         try:
             aComp = aux.install(rolesList)
         except Exception as inst:
