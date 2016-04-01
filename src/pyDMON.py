@@ -1028,52 +1028,52 @@ class ESCoreConfiguration(Resource):
 		else:
 			ESHeap = request.json['ESCoreHeap']
 
-		if request.json['DataNode'] is None:
+		if 'DataNode' not in request.json:
 			data = 1
 		else:
 			data = request.json['DataNode']
 
-		if request.json['NumOfShards'] is None:
+		if 'NumOfShards' not in request.json:
 			shards = 1
 		else:
 			shards = request.json['NumOfShards']
 
-		if request.json['NumOfReplicas'] is None:
+		if 'NumOfReplicas' not in request.json:
 			rep = 0
 		else:
 			rep = request.json['NumOfReplicas']
 
-		if request.json['FieldDataCacheSize'] is None:
+		if 'FieldDataCacheSize' not in request.json:
 			fdcs = '20%'
 		else:
 			fdcs = request.json['FieldDataCacheSize']
 
-		if request.json['FieldDataCacheExpires'] is None:
+		if 'FieldDataCacheExpires' not in request.json:
 			fdce = '6h'
 		else:
 			fdce = request.json['FieldDataCacheExpires']
 
-		if request.json['FieldDataCacheFilterSize'] is None:
+		if 'FieldDataCacheFilterSize' not in request.json:
 			fdcfs = '20%'
 		else:
 			fdcfs = request.json['FieldDataCacheFilterSize']
 
-		if request.json['FieldDataCacheFilterExpires'] is None:
+		if 'FieldDataCacheFilterExpires' not in request.json:
 			fdcfe = '6h'
 		else:
 			fdcfe = request.json['FieldDataCacheFilterExpires']
 
-		if request.json['IndexBufferSize'] is None:
+		if 'IndexBufferSize' not in request.json:
 			ibs = '30%'
 		else:
 			ibs = request.json['IndexBufferSize']
 
-		if request.json['MinShardIndexBufferSize'] is None:
+		if 'MinShardIndexBufferSize' not in request.json:
 			msibs = '12mb'
 		else:
 			msibs = request.json['MinShardIndexBufferSize']
 
-		if request.json['MinIndexBufferSize'] is None:
+		if 'MinIndexBufferSize' not in request.json:
 			mibs = '96mb'
 		else:
 			mibs = request.json['MinIndexBufferSize']
@@ -1103,28 +1103,61 @@ class ESCoreConfiguration(Resource):
 			qESCore.nodename = request.json['NodeName']
 			qESCore.clusterName = request.json['ESClusterName']
 			qESCore.nodePort = request.json['NodePort']
-			if request.json['DataNode'] == data:
+			if 'DataNode' not in request.json:
+				print >> sys.stderr, 'DataNode unchanged'
+			elif request.json['DataNode'] == data:
 				qESCore.DataNode = data
-			if request.json['ESCoreHeap'] == ESHeap:
+				print >> sys.stderr, 'DataNode set to ' + data
+			if 'ESCoreHeap' not in request.json:
+				print >> sys.stderr, 'ESCoreHeap unchanged'
+			elif request.json['ESCoreHeap'] == ESHeap:
 				qESCore.ESCoreHeap = ESHeap
-			if request.json['NumOfShards'] == shards:
+				print >> sys.stderr, 'ESCoreHeap set to ' + ESHeap
+			if 'NumOfShards' not in request.json:
+				print >> sys.stderr, 'NumOfShards unchanged'
+			elif request.json['NumOfShards'] == shards:
 				qESCore.NumOfShards = shards
-			if request.json['NumOfReplicas'] == rep:
+				print >> sys.stderr, 'NumOfShards set to ' + shards
+			if 'NumOfReplicas' not in request.json:
+				print >> sys.stderr, 'NumOfReplicas unchanged'
+			elif request.json['NumOfReplicas'] == rep:
 				qESCore.NumOfReplicas = rep
-			if request.json['FieldDataCacheSize'] == fdcs:
+				print >> sys.stderr, 'NumOfReplicas set to ' + rep
+			if 'FieldDataCacheSize' not in request.json:
+				print >> sys.stderr, 'FieldDataCacheSize unchanged'
+			elif request.json['FieldDataCacheSize'] == fdcs:
 				qESCore.FieldDataCacheSize = fdcs
-			if request.json['FieldDataCacheExpires'] == fdce:
+				print >> sys.stderr, 'FieldDataCacheSize set to ' + fdcs
+			if 'FieldDataCacheExpires' not in request.json:
+				print >> sys.stderr, 'FieldDataCacheExpires unchanged'
+			elif request.json['FieldDataCacheExpires'] == fdce:
 				qESCore.FieldDataCacheExpires = fdce
-			if request.json['FieldDataCacheFilterSize'] == fdcfs:
+				print >> sys.stderr, 'FieldDataCacheExpires set to ' + fdce
+			if 'FieldDataCacheFilterSize' not in request.json:
+				print >> sys.stderr, 'FieldDataCacheFilterSize unchanged'
+			elif request.json['FieldDataCacheFilterSize'] == fdcfs:
 				qESCore.FieldDataCacheFilterSize = fdcfs
-			if request.json['FieldDataCacheFilterExpires'] == fdcfe:
+				print >> sys.stderr, 'FieldDataCacheFilterSize set to ' + fdcfs
+			if 'FieldDataCacheFilterExpires' not in request.json:
+				print >> sys.stderr, 'FieldDataCacheFilterExpires unchanged'
+			elif request.json['FieldDataCacheFilterExpires'] == fdcfe:
 				qESCore.FieldDataCacheFilterExpires = fdcfe
-			if request.json['IndexBufferSize'] == ibs:
+				print >> sys.stderr, 'FieldDataCacheFilterExpires set to ' + fdcfe
+			if 'IndexBufferSize' not in request.json:
+				print >> sys.stderr, 'IndexBufferSize unchanged'
+			elif request.json['IndexBufferSize'] == ibs:
 				qESCore.IndexBufferSize = ibs
-			if request.json['MinShardIndexBufferSize'] == msibs:
+				print >> sys.stderr, 'IndexBufferSize set to ' + ibs
+			if 'MinShardIndexBufferSize' not in request.json:
+				print >> sys.stderr, 'MinShardIndexBufferSize unchanged'
+			elif request.json['MinShardIndexBufferSize'] == msibs:
 				qESCore.MinShardIndexBufferSize = msibs
-			if request.json['MinIndexBufferSize'] ==mibs:
+				print >> sys.stderr, 'MinShardIndexBufferSize set to ' + msibs
+			if 'MinIndexBufferSize' not in request.json:
+				print >> sys.stderr, 'MinIndexBufferSize unchanged'
+			elif request.json['MinIndexBufferSize'] == mibs:
 				qESCore.MinIndexBufferSize = mibs
+				print >> sys.stderr, 'MinIndexBufferSize set to ' + mibs
 			db.session.commit()
 			response = jsonify({'Updated': 'ES config for ' + request.json["HostFQDN"]})
 			response.status_code = 201
