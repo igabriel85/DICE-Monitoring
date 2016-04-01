@@ -25,6 +25,9 @@ from rdflib.namespace import Namespace, NamespaceManager
 from rdflib import RDFS
 from rdflib import Graph
 import sys
+from app import *
+import time
+import datetime
 
 
 def jsonToPerfMon(data, format='xml'):
@@ -51,16 +54,19 @@ def jsonToPerfMon(data, format='xml'):
 
     for d in nestedData:
         if d['_source']['plugin'] == 'load':
-            print >> sys.stderr, "load"
+            app.logger.info('[%s] : [INFO] Load value detected in query',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             # print d['_source']['shortterm']
             # print d['_source']['longterm']
             # print d['_source']['midterm']
         elif d['_source']['plugin'] == 'interface':
-            print >> sys.stderr, 'interface'
+            app.logger.info('[%s] : [INFO] Interface value detected in query',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             # print d['_source']['rx']
             # print d['_source']['tx']
         elif d['_source']['plugin'] == 'cpu':
-            print >> sys.stderr, 'cpu'
+            app.logger.info('[%s] : [INFO] CPU value detected in query',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             cpu = URIRef('http://perfmon-provider.example.org/rec001#cpuutil' + str(d['_source']['value']))
             g.add((rdflib.URIRef('http://perfmon-provider.example.org/rec001#cpuutil10'), RDFS.label, rdflib.Literal('CPU Utilization')))
             g.add((cpu, ems.numericValue, rdflib.Literal(d['_source']['value'])))
@@ -69,7 +75,8 @@ def jsonToPerfMon(data, format='xml'):
             g.add((cpu, dcterms.title, rdflib.Literal('CPU Utilization')))
             g.add((cpu, rdf.type, rdflib.URIRef('http://open-services.net/ns/ems#Measure')))
         elif d['_source']['plugin'] == 'memory' and d['_source']['type_instance'] == 'used':
-            print >> sys.stderr, 'memory'
+            app.logger.info('[%s] : [INFO] Memory value detected in query',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             memory = URIRef('http://perfmon-provider.example.org/rec001#realmemutil' + str(d['_source']['value']))
             g.add((memory, ems.numericValue, rdflib.Literal(d['_source']['value'])))
             g.add((memory, ems.unitOfMeasure, rdflib.URIRef('http://dbpedia.org/resource/Percentage')))
@@ -79,11 +86,13 @@ def jsonToPerfMon(data, format='xml'):
             # print d['_source']['value']
             # print d['_source']['type_instance']
         else:
-            print >> sys.stderr, 'something'
+            app.logger.info('[%s] : [INFO] Unknown value detected in query',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             # print d['_source']['value']
             # print d['_source']['type_instance']
         counter += 1
     return g.serialize(format=format)
+
 
 def checkifJson(json):
     try:

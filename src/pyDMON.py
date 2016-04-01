@@ -870,6 +870,7 @@ class ClusterRoles(Resource):
         if nodes is None:
             response = jsonify({'Status': 'No monitored nodes found'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No registererd nodes found', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
         yarnList = []
@@ -896,12 +897,14 @@ class ClusterRoles(Resource):
                 except:
                     response = jsonify({'Status': 'I/O Error', 'Message': 'Template file missing!'})
                     response.status_code = 500
+                    app.logger.error('[%s] : [ERROR] Spark properties template missing', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                     return response
 
                 qLSCore = dbSCore.query.first() #TODO: Only works for single deployment
                 if qLSCore is None:
                     response = jsonify({'Status': 'Missing Instance', 'Message': 'No Logstash Instance Configured'})
                     response.status_code = 404
+                    app.logger.warning('[%s] : [WARN] No LS instance registered')
                     return response
                 infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
                 propSparkInfo=template.render(infoSpark)
@@ -932,6 +935,8 @@ class MonitoredNodeInfo(Resource):
         if qNode is None:
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found!'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No node %s found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
             return response
         else:
             response = jsonify({
@@ -940,24 +945,30 @@ class MonitoredNodeInfo(Resource):
                 'IP': qNode.nodeIP,
                 'Monitored': qNode.nMonitored,
                 'OS': qNode.nodeOS,
-                'Key': qNode.nkey,
-                'Password': qNode.nPass,
-                'User': qNode.nUser, #TODO Chef client status, and CDH status
+                'Key': qNode.nkey, #TODO Chef client status, and CDH status
                 'Roles': qNode.nRoles,
                 'LSInstance': qNode.nLogstashInstance
             })
             response.status_code = 200
+            app.logger.info('[%s] : [INFO] Node info -> Status:%s, IP:%s, Monitored:%s, OS:%s, LSInstance: %s, Key:%s, Roles:%s, ',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qNode.nStatus,
+                            qNode.nodeIP, qNode.nMonitored, qNode.nodeOS, qNode.nLogstashInstance, qNode.nkey,
+                            str(qNode.nRoles))
             return response
 
     @api.expect(nodeUpdate)
     def put(self, nodeFQDN):
         if not request.json:
             abort(400)
+            app.logger.warning('[%s] : [WARN] Malformed request, not json',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
         nLSI = ''
         if qNode is None:
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found!'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No node %s found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
             return response
         else:
             qNode.nodeIP = request.json['IP']
@@ -973,6 +984,9 @@ class MonitoredNodeInfo(Resource):
                     nLSI = qLSCore.hostIP
             else:
                 nLSI = request.json['LogstashInstance']
+                app.logger.info('[%s] : [INFO] LS Instance changed for node %s from %s to %s',
+                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                    qNode.nodeFQDN, qNode.nLogstashInstance, nLSI)
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' updated!'})
             qNode.nLogstashInstance = nLSI
             response.status_code = 201
@@ -986,31 +1000,39 @@ class MonitoredNodeInfo(Resource):
         if dNode is None:
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No node %s found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
             return response
         dlist = []
         dlist.append(dNode.nodeIP)
         try:
             serviceCtrl(dlist, dNode.nUser, dNode.nPass, 'collectd', 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
             response = jsonify({'Error': 'Collectd stopping error!'})
             response.status_code = 500
+            app.logger.error('[%s] : [ERROR] Error while stopping collectd with %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             return response
 
         try:
             serviceCtrl(dlist, dNode.nUser, dNode.nPass, 'logstash-forwarder', 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
             response = jsonify({'Error': 'LSF stopping error!'})
             response.status_code = 500
+            app.logger.error('[%s] : [ERROR] Error while stopping lsf with %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             return response
         dNode.nMonitored = 0
         dNode.nCollectdState = 'Stopped'
         dNode.nLogstashForwState = 'Stopped'
         response = jsonify({'Status': 'Node ' + nodeFQDN + ' monitoring stopped!'})
         response.status_code = 200
+        app.logger.info('[%s] : [INFO] Monitoring stopped on node %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
         return response
 
 
@@ -1022,12 +1044,16 @@ class ClusterNodeRoles(Resource):
         if qNode is None:
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found'})
             response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No node %s found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
             return response
         else:
             listRoles = request.json['Roles']
             qNode.nRoles = ', '.join(map(str, listRoles))
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' roles updated!'})
             response.status_code = 201
+            app.logger.info('[%s] : [INFO] Node %s roles %s added.',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN, str(qNode.nRoles))
             return response
 
     def post(self, nodeFQDN):
@@ -1041,31 +1067,38 @@ class PurgeNode(Resource):
         qPurge = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
         if qPurge is None:
             abort(404)
-
+            app.logger.warning('[%s] : [WARN] No node %s found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
         lPurge = []
         lPurge.append(qPurge.nodeIP)
         try:
             serviceCtrl(lPurge, qPurge.uUser, qPurge.uPass, 'logstash-forwarder', 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
             response = jsonify({'Error': 'Stopping LSF!'})
             response.status_code = 500
+            app.logger.error('[%s] : [ERROR] While stopping LSF on %s with %s and %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN, type(inst),
+                             inst.args)
             return response
-
         try:
             serviceCtrl(lPurge, qPurge.uUser, qPurge.uPass, 'collectd', 'stop')
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
             response = jsonify({'Error': 'Stopping collectd!'})
             response.status_code = 500
+            app.logger.error('[%s] : [ERROR] While stopping collectd on %s with %s and %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN, type(inst), inst.args)
             return response
 
         db.session.delete(qPurge)
         db.session.commit()
         response = jsonify({'Status': 'Node ' + nodeFQDN + ' deleted!'})
         response.status_code = 200
+        app.logger.info('[%s] : [INFO] Node %s deleted',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
         return response
 
 
@@ -1075,18 +1108,23 @@ class ESCoreConfiguration(Resource):
         if not os.path.isdir(cfgDir):
             response = jsonify({'Error': 'Config dir not found !'})
             response.status_code = 404
+            app.logger.error('[%s] : [ERROR] Config dir not found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         if not os.path.isfile(os.path.join(cfgDir, 'elasticsearch.yml')):
             response = jsonify({'Status': 'Config file not found !'})
             response.status_code = 404
+            app.logger.error('[%s] : [ERROR] ES config dir not found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         try:
             esCfgfile = open(os.path.join(cfgDir, 'elasticsearch.yml'), 'r')
         except EnvironmentError:
             response = jsonify({'EnvError': 'file not found'})
             response.status_code = 500
+            app.logger.error('[%s] : [ERROR] ES config file failed to open',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
-
         return send_file(esCfgfile, mimetype='text/yaml', as_attachment=True)
 
     @api.expect(esCore)
@@ -1105,62 +1143,50 @@ class ESCoreConfiguration(Resource):
             os = "unknown"
         else:
             os = request.json["OS"]
-
         if request.json['ESCoreHeap'] is None:
             ESHeap = '4g'
         else:
             ESHeap = request.json['ESCoreHeap']
-
         if 'DataNode' not in request.json:
             data = 1
         else:
             data = request.json['DataNode']
-
         if 'NumOfShards' not in request.json:
             shards = 1
         else:
             shards = request.json['NumOfShards']
-
         if 'NumOfReplicas' not in request.json:
             rep = 0
         else:
             rep = request.json['NumOfReplicas']
-
         if 'FieldDataCacheSize' not in request.json:
             fdcs = '20%'
         else:
             fdcs = request.json['FieldDataCacheSize']
-
         if 'FieldDataCacheExpires' not in request.json:
             fdce = '6h'
         else:
             fdce = request.json['FieldDataCacheExpires']
-
         if 'FieldDataCacheFilterSize' not in request.json:
             fdcfs = '20%'
         else:
             fdcfs = request.json['FieldDataCacheFilterSize']
-
         if 'FieldDataCacheFilterExpires' not in request.json:
             fdcfe = '6h'
         else:
             fdcfe = request.json['FieldDataCacheFilterExpires']
-
         if 'IndexBufferSize' not in request.json:
             ibs = '30%'
         else:
             ibs = request.json['IndexBufferSize']
-
         if 'MinShardIndexBufferSize' not in request.json:
             msibs = '12mb'
         else:
             msibs = request.json['MinShardIndexBufferSize']
-
         if 'MinIndexBufferSize' not in request.json:
             mibs = '96mb'
         else:
             mibs = request.json['MinIndexBufferSize']
-
         test = db.session.query(dbESCore.hostFQDN).all() #TODO: it always sets the first node to master need to fix future version
         if not test:
             master = 1

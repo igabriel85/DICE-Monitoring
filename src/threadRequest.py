@@ -3,11 +3,14 @@ import Queue
 import time
 import requests
 from flask import copy_current_request_context
+from app import *
+import datetime
 
 
 class getThread(threading.Thread):
     exitFlag = 0
     NodeResponses = []
+
     def __init__(self, threadID, resource, q, lock):
         threading.Thread.__init__(self)
         self.threadID = threadID
@@ -16,9 +19,13 @@ class getThread(threading.Thread):
         self.lock = lock
 
     def run(self):
-        print "Starting thread " + str(self.threadID)
+        # print "Starting thread " + str(self.threadID)
+        app.logger.info('[%s] : [INFO] Starting GET Thread %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(self.threadID))
         tRequest(self.resource, self.q, self.lock)
-        print "Exiting thread " + str(self.threadID)
+        app.logger.info('[%s] : [INFO] Exiting GET Thread %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(self.threadID))
+        # print "Exiting thread " + str(self.threadID)
 
 
 class postThread(threading.Thread):
@@ -30,9 +37,13 @@ class postThread(threading.Thread):
         self.payload = payload
 
     def run(self):
-        print "Starting thread  " + str(self.threadID)
+        # print "Starting thread  " + str(self.threadID)
+        app.logger.info('[%s] : [INFO] Starting POST Thread %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(self.threadID))
         tRequestPost(self.resource, self.q, self.payload)
-        print "Exiting thread " + str(self.threadID)
+        app.logger.info('[%s] : [INFO] Exiting POST Thread %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(self.threadID))
+        # print "Exiting thread " + str(self.threadID)
 
 
 def tRequest(resource, q, lock):  #  TODO: pass function as argument with context decorator
@@ -60,7 +71,9 @@ def tRequest(resource, q, lock):  #  TODO: pass function as argument with contex
 
             getThread.NodeResponses.append(response)
             lock.release()
-            print "%s response %s" % (resourceURI, data)
+            app.logger.info('[%s] : [INFO] %s response %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), resourceURI, data)
+            # print "%s response %s" % (resourceURI, data)
         else:
             lock.release()
         time.sleep(1)
@@ -96,7 +109,9 @@ def tRequestPost(resource, q, payload=None):
 
             getThread.NodeResponses.append(response)
             q.release()
-            print "%s response %s" % (resourceURI, data)
+            # print "%s response %s" % (resourceURI, data)
+            app.logger.info('[%s] : [INFO] %s response %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), resourceURI, data)
         else:
             q.release()
         time.sleep(1)
@@ -127,9 +142,13 @@ class DmonRequest():
             threadList.append(tStr)
 
         print threadList
+        app.logger.info('[%s] : [INFO] Thread List %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(threadList))
         # Fill the queue
         queueLock.acquire()
         for word in self.resourceList:
+            app.logger.info('[%s] : [INFO] Word %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), word)
             print word
             workQueue.put(word)
         queueLock.release()
