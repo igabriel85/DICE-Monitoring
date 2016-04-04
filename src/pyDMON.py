@@ -2463,7 +2463,7 @@ class AuxAgentStart(Resource):
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
     def get(self):
-        qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored,
+        qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored, dbNodes.nStatus,
                                   dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
         mnList = []
         for nm in qNodes:
@@ -2471,8 +2471,9 @@ class AuxDeployThread(Resource):
             mNode['NodeFQDN'] = nm[0]
             mNode['NodeIP'] = nm[1]
             mNode['Monitored'] = nm[2]
-            mNode['Collectd'] = nm[3]
-            mNode['LSF'] = nm[4]
+            mNode['Status'] = nm[3]
+            mNode['Collectd'] = nm[4]
+            mNode['LSF'] = nm[5]
             mnList.append(mNode)
         # print >> sys.stderr, nm
         app.logger.info('[%s] : [INFO] Nodes -> %s',
