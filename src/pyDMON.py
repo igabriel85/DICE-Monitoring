@@ -2384,6 +2384,13 @@ class AuxAgentDeploy(Resource):
                 noAgent.append(n[0])
                 user = n[2]
                 password = n[3]
+
+        if not noAgent:
+            response = jsonify({'Status': 'All nodes have unpacked agents'})
+            response.status_code = 200
+            app.logger.info('[%s] : [INFO] All nodes have unpacked agents',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         try:
             deployAgent(noAgent, user, password)
         except Exception as inst:
