@@ -21,7 +21,7 @@ cm-api==10.0.0
 Fabric==1.10.2
 python-nmap==0.4.0
 elasticsearch==2.2.0
-parallel-ssh==0.70.2
+parallel-ssh==0.91.0
 paramiko==1.15.2
 requests==2.4.3
 pycrypto==2.6.1
