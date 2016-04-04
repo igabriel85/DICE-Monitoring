@@ -101,9 +101,9 @@ def main(argv):
 						print >> sys.stderr, "Argument must be string!"
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
 					print >> sys.stderr, chkESCoreDB
-					if chkESCoreDB is not None:
+					if chkESCoreDB is not None: #TODO read heap from env variable and set in db
 						corePopES = dbESCore(hostFQDN=socket.getfqdn(), hostIP='127.0.0.1', hostOS='ubuntu', nodeName='esCoreMaster',
-							clusterName = 'diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1)
+							clusterName='diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1)
 						db.session.add(corePopES)
 						try:
 							db.session.commit() 

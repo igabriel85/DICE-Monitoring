@@ -22,6 +22,8 @@ import os
 import nmap
 import sys, getopt
 from flask import Flask, jsonify, Response
+from app import *
+import datetime, time
 
 
 #fix for UNicodeDecoder Error -> ascii codec
@@ -547,10 +549,13 @@ def deployAgent(hostlist, userName, uPassword):
 	:param uPassword: password
 	'''
 
+	app.logger.info('[%s] : [INFO] dmon-agent hostlist received %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	if not os.path.isdir(credDir):
-		print "Configuration dir not found!"
+		# print "Configuration dir not found!"
+		app.logger.warning('[%s] : [WARN] Conf dir not found',
+						   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 
-	print "Copying Certificate ...."
 	client = ParallelSSHClient(hostlist, user=userName, password=uPassword)
 	localCopyCrt = os.path.join(credDir, 'logstash-forwarder.crt')
 
@@ -558,38 +563,54 @@ def deployAgent(hostlist, userName, uPassword):
 		print "Creating certificate folders..."
 		client.run_command('mkdir /opt/certs', sudo=True) #TODO: handle duplicate certs
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured creating /opt/certs!"
+		# print "An exception has occured creating /opt/certs!"
+		app.logger.error('[%s] : [ERROR] Error ocurred while creating /opt/certs',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
-
-	print "Copying certificate..."
+	app.logger.info('[%s] : [INFO] Created cert directories for %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 	try:
 		client.copy_file(localCopyCrt, "logstash-forwarder.crt")
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occured while uploading cert!"
+		# print "An exception has occured while uploading cert!"
+		app.logger.error('[%s] : [ERROR] Failed to copying certificates',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
-
+	app.logger.info('[%s] : [INFO] Copied certificate to %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	try:
 		client.run_command('mv logstash-forwarder.crt /opt/certs/', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print 'An exception occured while copying cert!'
+		# print 'An exception occured while copying cert!'
+		app.logger.error('[%s] : [ERROR] Failed to move certificates',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
+	app.logger.info('[%s] : [INFO] Moved certificates to proper location %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT', 'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz'))
+	app.logger.info('[%s] : [INFO] dmon-agent url %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), agentUrl)
 	try:
-		print "Copying dmon-agent ..."
 		client.run_command(agentUrl)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "Error while downloading dmon-agent"
+		# print "Error while downloading dmon-agent"
+		app.logger.error('[%s] : [ERROR] Failed to copy dmon-agent',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
-
+	app.logger.info('[%s] : [INFO] Copied dmon-agent to %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	try:
 		client.run_command('mv dmon-agent.tar.gz /opt/', sudo=True)
 		client.run_command('tar xvf /opt/dmon-agent.tar.gz -C /opt', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while unpacking dmon-agent"
+		app.logger.error('[%s] : [ERROR] Failed while unpacking dmon-agent',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
-
+	app.logger.info('[%s] : [INFO] dmon-agent unpacked %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	# try:
 	# 	client.run_command('pip install -r /opt/dmon-agent/requirements.txt', sudo=True)
 	# except (AuthenticationException, UnknownHostException, ConnectionErrorException):
@@ -603,14 +624,19 @@ def startAgent(hostlist, username, password):
 	:param username:
 	:param password:
 	'''
-	print "Start Agents"
+	# print "Start Agents"
+	app.logger.info('[%s] : [INFO] dmon-agent hostlist received %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	client = ParallelSSHClient(hostlist, user=username, password=password)
 	try:
-		print "Start Agent..."
 		client.run_command('bash /opt/dmon-agent/dmon-agent.sh', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		print "An exception has occurred while starting dmon-agent!"
+		# print "An exception has occurred while starting dmon-agent!"
+		app.logger.error('[%s] : [ERROR] Failed to start dmon-agent',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
+	app.logger.info('[%s] : [INFO] dmon-agent started for %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 
 def stopAgent(hostlist, username, password):
@@ -620,14 +646,20 @@ def stopAgent(hostlist, username, password):
 	:param password:
 	:return:
 	'''
-	print "Stopping Agents"
+	# print "Stopping Agents"
+	app.logger.info('[%s] : [INFO] dmon-agent hostlist received %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	client = ParallelSSHClient(hostlist, user=username, password=password)
 	try:
-		print "Stop Agent..."
 		client.run_command('bash /opt/dmon-agent/dmon-agent.sh stop', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occurred while stopping dmon-agent!"
+		app.logger.error('[%s] : [ERROR] Failed to stop dmon-agent',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
+	app.logger.info('[%s] : [INFO] dmon-agent stopped for %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
+
 
 def main(argv):
 	'''
