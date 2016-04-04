@@ -2511,7 +2511,8 @@ class AuxDeployThread(Resource):
             if n['StatusCode'] != 201:
                 failedNodes.append({'NodeIP': str(nodeIP.hostname),
                                     'Code': n['StatusCode']})
-            print >> sys.stderr, str(n['Data']['Components'])
+            # print >> sys.stderr, str(n['Data']['Components'])
+            print >> sys.stderr, str(n)
             try:
                 NodeDict[nodeIP.hostname] = n['Data']['Components']
             except Exception as inst:
