@@ -23,7 +23,8 @@ import nmap
 import sys, getopt
 from flask import Flask, jsonify, Response
 from app import *
-import datetime, time
+import time
+from datetime import datetime
 
 
 #fix for UNicodeDecoder Error -> ascii codec

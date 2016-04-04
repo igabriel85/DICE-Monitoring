@@ -56,7 +56,7 @@ import requests
 import psutil
 from logging.handlers import RotatingFileHandler
 import time
-from datetime import *
+from datetime import datetime
 
 # directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
@@ -2402,7 +2402,8 @@ class AuxAgentDeploy(Resource):
 
         response = jsonify({'Status': 'Done', 'Message': 'Agents Installed!'})
         response.status_code = 201
-        app.logger.info('[%s] : [INFO] Agents installed')
+        app.logger.info('[%s] : [INFO] Agents installed',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return response
 
 
