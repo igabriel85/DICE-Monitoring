@@ -56,7 +56,7 @@ import requests
 import psutil
 from logging.handlers import RotatingFileHandler
 import time
-from datetime import datetime
+from datetime import *
 
 # directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
