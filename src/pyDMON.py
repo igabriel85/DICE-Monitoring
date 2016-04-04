@@ -3225,7 +3225,7 @@ class DMONReset(Resource):
         listT = []
         for n in qn:
             print str(n.nStatus)
-            n.nStatus = 1
+            n.nStatus = 0
             print str(n.nStatus)
 
 

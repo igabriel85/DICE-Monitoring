@@ -26,7 +26,7 @@ class dbNodes(db.Model):
     # TODO: Create init function/method to populate db.Model
 
     def __repr__(self):
-        return '<dbNodes %r>' % (self.nickname)
+        return '<dbNodes %r>' % (self.nodeFQDN)
 
 
 class dbESCore(db.Model):
@@ -58,7 +58,7 @@ class dbESCore(db.Model):
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
-        return '<dbESCore %r>' % (self.body)
+        return '<dbESCore %r>' % (self.hostFQDN)
 
 
 class dbSCore(db.Model):
@@ -87,7 +87,7 @@ class dbSCore(db.Model):
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
-        return '<dbLSCore %r>' % (self.body)
+        return '<dbLSCore %r>' % (self.hostFQDN)
 
 
 class dbKBCore(db.Model):
@@ -104,7 +104,7 @@ class dbKBCore(db.Model):
     #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
-        return '<dbKBCore %r>' % (self.body)
+        return '<dbKBCore %r>' % (self.hostFQDN)
 
 #Not Used Yet
 class dbApp(db.Model):
@@ -116,7 +116,7 @@ class dbApp(db.Model):
     stopTime = db.Column(db.String(64), index=True, unique=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     def __repr__(self):
-        return '<dbApp %r>' % (self.body)
+        return '<dbApp %r>' % (self.appName)
 
 class dbCDHMng(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -126,5 +126,5 @@ class dbCDHMng(db.Model):
     cuser = db.Column(db.String(64), index=True, default='admin', unique=False)
 
     def __repr__(self):
-        return '<dbCDHMng %r>' % (self.body)
+        return '<dbCDHMng %r>' % (self.cdhMng)
 #%--------------------------------------------------------------------%

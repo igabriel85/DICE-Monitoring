@@ -117,7 +117,7 @@ def installCollectd(hostlist, userName, uPassword, confDir=confDir):
 	print "Starting Collectd ..."
 	try:
 		#out = client.exec_command('collectd',sudo=True,pty=False)
-		out = client.run_command('nohup service collectd restart',sudo=True)
+		out = client.run_command('nohup service collectd restart', sudo=True)
 		listOutput(out)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting collectd!"
@@ -561,8 +561,10 @@ def deployAgent(hostlist, userName, uPassword):
 	localCopyCrt = os.path.join(credDir, 'logstash-forwarder.crt')
 
 	try:
-		print "Creating certificate folders..."
-		client.run_command('mkdir /opt/certs', sudo=True) #TODO: handle duplicate certs
+		mkdirOut = client.run_command('mkdir /opt/certs', sudo=True) #TODO: handle duplicate certs
+		for host in mkdirOut:
+			for line in mkdirOut[host]['stdout']:
+				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		# print "An exception has occured creating /opt/certs!"
 		app.logger.error('[%s] : [ERROR] Error ocurred while creating /opt/certs',
@@ -572,7 +574,10 @@ def deployAgent(hostlist, userName, uPassword):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 	try:
-		client.copy_file(localCopyCrt, "logstash-forwarder.crt")
+		cpLSFCert = client.copy_file(localCopyCrt, "logstash-forwarder.crt")
+		for host in cpLSFCert:
+			for line in cpLSFCert[host]['stdout']:
+				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		# print "An exception has occured while uploading cert!"
 		app.logger.error('[%s] : [ERROR] Failed to copying certificates',
@@ -603,8 +608,14 @@ def deployAgent(hostlist, userName, uPassword):
 	app.logger.info('[%s] : [INFO] Copied dmon-agent to %s',
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	try:
-		client.run_command('mv dmon-agent.tar.gz /opt/', sudo=True)
-		client.run_command('tar xvf /opt/dmon-agent.tar.gz -C /opt', sudo=True)
+		mvArchive = client.run_command('mv dmon-agent.tar.gz /opt/', sudo=True)
+		for host in mvArchive:
+			for line in mvArchive[host]['stdout']:
+				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)
+		unpackArchive = client.run_command('tar xvf /opt/dmon-agent.tar.gz -C /opt', sudo=True)
+		for host in unpackArchive:
+			for line in unpackArchive[host]['stdout']:
+				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while unpacking dmon-agent"
 		app.logger.error('[%s] : [ERROR] Failed while unpacking dmon-agent',
