@@ -37,7 +37,7 @@ fi
 if [ $# -eq 0 ]; then
     echo "Starting dmon-agent"
 	#. $DIR/dmonEnv/bin/activate
-        python dmon-agent.py > dmon-agent.log 2>&1 &
+        python dmon-agent.py > $DIR/log/dmon-agent.out 2>&1 &
         echo $! > $DIR/pid/dmon-agent.pid
 elif [[ $1 == "stop" ]]; then
     echo "Stopping dmon-agent"

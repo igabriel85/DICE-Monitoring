@@ -328,6 +328,8 @@ class NodeMonitStopSelective(Resource):
 @agent.route('/v1/log')
 class NodeLog(Resource):
     def get(self):
+        app.logger.info('[%s] : [INFO] Agent log file -> %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(agentlog))
         try:
             log = open(agentlog, 'w+')
         except Exception as inst:
@@ -490,7 +492,7 @@ class AgentMetricsSystem(Resource):
 
 
 if __name__ == '__main__':
-    handler = RotatingFileHandler(logDir + '/dmon-agent.log', maxBytes=10000000, backupCount=5)
+    handler = RotatingFileHandler(agentlog, maxBytes=10000000, backupCount=5)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)
     log = logging.getLogger('werkzeug')
