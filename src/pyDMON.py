@@ -2432,6 +2432,7 @@ class AuxAgentStart(Resource):
                 break
             else:
                 node.append(ns.nodeIP)
+            app.logger.info('[%s] : [INFO] Unmonitored nodes %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(node))
 
             try:
                 startAgent(node, ns.nUser, ns.nPass)
