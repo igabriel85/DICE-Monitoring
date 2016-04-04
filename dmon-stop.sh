@@ -14,6 +14,7 @@ if [ ! -f $DIR/src/pid/kibana.pid ]; then
 	echo "No Kibana instance to stop."
 else
 	kill -15  `cat $DIR/src/pid/kibana.pid`
+	rm $DIR/src/pid/kibana.pid
 	echo "Kibana Stopped!"
 fi
 
@@ -25,6 +26,7 @@ else
 	LSPID=`cat $DIR/src/pid/logstash.pid`
 	sleep 5
     kill -9 $(($LSPID+1)) #TODO: fix this, kill by child process
+    rm $DIR/src/pid/logstash.pid
 	echo "Logstash Stopped!"
 fi
 
@@ -33,6 +35,7 @@ if [ ! -f $DIR/src/pid/elasticsearch.pid ]; then
 	echo "No ElasticSearch instance to stop."
 else
 	kill -15  `cat $DIR/src/pid/elasticsearch.pid`
+	rm $DIR/src/pid/elasticsearch.pid
 	echo "ElasticSearch Stopped!"
 fi
 
