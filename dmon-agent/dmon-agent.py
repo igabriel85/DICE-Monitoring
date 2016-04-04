@@ -60,6 +60,7 @@ nodeRoles = api.model('query details Model', {
 collectdConfModel = api.model('configuration details Model for collectd', {
     'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
     'UDPPort': fields.String(required=True, default='25826', description='Port of UDP plugin from Logstash Server'),
+    'Interval': fields.String(required=False, default='15', description='Polling interval for all resources')
 })
 
 lsfConfModel = api.model('configuration details Model for LSF', {
@@ -125,15 +126,40 @@ class NodeDeployCollectd(Resource):
     @api.expect(collectdConfModel)
     def post(self):
         collectdTemp = os.path.join(tmpDir, 'collectd.tmp')
+        if not request.json:
+            response = jsonify({'Status': 'Malformed request, json expected'})
+            response.status_code = 400
+            app.logger.warning('[%s] : [WARN] Malformed request, json expected', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval']
+        for k in request.json:
+            app.logger.info('[%s] : [INFO] Key found %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
+            if k not in reqKeyList:
+                response = jsonify({'Status': 'Unrecognized key %s' %(k)})
+                response.status_code = 400
+                app.logger.warning('[%s] : [WARN] UNsuported key  %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
+                return response
+        if 'LogstashIP' not in request.json or 'UDPPort' not in request.json:
+            response = jsonify({'Status': 'Missing key(s)'})
+            response.status_code = 400
+            app.logger.warning('[%s] : [WARN] Missing key(s)', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        if 'Interval' not in request.json:
+            pollInterval = '10'
+        else:
+            pollInterval = request.json['Interval']
+
         settingsDict = {'logstash_server_ip': request.json['LogstashIP'],
                         'logstash_server_port': request.json['UDPPort'],
-                        'collectd_pid_file': '/var/run/collectd.pid'}
-        app.logger.info('[%s] : [INFO] collectd started with: %s',
-                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(settingsDict))
+                        'collectd_pid_file': '/var/run/collectd.pid',
+                        'poll_interval': pollInterval}
         aux.configureComponent(settingsDict, collectdTemp, collectdConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
                             'Message': 'Collectd Started'})
+        app.logger.info('[%s] : [INFO] collectd started with: %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(settingsDict))
         response.status_code = 200
         return response
 
@@ -143,6 +169,19 @@ class NodeDeployLSF(Resource):
     @api.expect(lsfConfModel)
     def post(self):
         lsfTemp = os.path.join(tmpDir, 'logstash-forwarder.tmp')
+        if not request.json:
+            response = jsonify({'Status': 'Malformed request, json expected'})
+            response.status_code = 400
+            app.logger.warning('[%s] : [WARN] Malformed request, json expected', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        reqKeyList = ['LogstashIP', 'LumberjackPort']
+        for k in request.json:
+            app.logger.info('[%s] : [INFO] Key found %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
+            if k not in reqKeyList:
+                response = jsonify({'Status': 'Unrecognized key %s' %(k)})
+                response.status_code = 400
+                app.logger.warning('[%s] : [WARN] UNsuported key  %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
+                return response
         settingsDict = {'ESCoreIP': request.json['LogstashIP'],
                          'LSLumberPort': request.json['LumberjackPort']}
         app.logger.info('[%s] : [INFO] Logstash-Forwarder settings:  %s',
@@ -290,7 +329,7 @@ class NodeMonitStopSelective(Resource):
 class NodeLog(Resource):
     def get(self):
         try:
-            log = open(agentlog,'w+')
+            log = open(agentlog, 'w+')
         except Exception as inst:
             app.logger.error('[%s] : [ERROR] Opening log with %s and %s',
                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)

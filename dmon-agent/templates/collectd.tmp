@@ -1,6 +1,7 @@
 FQDNLookup true
 
 PIDFile "{{collectd_pid_file}}"
+#Interval {{poll_interval}}
 
 LoadPlugin logfile
 <Plugin "logfile">
