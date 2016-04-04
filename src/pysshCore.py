@@ -604,6 +604,8 @@ def deployAgent(hostlist, userName, uPassword):
 		raise
 	app.logger.info('[%s] : [INFO] Copied dmon-agent to %s',
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
+
+	time.sleep(5)
 	try:
 		mvArchive = client.run_command('mv dmon-agent.tar.gz /opt/', sudo=True)
 		for host in mvArchive:
@@ -612,7 +614,7 @@ def deployAgent(hostlist, userName, uPassword):
 		unpackArchive = client.run_command('tar xvf /opt/dmon-agent.tar.gz -C /opt', sudo=True)
 		for host in unpackArchive:
 			for line in unpackArchive[host]['stdout']:
-				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)
+				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line) #TODO: add sleep to retry unpacking
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "Error while unpacking dmon-agent"
 		app.logger.error('[%s] : [ERROR] Failed while unpacking dmon-agent',
