@@ -574,10 +574,7 @@ def deployAgent(hostlist, userName, uPassword):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 	try:
-		cpLSFCert = client.copy_file(localCopyCrt, "logstash-forwarder.crt")
-		for h1 in cpLSFCert:
-			for l1 in cpLSFCert[h1]['stdout']:
-				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), h1, l1)
+		client.copy_file(localCopyCrt, "logstash-forwarder.crt")
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		# print "An exception has occured while uploading cert!"
 		app.logger.error('[%s] : [ERROR] Failed to copying certificates',
