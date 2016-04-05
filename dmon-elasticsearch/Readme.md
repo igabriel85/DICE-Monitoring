@@ -9,11 +9,9 @@ The DICE MOnitoring logstash service is designed to provide a REST API in order 
 	 	
 	  		 	
 ##Installation and Use
-
-In contrast to the dmon-agent the dmon-elasticsearch installs an elasticsearch instance on the target host at deployment.
-**TODO**
-
 ###Manual
+In contrast to the dmon-agent the dmon-elasticsearch installs an elasticsearch instance on the target host at deployment.
+
 **TODO**
 
 ##REST API Structure 

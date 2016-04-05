@@ -38,8 +38,9 @@ This will check the current folder structure of the agent and create missing fol
 
 Prerequisets include:
 
-* __python-dev__
-* __python-pip__
+* python-dev
+* python-pip
+* contents of [requirements.txt](https://github.com/igabriel85/IeAT-DICE-Repository/blob/master/dmon-agent/requirements.txt)
 
 Required python modules are automaticaly installed using the _requrement.txt_ file.
 
