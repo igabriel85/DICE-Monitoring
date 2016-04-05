@@ -31,6 +31,7 @@ import sqlite3, os
 import socket
 from flask.ext.sqlalchemy import SQLAlchemy
 from logging.handlers import RotatingFileHandler
+from datetime import datetime
 
 
 def main(argv):
@@ -69,67 +70,80 @@ def main(argv):
 		if opt in ("-i", "--core-install"):
 			#hostfile=arg
 			if os.path.isfile('dmon.lock') is True: 
-				print >>sys.stderr, "D-Mon Core already installed!"
+				# print >>sys.stderr, "D-Mon Core already installed!"
+				app.logger.warning('[%s] : [WARNING] D-Mon Core already installed!',
+								   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				#sys.exit(2) #uncoment if exit upon 
 			else:
 				try:
-					print >>sys.stderr, "Bootstrapping D-Mon Core please wait..."
+					app.logger.info('[%s] : [INFO] Bootstrapping D-Mon Core please wait...',
+									datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 					procStart = subprocess.Popen(['./bootstrap.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False).communicate()
-					print >>sys.stderr, "Bootstrap finished!"
+					app.logger.info('[%s] : [INFO] Bootstrap finished!',
+									datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				except Exception as inst:
-					print >> sys.stderr, 'Error while executing bootstrap script!'
-					print >> sys.stderr, type(inst)
-					print >> sys.stderr, inst.args
+					app.logger.error('[%s] : [ERROR] Error while executing bootstrap script with %s and %s',
+									datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 					sys.exit(2)
-				lock =  open('dmon.lock', "w+")
+				lock = open('dmon.lock', "w+")
 				lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				lock.close()
+				app.logger.info('[%s] : [INFO] Stopping D-Mon Controller',
+								datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				sys.exit(0) #exit when done
 		if opt in ("-p", "--port"):
-			if isinstance(int(arg), int) is not True:
-				print >> sys.stderr, "Argument must be an integer!"
+			if not isinstance(arg, int):
+				app.logger.error('[%s] : [ERROR] Port must be integer. Exiting',
+								 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				sys.exit(2)
 			port = int(arg)
 		if opt in ("-e", "--endpoint-ip"):
-			if isinstance(arg, str) is not True:
-				print >> sys.stderr, "Argument must be string!"
+			if not isinstance(arg, str):
+				app.logger.error('[%s] : [ERROR] Endpoint must be string. Exiting',
+								 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+				sys.exit(2)
 			ip = arg
-		if opt in ("-l", "--local"):#TODO add the ability to define local IP
+		if opt in ("-l", "--local"):
 			if os.environ.get("WERKZEUG_RUN_MAIN") == "true":		
 				if opt in ("-l", "--local"):
 					if isinstance(arg, str) is not True:
 						print >> sys.stderr, "Argument must be string!"
 					chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
-					print >> sys.stderr, chkESCoreDB
+					# print >> sys.stderr, chkESCoreDB
 					if chkESCoreDB is not None: #TODO read heap from env variable and set in db
 						corePopES = dbESCore(hostFQDN=socket.getfqdn(), hostIP='127.0.0.1', hostOS='ubuntu', nodeName='esCoreMaster',
-							clusterName='diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1)
+							clusterName='diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1,
+											 ESCoreHeap=os.getenv('ES_HEAP_SIZE', '4g'))
 						db.session.add(corePopES)
 						try:
 							db.session.commit() 
 						except Exception as inst:
-							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
-							print >> sys.stderr, type(inst)
-							print >> sys.stderr, inst.args
+							# print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
+							# print >> sys.stderr, type(inst)
+							# print >> sys.stderr, inst.args
+							app.logger.warning('[%s] : [WARNING] Duplicate ES entry exception! Local deployment can be run only once. With %s and %s',
+											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 
 					chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
-					print >> sys.stderr, chkLSCoreDB
+					# print >> sys.stderr, chkLSCoreDB
 					if chkLSCoreDB is not None:
 						corePopLS = dbSCore(hostFQDN=socket.getfqdn(), hostIP=socket.gethostbyname(socket.gethostname()),
 										  hostOS='ubuntu', outESclusterName='diceMonit', udpPort=25680,
-										  inLumberPort=5000)
+										  inLumberPort=5000, LSCoreHeap=os.getenv('ES_HEAP_SIZE', '512m'))
 						db.session.add(corePopLS) 
 						try:
 							db.session.commit() 
 						except Exception as inst:
-							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
-							print >> sys.stderr, type(inst)
-							print >> sys.stderr, inst.args
+							# print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
+							# print >> sys.stderr, type(inst)
+							# print >> sys.stderr, inst.args
+							app.logger.warning('[%s] : [WARNING] Duplicate LS entry exception! Local deployment can be run only once. With %s and %s',
+											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 
 					chkKBCoreDB = db.session.query(dbKBCore.hostFQDN).all()
-					print >> sys.stderr, chkLSCoreDB
+					# print >> sys.stderr, chkLSCoreDB
 					if chkKBCoreDB is not None:
 						corePopKB = dbKBCore(hostFQDN=socket.getfqdn(),
 											 hostIP=socket.gethostbyname(socket.gethostname()), hostOS='ubuntu',
@@ -141,6 +155,8 @@ def main(argv):
 							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
 							print >> sys.stderr, type(inst)
 							print >> sys.stderr, inst.args
+							app.logger.warning('[%s] : [WARNING] Duplicate KB entry exception! Local deployment can be run only once. With %s and %s',
+											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 
 	app.run(host=ip, port=port, debug=True)
