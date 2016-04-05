@@ -675,6 +675,14 @@ class OverlordCoredb(Resource):
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return response
 
+# @dmon.route('/v1/overlord/core/state')
+# class OverlordCoreState(Resource):
+#     def get(self):
+#         qAll = db.session.query(dbNodes.nodeFQDN, dbSCore.hostFQDN, dbESCore.hostFQDN, dbKBCore.hostFQDN, dbApp.appName, dbCDHMng.cdhMng).all()
+#         payload ={}
+#         for res in qAll:
+#             qNodes = dbNodes.query.filter_by(nodeFQDN=res[0]).first()
+
 
 @dmon.route('/v1/overlord/core/status')
 class OverlordCoreStatus(Resource):
