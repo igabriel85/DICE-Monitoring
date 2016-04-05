@@ -372,6 +372,7 @@ class ObsApplications(Resource):
 
 
 @dmon.route('/v1/observer/applications/<appID>')
+@api.doc(params={'appID': 'Application identification'})
 class ObsAppbyID(Resource):
     def get(self, appID):
         return 'Returns information on a particular YARN applicaiton identified by ' + appID + '!'
@@ -448,7 +449,7 @@ class NodeStatusServices(Resource):
 
 
 @dmon.route('/v1/observer/query/<ftype>')
-@api.doc(params={'ftype': 'output type'})
+@api.doc(params={'ftype': 'Output type'})
 class QueryEsCore(Resource):
     # @api.doc(parser=pQueryES) #inst parser
     # @api.marshal_with(dMONQuery) # this is for response
@@ -577,6 +578,7 @@ class OverlordFrameworkInfo(Resource):
 
 
 @dmon.route('/v1/overlord/framework/<fwork>')
+@api.doc(params={'fwork': 'Big Data framework name'})
 class OverlordFrameworkProperties(Resource):
     def get(self, fwork):
         if fwork not in lFrameworks:
@@ -630,6 +632,7 @@ class OverlordFrameworkProperties(Resource):
 
 
 @dmon.route('/v1/overlord/applicaiton/<appID>')
+@api.doc(params={'appID': 'Application identification'})
 class OverlordAppSubmit(Resource):
     def put(self):
         return 'Registers an applicaiton with DMON and creates a unique tag!'
@@ -1081,6 +1084,7 @@ class MonitoredNodeInfo(Resource):
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/roles')
+@api.doc(params={'nodeFQDN': 'Nodes FQDN'})
 class ClusterNodeRoles(Resource):
     @api.expect(nodeRoles)
     def put(self, nodeFQDN):  # TODO validate role names
@@ -1353,7 +1357,7 @@ class ESCoreRemove(Resource):
 
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>')
-@api.doc(params={'hostFQDN': 'Host FQDN.'})
+@api.doc(params={'hostFQDN': 'Host FQDN'})
 class LSCoreRemove(Resource):
     def delete(self, hostFQDN):
         qLSCorePurge = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
@@ -1482,6 +1486,7 @@ class ESCoreController(Resource):
 
 
 @dmon.route('/v1/overlord/core/es/status/<intComp>/property/<intProp>')
+@api.doc(params={'intComp': 'ES specific component', 'intProp': 'Component specific property'})
 class ESCOntrollerStatus(Resource):
     def get(self, intComp, intProp):
 
@@ -1526,13 +1531,14 @@ class ESCOntrollerStatus(Resource):
                 response.status_code = 500
                 return response
         else:
-            response = jsonify({"Status": "Mallformed"})
+            response = jsonify({"Status": "Mallformed request"})
             response.status_code = 400
             return response
         return data
 
 
 @dmon.route('/v1/overlord/core/es/<hostFQDN>/start')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
 class ESControllerStart(Resource):
     def get(self, hostFQDN):
         qESCoreStatus = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
@@ -1590,6 +1596,7 @@ class ESControllerStart(Resource):
 
 
 @dmon.route('/v1/overlord/core/es/<hostFQDN>/stop')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
 class ESControllerStop(Resource):
     def post(self, hostFQDN):
         qESCoreStop = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
@@ -1969,6 +1976,7 @@ class LSCoreController(Resource):
 
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>/start')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
 class LSCoreCOntrollerStart(Resource):
     def get(self, hostFQDN):
         qLSCoreStatus = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
@@ -2026,6 +2034,7 @@ class LSCoreCOntrollerStart(Resource):
 
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>/stop')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
 class LSCoreControllerStop(Resource):
     def post(self, hostFQDN):
         qLSCoreStop = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
@@ -3227,6 +3236,7 @@ class AuxStopAllThreaded(Resource):
 
         dmon.reset()
         return response
+
 
 @dmon.route('/v1/reset')
 class DMONReset(Resource):
