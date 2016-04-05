@@ -193,6 +193,18 @@ class ESControllerCmd(Resource):
         return "Execute specific command!"
 
 
+@agent.route('/v1/elasticsearch/start')
+class ESControllerStart(Resource):
+    def post(self):
+        return "Starts ES instance"
+
+
+@agent.route('/v1/elasticsearch/stop')
+class ESControllerStop(Resource):
+    def post(self):
+        return "Stops ES instance"
+
+
 if __name__ == '__main__':
     handler = RotatingFileHandler(logDir + '/dmon-elasticsearch.log', maxBytes=10000000, backupCount=5)
     handler.setLevel(logging.INFO)
