@@ -97,7 +97,7 @@ For specific nodes use:
 
 ###Using DICE Deployment Service
 
-**NOTE:** Note schedueled for M12.
+**NOTE:** Not schedueled for M12.
 
 ##REST API Structure
 **NOTE:** This is a preliminary structure of the REST API. It may be subject to changes!

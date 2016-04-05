@@ -12,10 +12,52 @@ This is the main reason this service has been created. It allows the generation 
 	  		 	
 ##Installation and Use
 
-**TODO**
-
 ###Manual
-**TODO**
+The archive containing the current version of dmon-logstash can be found [here](https://github.com/igabriel85/IeAT-DICE-Repository/archive/v0.0.2-dmon-logstash.tar.gz). In order to install it on a VM or physical host:
+
+```bash
+$wget https://github.com/igabriel85/IeAT-DICE-Repository/archive/v0.0.2/dmon-logstash.tar.gz
+
+```
+
+Once the archive has been downloaded we can untar it:
+
+```bash
+$tar xvf dmon-logstash.tar.gz
+```
+
+Once untared we can run the startup script:
+
+```bash
+$./dmon-logstash.sh
+```
+
+This script will check for the internal folder hierarchy and will create any missing ones. It also checks if all prerequisets are met by the host. 
+
+These prerequisets are:
+
+ * python-dev
+ * python-pip
+ * contents of [requirement.txt](https://github.com/igabriel85/IeAT-DICE-Repository/blob/master/dmon-logstash/requirements.txt) 
+
+**NOTE:** If the requirements are not met it installs them. This requires _root_ privilages. If the script is not run using _sudo_ it will exit with code 1 and display the message:
+
+```bash
+$Installation requires root privilages!
+```
+If _sudo_ is invoked it will start installing all prerequisets and exit with 0.
+
+However if these prerequisets have already been verified running the script with _sudo_ the script will exit woth code 1 and display:
+
+```bash
+$Warning root not recommended after installation
+```
+
+In order to stop dmon-logstash we have to issue:
+
+```bash
+$./dmon-logstash.sh stop
+```
 
 ##REST API Structure 
 **NOTE:** This is a preliminary structure of the REST API. It mau be sibject to changes!

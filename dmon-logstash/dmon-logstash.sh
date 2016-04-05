@@ -64,6 +64,7 @@ elif [[ $1 == "stop" ]]; then
     echo "Stopping dmon-logstash"
     kill -9 `cat $DIR/pid/dmon-logstash.pid`
     killall -9 python #TODO: fix this, kill only dmon-logstash by pid
+    rm -rf $DIR/pid/dmon-logstash.pid
     echo "Stopped dmon-logstash"
 
     echo "Stopping logstash"
@@ -75,6 +76,7 @@ elif [[ $1 == "stop" ]]; then
     kill -15  `cat $DIR/pid/logstash.pid`
     sleep 5
     kill -9 $(($PID+1)) #TODO: fix this, kill by child process
+    rm -rf $DIR/pid/logstash.pid
     echo "Stopped logstash server"
 else
    echo "dmon-logstash does not support this command line argument!"
