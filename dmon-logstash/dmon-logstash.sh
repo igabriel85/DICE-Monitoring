@@ -14,11 +14,48 @@ elif [ $ARCH == "Darwin" ]; then
    DIR=`python -c "$CMD"`
 fi
 
+if [ ! -d "$DIR/pid" ]; then
+    mkdir -p $DIR/pid/dmon-agent.pid
+fi
+
+if [ ! -d "$DIR/log" ]; then
+    mkdir $DIR/log
+fi
+
+if [ ! -d "$DIR/credentials" ]; then
+    mkdir $DIR/credentials
+fi
+
+if [ ! -d "$DIR/lock" ]; then
+    mkdir $DIR/lock
+fi
+
+if [ ! -d "$DIR/config" ]; then
+    mkdir $DIR/config
+fi
+
+if [ ! -f "$DIR/lock/dmon-logstash.lock" ]; then
+  echo "Basic pre-requisets seem to be missing, begining installation"
+  if [[ $EUID != 0 ]]; then
+    echo "Installation requires root privilages!"
+    exit 1
+  fi
+  apt-get install -y python-dev python-pip && pip install -r $DIR/requirements.txt
+  echo "Installed on: $currentDate" >> $DIR/lock/dmon-logstash.lock
+  echo "Done installing prerequisets please restart without root privilages!"
+  exit 0
+fi
+
+if [[ $EUID -ne 0 ]]; then
+    echo "Warning root not recommended after installation"
+    exit 1  #TODO: delete not to enforce warning
+fi
+
 if [ $# -eq 0 ]; then
     echo "Starting dmon-logstash"
 	#. $DIR/dmonEnv/bin/activate
         python dmon-logstash.py > log/dmon-logstash.out 2>&1 &
-        echo $! > pid/dmon-logstash.pid
+        echo $! > $DIR/pid/dmon-logstash.pid
     echo "Finished"
 elif [[ $1 == "stop" ]]; then
     if [ ! -f $DIR/pid/dmon-logstash.pid ]; then
