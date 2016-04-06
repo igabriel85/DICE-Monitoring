@@ -329,7 +329,7 @@ class NodeLog(Resource):
     def get(self):
         agentlog = os.path.join(logDir, 'dmon-agent.log')
         try:
-            log = open(agentlog, 'r')
+            logFile1 = open(agentlog, 'r')
         except Exception as inst:
             app.logger.error('[%s] : [ERROR] Opening log with %s and %s',
                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
@@ -339,7 +339,7 @@ class NodeLog(Resource):
             return response
         app.logger.info('[%s] : [INFO] Agent log file -> %s',
                         datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(agentlog))
-        return send_file(log, mimetype='text/plain', as_attachment=True)
+        return send_file(logFile1, mimetype='text/plain', as_attachment=True)
 
 
 @agent.route('/v1/log/component/<auxComp>')
