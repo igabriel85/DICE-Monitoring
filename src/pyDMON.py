@@ -604,9 +604,31 @@ class OverlordFrameworkProperties(Resource):
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fwork)
             return response
         if fwork == 'hdfs' or fwork == 'yarn':
-            propFile = os.path.join(tmpDir, 'metrics/hadoop-metrics2.tmp')
+            templateLoader = jinja2.FileSystemLoader(searchpath="/")
+            templateEnv = jinja2.Environment(loader=templateLoader)
+            propYarnTmp = os.path.join(tmpDir, 'metrics/hadoop-metrics2.tmp')
+            propYarnFile = os.path.join(cfgDir, 'hadoop-metrics2.properties')
             try:
-                propCfg = open(propFile, 'r')
+                template = templateEnv.get_template(propYarnTmp)
+            except:
+                response = jsonify({'Status': 'I/O Error', 'Message': 'Template file missing!'})
+                response.status_code = 500
+                app.logger.error('[%s] : [ERROR] YARN template file missing',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return response
+            qPeriod = dbMetPer.query.first()
+            if qPeriod is None:
+                period = '10'
+            else:
+                period = qPeriod.yarnMet
+
+            infoYarn = {'metrics2_period': period}
+            propSparkInfo = template.render(infoYarn)
+            propYarnConf = open(propYarnFile, "w+")
+            propYarnConf.write(propSparkInfo)
+            propYarnConf.close()
+            try:
+                propCfg = open(propYarnFile, 'r')
             except EnvironmentError:
                 response = jsonify({'Status': 'Environment Error!', 'Message': 'File not Found!'})
                 response.status_code = 500
@@ -636,7 +658,12 @@ class OverlordFrameworkProperties(Resource):
                 app.logger.warning('[%s] : [WARN] No Logstash server instance configured',
                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 return response
-            infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
+            qPeriod = dbMetPer.query.first()
+            if qPeriod is None:
+                period = '10'
+            else:
+                period = qPeriod.sparkMet
+            infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': period}
             propSparkInfo = template.render(infoSpark)
             propSparkConf = open(propSparkFile, "w+")
             propSparkConf.write(propSparkInfo)
@@ -921,17 +948,40 @@ class ClusterRoles(Resource):
         sparkList = []
         stormList = []
         unknownList = []
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        propYarnTmp = os.path.join(tmpDir, 'metrics/hadoop-metrics2.tmp')
+        propYarnFile = os.path.join(cfgDir, 'hadoop-metrics2.properties')
+        try:
+            template = templateEnv.get_template(propYarnTmp)
+        except:
+            response = jsonify({'Status': 'I/O Error', 'Message': 'Template file missing!'})
+            response.status_code = 500
+            app.logger.error('[%s] : [ERROR] YARN template file missing',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        qPeriod = dbMetPer.query.first()
+        if qPeriod is None:
+            period = '10'
+        else:
+            period = qPeriod.yarnMet
+
+        infoYarn = {'metrics2_period': period}
+        propSparkInfo = template.render(infoYarn)
+        propYarnConf = open(propYarnFile, "w+")
+        propYarnConf.write(propSparkInfo)
+        propYarnConf.close()
+
         for node in nodes:
             roleList = node[4].split(',')
             if 'yarn' in roleList or 'hdfs' in roleList:
-                yarnPropertiesLoc = os.path.join(tmpDir, 'hadoop-metrics2.tmp')
                 nl = []
                 nl.append(node[1])
-                uploadFile(nl, node[2], node[3], yarnPropertiesLoc, 'hadoop-metrics2.tmp',
+                uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',
                            '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties')  # TODO better solution
-                uploadFile(nl, node[2], node[3], yarnPropertiesLoc, 'hadoop-metrics2.tmp',
+                uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',
                            '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties')  # TODO better solution
-                uploadFile(nl, node[2], node[3], yarnPropertiesLoc, 'hadoop-metrics2.tmp',
+                uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',
                            '/etc/hadoop/conf/hadoop-metrics2.properties')  # TODO better solution
                 yarnList.append(node[0])
                 app.logger.info('[%s] : [INFO] HDFS/YARN conf upload to %s, %s, %s',
@@ -957,10 +1007,16 @@ class ClusterRoles(Resource):
                     response.status_code = 404
                     app.logger.warning('[%s] : [WARN] No LS instance registered')
                     return response
-                infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': '10'}
+
+                qPeriod = dbMetPer.query.first()
+                if qPeriod is None:
+                    period = '10'
+                else:
+                    period = qPeriod.sparkMet
+                infoSpark = {'logstashserverip': qLSCore.hostIP, 'logstashportgraphite': '5002', 'period': period}
                 app.logger.info(
-                    '[%s] : [INFO] Spark Config used based on role def: LSServer -> %s, Graphite -> 5002, Period -> 10',
-                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qLSCore.hostIP)
+                    '[%s] : [INFO] Spark Config used based on role def: LSServer -> %s, Graphite -> 5002, Period -> %s',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qLSCore.hostIP, period)
                 propSparkInfo = template.render(infoSpark)
                 propSparkConf = open(propSparkFile, "w+")
                 propSparkConf.write(propSparkInfo)
