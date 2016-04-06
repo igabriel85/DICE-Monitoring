@@ -490,6 +490,25 @@ class AgentMetricsSystem(Resource):
             response.status_code = 404
             return response
 
+@agent.route('/v1test')
+class Test(Resource):
+    def get(self):
+        test = {}
+        test[logDir] = os.path.isfile(logDir)
+        test[tmpDir] = os.path.isfile(tmpDir)
+        test[pidDir] = os.path.isfile(pidDir)
+        test[agentlog] = os.path.isfile(agentlog)
+        test[collectdlog] = os.path.isfile(collectdlog)
+        test[collectdpid] = os.path.isfile(collectdpid)
+        test[lsflog] = os.path.isfile(lsflog)
+        test[lsferr] = os.path.isfile(lsferr)
+        test[collectdConf] = os.path.isfile(collectdConf)
+        test[lsfConf] = os.path.isfile(lsfConf)
+        test[lsfList] = os.path.isfile(lsfList)
+        test[lsfGPG] = os.path.isfile(lsfGPG)
+        test[certLoc] = os.path.isfile(certLoc)
+        return test
+
 
 if __name__ == '__main__':
     handler = RotatingFileHandler(agentlog, maxBytes=10000000, backupCount=5)
