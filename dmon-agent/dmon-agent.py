@@ -36,7 +36,6 @@ from app import *
 logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'log')
 tmpDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
-agentlog = os.path.join(logDir, 'dmon-agent.log')
 collectdlog = '/var/log/collectd.log'
 collectdpid = os.path.join(pidDir, 'collectd.pid')
 lsflog = '/var/log/logstash-fowarder/logstash-fowarder.log'
@@ -328,6 +327,7 @@ class NodeMonitStopSelective(Resource):
 @agent.route('/v1/log')
 class NodeLog(Resource):
     def get(self):
+        agentlog = os.path.join(logDir, 'dmon-agent.log')
         try:
             log = open(agentlog, 'r')
         except Exception as inst:
@@ -337,6 +337,8 @@ class NodeLog(Resource):
                                     'Message': 'Cannot open log file'})
             response.status_code = 500
             return response
+        app.logger.info('[%s] : [INFO] Agent log file -> %s',
+                        datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(agentlog))
         return send_file(log, mimetype='text/plain', as_attachment=True)
 
 
@@ -495,7 +497,7 @@ class Test(Resource):
         test[logDir] = os.path.isfile(logDir)
         test[tmpDir] = os.path.isfile(tmpDir)
         test[pidDir] = os.path.isfile(pidDir)
-        test[agentlog] = os.path.isfile(agentlog)
+        test[os.path.join(logDir, 'dmon-agent.log')] = os.path.isfile(os.path.join(logDir, 'dmon-agent.log'))
         test[collectdlog] = os.path.isfile(collectdlog)
         test[collectdpid] = os.path.isfile(collectdpid)
         test[lsflog] = os.path.isfile(lsflog)
@@ -509,7 +511,7 @@ class Test(Resource):
 
 
 if __name__ == '__main__':
-    handler = RotatingFileHandler(agentlog, maxBytes=10000000, backupCount=5)
+    handler = RotatingFileHandler(os.path.join(logDir, 'dmon-agent.log'), maxBytes=10000000, backupCount=5)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)
     log = logging.getLogger('werkzeug')
