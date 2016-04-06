@@ -17,10 +17,6 @@ if [[ $EUID != 0 ]]; then
     echo "Agent requires root privilages! Exiting"
     exit 1
 fi
-#TODO Find better solution
-if [ -f $DIR/templates/collectd.tmp ]; then
-  echo >> $CCFG
-fi
 
 if [ ! -d "$DIR/pid" ]; then
   mkdir -p $DIR/pid/

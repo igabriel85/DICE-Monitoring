@@ -272,7 +272,9 @@ class AuxComponent():
             subprocess.Popen('echo >> ' + filePath, shell=True) # TODO fix this
             # subprocess.call(["echo", ">>", filePath])
         except Exception as inst:
-            app.logger.error('[%s] : [ERROR] Cannot find %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath)
+            app.logger.error('[%s] : [ERROR] Cannot find %s, with %s and %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath,
+                             type(inst), inst.args)
 
     def getRoles(self):  # TODO:  implement role identification based on JPS and possibly pid files in /var/run
         return 'check vm roles using JPS!'
