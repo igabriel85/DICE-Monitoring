@@ -268,7 +268,10 @@ class AuxComponent():
         confFile = open(filePath, "w+")
         confFile.write(confInfo)
         confFile.close()
-        subprocess.Popen('echo >> ' + filePath) # TODO fix this
+        try:
+            subprocess.Popen('echo >> ' + filePath) # TODO fix this
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Cannot find %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath)
 
     def getRoles(self):  # TODO:  implement role identification based on JPS and possibly pid files in /var/run
         return 'check vm roles using JPS!'
