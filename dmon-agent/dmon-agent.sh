@@ -6,6 +6,7 @@ RE='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
 RENR='^[0-9]+$'
 currentDate=$(date "+%Y.%m.%d-%H.%M.%S")
 
+
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`
 elif [ $ARCH == "Darwin" ]; then
@@ -15,7 +16,11 @@ fi
 if [[ $EUID != 0 ]]; then
     echo "Agent requires root privilages! Exiting"
     exit 1
-  fi
+fi
+#TODO Find better solution
+if [ -f $DIR/templates/collectd.tmp ]; then
+  echo >> $CCFG
+fi
 
 if [ ! -d "$DIR/pid" ]; then
   mkdir -p $DIR/pid/
