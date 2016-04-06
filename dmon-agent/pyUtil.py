@@ -269,8 +269,8 @@ class AuxComponent():
         confFile.write(confInfo)
         confFile.close()
         try:
-            # subprocess.Popen('echo >> ' + filePath) # TODO fix this
-            subprocess.call(["echo", ">>", filePath])
+            subprocess.Popen('echo >> ' + filePath, shell=True) # TODO fix this
+            # subprocess.call(["echo", ">>", filePath])
         except Exception as inst:
             app.logger.error('[%s] : [ERROR] Cannot find %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath)
 
