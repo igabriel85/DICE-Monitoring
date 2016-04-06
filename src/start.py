@@ -160,7 +160,9 @@ def main(argv):
 											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 
-					chkMetPer = db.session.query.first()
+					chkMetPer = dbMetPer.query.first()
+					app.logger.warning('[%s] : [WARNING] chkMetPer value -> %s',
+											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(chkMetPer))
 					if chkMetPer is None:
 						chkMetPerCore = dbMetPer(sysMet="15", yarnMet="15", sparkMet="5", stormMet="60")
 						db.session.add(chkMetPerCore)
