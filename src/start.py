@@ -160,7 +160,7 @@ def main(argv):
 											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 					chkMetPer = db.session.query(dbMetPer.id).first()
-					if chkMetPer is not None:
+					if chkMetPer is None:
 						chkMetPerCore = dbMetPer(sysMet="15", yarnMet="15", sparkMet="5", stormMet="60")
 						db.session.add(chkMetPerCore)
 						try:
