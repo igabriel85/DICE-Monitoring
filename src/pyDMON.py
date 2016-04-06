@@ -220,6 +220,16 @@ class dbCDHMng(db.Model):
     def __repr__(self):
         return '<dbCDHMng %r>' % (self.cdhMng)
 
+class dbMetPer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sysMet = db.Column(db.String(64), index=True, unique=False, default="15")
+    yarnMet = db.Column(db.String(64), index=True, unique=False, default="15")
+    sparkMet = db.Column(db.String(64), index=True, unique=False, default="5")
+    stormMet = db.Column(db.String(64), index=True, unique=False, default="60")
+
+    def __repr__(self):
+        return '<dbCDHMng %r>' % (self.id)
+
 
 # %--------------------------------------------------------------------%
 
@@ -348,6 +358,12 @@ certModel = api.model('Update Cert', {
     'Certificate': fields.String(required=False, description='Certificate')
 })
 
+resInterval = api.model('Polling interval', {
+    'Spark': fields.String(required=False, default='15', description='Polling period for Spark metrics'),
+    'Storm': fields.String(required=False, default='60', description='Polling period for Storm metrics'),
+    'System': fields.String(required=False, default='15', description='Polling period for System metrics'),
+    'YARN': fields.String(required=False, default='15', description='Polling period for YARN metrics')
+})
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db.create_all()
@@ -2554,7 +2570,7 @@ class AuxDeployThread(Resource):
         return response
 
 
-@dmon.route('/v2/overlord/aux/deploy/check')  # TODO: polls all dmon-agents for current status
+@dmon.route('/v2/overlord/aux/deploy/check')
 class AuxDeployCheckThread(Resource):
     def get(self):
         agentPort = '5000'
@@ -3196,7 +3212,7 @@ class AuxStopAllThreaded(Resource):
     def post(self, auxComp):
         auxList = ['collectd', 'lsf', 'jmx', 'all']
         if auxComp not in auxList:
-            response = jsonify({'Status': 'No such such aux component ' + auxComp})
+            response = jsonify({'Status': 'No such such aux component supported' + auxComp})
             response.status_code = 400
             return response
         qNodes = db.session.query(dbNodes.nodeIP).all()
@@ -3235,6 +3251,174 @@ class AuxStopAllThreaded(Resource):
         response.status_code = 200
 
         dmon.reset()
+        return response
+
+
+@dmon.route('/v2/overlord/aux/<auxComp>/configure')
+class AuxConfigureCompTreaded(Resource):
+    def post(self, auxComp):
+        auxList = ['collectd', 'lsf', 'jmx'] #TODO: add all, will need some concurency on dmon-agent part
+        if auxComp not in auxList:
+            response = jsonify({'Status': 'No such such aux component supported ' + auxComp})
+            response.status_code = 400
+            app.logger.warning('[%s] : [WARNING] Aux Components %s not supported',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), auxComp)
+            return response
+        qNodes = db.session.query(dbNodes.nodeIP, dbNodes.nMonitored).all()
+        nList = []
+        for n in qNodes:
+            if not n[1]:
+                break
+            nList.append(n[0])
+        if not nList:
+            response = jsonify({'Status': 'No monitored nodes found'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARNING] No monitored nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), auxComp)
+            return response
+
+        agentr = AgentResourceConstructor(nList, '5000')
+        qMetPer = dbMetPer.query.first()
+        if auxComp == 'collectd':
+            resFin = {}
+            resourceList = agentr.collectd()
+            for n in resourceList:
+                payload = {}
+                nIP = urlparse(n).hostname
+                qNodeSpec = dbNodes.query.filter_by(nodeIP=nIP).first() #TODO: unify db foreign keys in tables
+                qLSSpec = dbSCore.query.filter_by(hostIP=qNodeSpec.nLogstashInstance).first()
+                payload['Interval'] = qMetPer.sysMet
+                payload['LogstashIP'] = qNodeSpec.nLogstashInstance
+                payload['UDPPort'] = str(qLSSpec.udpPort)
+                resFin[n] = payload
+
+        if auxComp == 'lsf':
+            resFin = {}
+            resourceList = agentr.lsf()
+            for n in resourceList:
+                payload = {}
+                nIP = urlparse(n).hostname
+                qNodeSpec = dbNodes.query.filter_by(nodeIP=nIP).first() #TODO: same as for collectd remove duplicate code
+                qLSSpec = dbSCore.query.filter_by(hostIP=qNodeSpec.nLogstashInstance).first()
+                payload['LogstashIP'] = qNodeSpec.nLogstashInstance
+                payload['LumberjackPort'] = qLSSpec.inLumberPort
+                resFin[n] = payload
+
+        if auxComp == 'jmx':
+            return "Not available in this version!"
+
+
+        # if auxComp == 'all':
+        #     resourceCollectd = agentr.collectd()
+        #     resourceLSF = agentr.lsf()
+        app.logger.info('[%s] : [INFO] Resources with payload -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(resFin))
+
+        dmon = GreenletRequests(resFin)
+        nodeRes = dmon.parallelPost(None)
+        app.logger.info('[%s] : [INFO] Resources responses -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nodeRes))
+        failedNodes = []
+        for n in nodeRes:
+            nodeIP = urlparse(n['Node'])
+            qNode = dbNodes.query.filter_by(nodeIP=nodeIP.hostname).first()
+            # print n['StatusCode']
+            if n['StatusCode'] != 200:
+                failedNodes.append({'NodeIP': str(nodeIP.hostname),
+                                    'Code': n['StatusCode']})
+                qNode.nCollectdState = 'unknown'
+                qNode.nLogstashForwState = 'unknown'
+        response = jsonify({'Status': 'Reconfigured ' + auxComp,
+                            'Message': 'Updated Status',
+                            'Failed': failedNodes})
+        response.status_code = 200
+        app.logger.info('[%s] : [INFO] Component %s reconfigure, failed %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(auxComp), str(failedNodes))
+        dmon.reset()
+        return response
+
+
+@dmon.route('/v1/overlord/aux/interval')
+class AuxInterval(Resource):
+    def get(self):
+        qInterv = dbMetPer.query.first()
+        if qInterv is None:
+            response = jsonify({'Status': 'No metrics interval has been set'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARNING] No metrics interval has been set',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        else:
+            response = jsonify({'System': qInterv.sysMet,
+                        'YARN': qInterv.yarnMet,
+                        'Spark': qInterv.sparkMet,
+                        'Storm': qInterv.stormMet})
+            response.status_code = 200
+            app.logger.info('[%s] : [INFO] Returned metrics poll rate; System -> %s, YARN -> %s, Spark -> %s, Storm -> %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            qInterv.sysMet, qInterv.yarnMet, qInterv.sparkMet, qInterv.stormMet)
+        return response
+    @api.expect(resInterval)
+    def put(self):
+        if not request.json:
+            abort(400)
+
+        if 'Spark' not in request.json:
+            spark = '15'
+        else:
+            spark = request.json['Spark']
+        if 'Storm' not in request.json:
+            storm = '60'
+        else:
+            storm = request.json['Storm']
+        if 'YARN' not in request.json:
+            yarn = '15'
+        else:
+            yarn = request.json['YARN']
+        if 'Systen' not in request.json:
+            system = '15'
+        else:
+            system = request.json['System']
+        app.logger.info('[%s] : [INFO] Values; System -> %s, YARN -> %s, Spark -> %s, Storm -> %s',
+                      datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), system, yarn, spark, storm)
+        qInterv = dbMetPer.query.first()
+        if qInterv is None:
+            upMet = dbMetPer(sysMet=system, yarnMet=yarn, stormMet=storm, sparkMet=spark)
+            db.session.add(upMet)
+            db.session.commit()
+            response = jsonify({'Status': 'Added metrics interval values'})
+            response.status_code = 201
+            app.logger.info('[%s] : [INFO] Added Metrics interval values',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        else:
+            if 'Spark' not in request.json:
+                app.logger.info('[%s] : [INFO] Spark not in request. Value unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                pass
+            elif request.json['Spark'] == spark:
+                qInterv.sparkMet = spark
+            if 'Storm' not in request.json:
+                app.logger.info('[%s] : [INFO] Storm not in request. Value unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                pass
+            elif request.json['Storm'] == storm:
+                qInterv.stormMet = storm
+            if 'YARN' not in request.json:
+                app.logger.info('[%s] : [INFO] YARN not in request. Value unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                pass
+            elif request.json['YARN'] == yarn:
+                qInterv.yarnMet = yarn
+            if 'System' not in request.json:
+                app.logger.info('[%s] : [INFO] System not in request. Value unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                pass
+            elif request.json['System'] == system:
+                qInterv.sysMet = system
+            db.session.commit()
+            response = jsonify({'Status': 'Updated metrics interval values'})
+            response.status_code = 200
+            app.logger.info('[%s] : [INFO] Updated Metrics interval values',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return response
 
 

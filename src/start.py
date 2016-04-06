@@ -153,10 +153,20 @@ def main(argv):
 						try:
 							db.session.commit() 
 						except Exception as inst:
-							print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
-							print >> sys.stderr, type(inst)
-							print >> sys.stderr, inst.args
+							# print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
+							# print >> sys.stderr, type(inst)
+							# print >> sys.stderr, inst.args
 							app.logger.warning('[%s] : [WARNING] Duplicate KB entry exception! Local deployment can be run only once. With %s and %s',
+											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+							pass
+					chkMetPer = db.session.query(dbMetPer.id).first()
+					if chkMetPer is not None:
+						chkMetPerCore = dbMetPer(sysMet="15", yarnMet="15", sparkMet="5", stormMet="60")
+						db.session.add(chkMetPerCore)
+						try:
+							db.session.commit()
+						except Exception as inst:
+							app.logger.warning('[%s] : [WARNING] Duplicate MetPer entry exception! Local deployment can be run only once. With %s and %s',
 											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 
