@@ -159,7 +159,8 @@ def main(argv):
 							app.logger.warning('[%s] : [WARNING] Duplicate KB entry exception! Local deployment can be run only once. With %s and %s',
 											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
-					chkMetPer = db.session.query(dbMetPer.id).first()
+
+					chkMetPer = db.session.query.first()
 					if chkMetPer is None:
 						chkMetPerCore = dbMetPer(sysMet="15", yarnMet="15", sparkMet="5", stormMet="60")
 						db.session.add(chkMetPerCore)
