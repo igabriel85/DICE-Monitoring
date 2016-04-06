@@ -92,11 +92,12 @@ def main(argv):
 								datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				sys.exit(0) #exit when done
 		if opt in ("-p", "--port"):
-			if not isinstance(arg, int):
-				app.logger.error('[%s] : [ERROR] Port must be integer. Exiting',
-								 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+			try:
+				port = int(arg)
+			except Exception as inst:
+				app.logger.error('[%s] : [ERROR] Port must be integer. Exiting %s with %s',
+								 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args )
 				sys.exit(2)
-			port = int(arg)
 		if opt in ("-e", "--endpoint-ip"):
 			if not isinstance(arg, str):
 				app.logger.error('[%s] : [ERROR] Endpoint must be string. Exiting',
