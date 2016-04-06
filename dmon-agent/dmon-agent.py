@@ -154,7 +154,7 @@ class NodeDeployCollectd(Resource):
                         'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid',
                         'poll_interval': pollInterval}
-        aux.configureComponent(settingsDict, collectdTemp, collectdConf, lsfConf)
+        aux.configureComponent(settingsDict, collectdTemp, collectdConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
                             'Message': 'Collectd Started'})
@@ -193,7 +193,7 @@ class NodeDeployLSF(Resource):
                                 'Message': 'LS Server certificate is missing'})
             response.status_code = 404
             return response
-        aux.configureComponent(settingsDict, lsfTemp)
+        aux.configureComponent(settingsDict, lsfTemp, lsfConf)
         aux.controll('logstash-forwarder', 'restart')
         response = jsonify({'Status': 'Done',
                             'Message': 'LSF Stated'})

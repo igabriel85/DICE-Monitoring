@@ -12,6 +12,10 @@ elif [ $ARCH == "Darwin" ]; then
    CMD="import os, sys; print os.path.realpath(\"$( dirname $0 )\")"
    DIR=`python -c "$CMD"`
 fi
+if [[ $EUID != 0 ]]; then
+    echo "Agent requires root privilages! Exiting"
+    exit 1
+  fi
 
 if [ ! -d "$DIR/pid" ]; then
   mkdir -p $DIR/pid/
