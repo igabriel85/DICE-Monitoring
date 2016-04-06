@@ -154,7 +154,7 @@ class NodeDeployCollectd(Resource):
                         'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid',
                         'poll_interval': pollInterval}
-        aux.configureComponent(settingsDict, collectdTemp, collectdConf)
+        aux.configureComponent(settingsDict, collectdTemp, collectdConf, lsfConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
                             'Message': 'Collectd Started'})

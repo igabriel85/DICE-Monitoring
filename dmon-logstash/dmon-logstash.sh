@@ -15,7 +15,7 @@ elif [ $ARCH == "Darwin" ]; then
 fi
 
 if [ ! -d "$DIR/pid" ]; then
-    mkdir -p $DIR/pid/dmon-agent.pid
+    mkdir -p $DIR/pid/
 fi
 
 if [ ! -d "$DIR/log" ]; then
