@@ -848,7 +848,7 @@ class MonitoredNodes(Resource):
                     nLSI = nodes['LogstashInstance']
                     app.logger.info('[%s] : [INFO] LS Instance at %s assigned to %s',
                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
-                                    qNodes.nodeFQDN, nLSI)
+                                    nLSI, nodes['NodeName'])
 
                 e = dbNodes(nodeFQDN=nodes['NodeName'], nodeIP=nodes['NodeIP'], nodeOS=nodes['NodeOS'],
                             nkey=nodes['key'], nUser=nodes['username'], nPass=nodes['password'], nLogstashInstance=nLSI)
@@ -2589,7 +2589,7 @@ class AuxDeployThread(Resource):
             for k, v in e.iteritems():
                 nodeList = []
                 nodeList.append(k)
-                agentr = AgentResourceConstructor(nodeList, '5000')
+                agentr = AgentResourceConstructor(nodeList, '5222')
                 resourceList = agentr.deploy()
                 r = {'roles': v}
                 resFin[resourceList[-1]] = r
@@ -2629,7 +2629,7 @@ class AuxDeployThread(Resource):
 @dmon.route('/v2/overlord/aux/deploy/check')
 class AuxDeployCheckThread(Resource):
     def get(self):
-        agentPort = '5000'
+        agentPort = '5222'
         nodesAll = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP).all()
         if nodesAll is None:
             response = jsonify({'Status': 'No monitored nodes found'})
@@ -3122,7 +3122,7 @@ class AuxStartSelectiveThreaded(Resource):
 
         node = []
         node.append(qAux.nodeIP)
-        agentr = AgentResourceConstructor(node, '5000')
+        agentr = AgentResourceConstructor(node, '5222')
 
         if auxComp == 'all':
             resourceList = agentr.start()
@@ -3176,7 +3176,7 @@ class AuxStopSelectiveThreaded(Resource):
 
         node = []
         node.append(qAux.nodeIP)
-        agentr = AgentResourceConstructor(node, '5000')
+        agentr = AgentResourceConstructor(node, '5222')
 
         if auxComp == 'all':
             resourceList = agentr.stop()
@@ -3227,7 +3227,7 @@ class AuxStartAllThreaded(Resource):
         for n in qNodes:
             nList.append(n[0])
 
-        agentr = AgentResourceConstructor(nList, '5000')
+        agentr = AgentResourceConstructor(nList, '5222')
         if auxComp == 'all':
             resourceList = agentr.start()
         else:
@@ -3276,7 +3276,7 @@ class AuxStopAllThreaded(Resource):
         for n in qNodes:
             nList.append(n[0])
 
-        agentr = AgentResourceConstructor(nList, '5000')
+        agentr = AgentResourceConstructor(nList, '5222')
         if auxComp == 'all':
             resourceList = agentr.stop()
         else:
@@ -3333,7 +3333,7 @@ class AuxConfigureCompTreaded(Resource):
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), auxComp)
             return response
 
-        agentr = AgentResourceConstructor(nList, '5000')
+        agentr = AgentResourceConstructor(nList, '5222')
         qMetPer = dbMetPer.query.first()
         if auxComp == 'collectd':
             resFin = {}
