@@ -903,7 +903,7 @@ class ClusterRoles(Resource):
 
     @api.expect(listNodeRoles)
     def put(self):
-        if not request.json or not "Nodes" in request.json:
+        if not request.json or not "Nodes" in request.json or not "NodeName" in request.json:
             response = jsonify({'Status': 'Mimetype Error',
                                 'Message': 'Only JSON requests are permitted'})
             response.status_code = 400
