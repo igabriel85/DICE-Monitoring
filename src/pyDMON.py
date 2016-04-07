@@ -911,21 +911,22 @@ class ClusterRoles(Resource):
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
-        if "Nodes" not in request.json or "NodeName" not in request.json:
+        if "Nodes" not in request.json:
             response = jsonify({'Status': 'Malformed Request',
                                 'Message': 'Missing key(s)'})
             response.status_code = 400
-            app.logger.warning('[%s] : [WARN] Malformed request, missing keys',
+            app.logger.warning('[%s] : [WARN] Malformed request, missing Node key',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
-
-        if "NodeName" not in request.json['Nodes']:
-            response = jsonify({'Status': 'Malformed Request',
+        nrNodes = len(request.json['Nodes'])
+        for n in range(nrNodes):
+            if "NodeName" not in request.json['Nodes'][n]:
+                response = jsonify({'Status': 'Malformed Request',
                                 'Message': 'Missing key(s)'})
-            response.status_code = 400
-            app.logger.warning('[%s] : [WARN] Malformed request, missing keys',
+                response.status_code = 400
+                app.logger.warning('[%s] : [WARN] Malformed request, missing NodeName key',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
-            return response
+                return response
 
         nList = request.json["Nodes"]
 
