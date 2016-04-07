@@ -892,11 +892,12 @@ class ClusterRoles(Resource):
             return response
         for nl in nodesAll:
             nodeDict = {}
-            print >> sys.stderr, nl[0]
-            nodeDict.update({nl[0]: nl[1].split(',')})
+            app.logger.info('[%s] : [INFO] Node name -> %s ',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nl[0]))
+            nodeDict.update({nl[0]: nl[1].split(', ')})
             nodeList.append(nodeDict)
         response = jsonify({'Nodes': nodeList})
-        app.logger.info('[%s] : [INFO] Nodes and their associted roles ',
+        app.logger.info('[%s] : [INFO] Nodes and their associted roles %s',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nodeList))
         response.status_code = 200
         return response
