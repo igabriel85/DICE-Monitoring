@@ -903,11 +903,19 @@ class ClusterRoles(Resource):
 
     @api.expect(listNodeRoles)
     def put(self):
-        if not request.json or not "Nodes" in request.json or not "NodeName" in request.json:
-            response = jsonify({'Status': 'Mimetype Error',
+        if not request.json:
+            response = jsonify({'Status': 'Malformed Request',
                                 'Message': 'Only JSON requests are permitted'})
             response.status_code = 400
-            app.logger.warning('[%s] : [WARN] Malformed request',
+            app.logger.warning('[%s] : [WARN] Malformed request, not JSON',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        if "Nodes" not in request.json or "NodeName" not in request.jdon:
+            response = jsonify({'Status': 'Malformed Request',
+                                'Message': 'Missing key(s)'})
+            response.status_code = 400
+            app.logger.warning('[%s] : [WARN] Malformed request, missing keys',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
