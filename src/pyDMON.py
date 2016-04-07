@@ -3448,7 +3448,7 @@ class AuxInterval(Resource):
             yarn = '15'
         else:
             yarn = request.json['YARN']
-        if 'Systen' not in request.json:
+        if 'System' not in request.json:
             system = '15'
         else:
             system = request.json['System']
