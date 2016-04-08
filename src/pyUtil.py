@@ -284,6 +284,33 @@ def validateIPv4(s):
     except ValueError:
         return False
 
+
+def checkStormSpoutsBolts(ip, port, topology):
+    '''
+    :param ip: IP of the Storm REST API
+    :param port: Port of th Storm REST API
+    :param topology: Topology ID
+    :return:
+    '''
+    ipTest = validateIPv4(ip)
+    if not ipTest:
+        return 0, 0
+    if not port.isdigit():
+        return 0, 0
+    url = 'http://%s:%s/api/v1/topology/%s' %(ip, port, topology)
+    try:
+        r = requests.get(url, timeout=2)
+    except requests.exceptions.Timeout:
+        print "Connection timedout"
+        return 0, 0
+    except requests.exceptions.ConnectionError:
+        print "Connection error"
+        return 0, 0
+    if r.status_code != 200:
+        return 0, 0
+
+    return len(r.json()['bolts']), len(r.json()['spouts'])
+
 # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #
 # t = test.check()

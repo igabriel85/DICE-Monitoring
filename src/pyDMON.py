@@ -2164,17 +2164,44 @@ class LSCoreController(Resource):
         else:
             keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
 
-        StormRestIP = ''
         if qSCore.LSCoreStormEndpoint == 'None':
             StormRestIP = 'None'
         else:
             StormRestIP = qSCore.LSCoreStormEndpoint
+        qNodeRoles = db.session.query(dbNodes.nRoles).all()
+        if qNodeRoles is None:
+            uniqueRolesList = ['unknown']
+        else:
+            uList = []
+            for r in qNodeRoles:
+                uList.append(r[0].split(', '))
+            uniqueRoles = set(x for l in uList for x in l) #TODO find better solution for finding unique roles
+            uniqueRolesList = list(uniqueRoles)
 
+        qMetInt =dbMetPer.query.first()
+        if qMetInt is None:
+            stormInterval = '60'
+        else:
+            stormInterval = qMetInt.stormMet
+#TODO: check if storm in roles -> check spout and bolt number -> if fail remove storm from role list -> add to response storm status
+        if 'storm' in uniqueRolesList:
+            stormStatus = 'Storm registered'
+            spouts, bolts = checkStormSpoutsBolts(StormRestIP, qSCore.LSCoreStormPort, qSCore.LSCoreStormTopology)
+            if spouts == 0 or bolts == 0:
+                uniqueRolesList.remove('storm')
+                app.logger.warning('[%s] : [WARN] Storm topology spouts and botls not found, ignoring Storm',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                stormStatus = 'Storm ignored'
+        else:
+            stormStatus = 'Not registered'
+            spouts = 0
+            bolts = 0
         infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort,
                      "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
-                     "EShostPort": qESCore.nodePort,
-                     "StormRestIP": StormRestIP, "StormRestPort": qSCore.LSCoreStormPort,
-                     "StormTopologyID": qSCore.LSCoreStormTopology}
+                     "EShostPort": qESCore.nodePort, "StormRestIP": StormRestIP,
+                     "StormRestPort": qSCore.LSCoreStormPort, "StormTopologyID": qSCore.LSCoreStormTopology,
+                     'storm_interval': stormInterval, 'roles': uniqueRolesList, 'myIndex': 'logstash',
+                     'nSpout': spouts, 'nBolt': bolts}
         sConf = template.render(infoSCore)
         qSCore.conf = sConf
         # print >>sys.stderr, esConf
@@ -2207,7 +2234,8 @@ class LSCoreController(Resource):
             response.status_code = 500
             return response
         qSCore.LSCoreStatus = 'Running'
-        response = jsonify({'Status': 'Logstash Core PID ' + str(lsPid)})
+        response = jsonify({'Status': 'Logstash Core PID ' + str(lsPid),
+                            'Storm': stormStatus})
         response.status_code = 200
         return response
 
