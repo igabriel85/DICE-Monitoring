@@ -1,46 +1,103 @@
 
-
 input {
-lumberjack{
-port =>5000
-ssl_certificate => "{{sslcert}}"
-ssl_key=> "{{sslkey}}"
+{% if 'yarn' in roles %}
+    lumberjack{
+    port =>5000
+    ssl_certificate => "{{sslcert}}"
+    ssl_key=> "{{sslkey}}"
 }
+{% else %}
+#No lumberjack needed
+{% endif %}
+
+{% if 'spark' in roles%}
 graphite{
-mode => server
-port => 5002
-type => "graphite"
+    mode => server
+    port => 5002
+    type => "graphite"
 }
-  udp {
+{% else %}
+# No spark role found
+{% endif%}
+
+udp {
     port => {{udpPort}}         # 25826 matches port specified in collectd.conf
     buffer_size => 1452   # 1452 is the default buffer size for Collectd
     codec => collectd { } # specific Collectd codec to invoke
     type => collectd
-  }
-  {% if StormRestIP == "None"%}
-    #No Storm set
+}
+
+{% if 'storm' not in roles %}
+ #Storm role not defined
+    {% elif StormRestIP == "None"%}
+    #No Storm IP set
+  
+    {% elif StormRestPort == "None"%}
+    #No Storm Port set
+    
+
+    {% elif StormTopologyID == "None"%}
+    #No Storm Topology set
+    
   {% else %}
-    http_poller {
-      urls => {
-        Topology => {
-        method => get
-        url => "http://{{StormRestIP}}:{{StormRestPort}}/api/v1/topology/{{StormTopologyID}}"
-        headers => {
-        Accept => "application/json"
-        }
-        }
+http_poller {
+  urls => {
+    Topology => {
+      method => get
+      url => "http://{{StormRestIP}}:{{StormRestPort}}/api/v1/topology/{{StormTopologyID}}"
+      headers => {
+      Accept => "application/json"
       }
-      request_timeout => 60
-      interval => 60
-      codec => "json"
-      # A hash of request metadata info (timing, response headers, etc.) will be sent here
-      metadata_target => "http_poller_metadata"
-      type =>"storm"
     }
+  }
+    request_timeout => 60
+    interval => {{storm_interval}}
+    codec => "json"
+    # A hash of request metadata info (timing, response headers, etc.) will be sent here
+    # metadata_target => "http_poller_metadata"
+    type =>"storm-topology"
+}
+
+http_poller {
+  urls =>{
+    ClusterSummary =>{
+      method => get
+      url => "http://{{StormRestIP}}:{{StormRestPort}}/api/v1/cluster/summary"
+      headers => {
+      Accept => "application/json"
+      }
+    }
+  }
+    request_timeout => 60
+    interval => {{storm_interval}}
+    codec => "json"
+    # A hash of request metadata info (timing, response headers, etc.) will be sent here
+    # metadata_target => "http_poller_metadata"
+    type =>"storm-cluster"
+}
+
+http_poller{
+  urls =>{
+    TopologyList =>{
+      method => get
+      url => "http://{{StormRestIP}}:{{StormRestPort}}/api/v1/topology/summary"
+      headers => {
+      Accept => "application/json"
+      }
+    }
+  }
+    request_timeout => 60
+    interval => {{storm_interval}}
+    codec => "json"
+    # A hash of request metadata info (timing, response headers, etc.) will be sent here
+    # metadata_target => "http_poller_metadata"
+    type =>"storm-topSum"
+}
   {% endif %}
 }
 
 filter{
+{% if 'spark' in roles%}
 if [type]=="graphite"{
  grok{
   break_on_match => false
@@ -48,6 +105,108 @@ if [type]=="graphite"{
   match=>["message","\A%{WORD:appID}.%{NOTSPACE:sparkMetric} %{NUMBER:Value} %{NUMBER:timestamp}"]
 }
 }
+{% else %}
+#No spark node defined
+{% endif %}
+
+
+{% if 'storm' in roles %}
+if [type] == "storm-topology"{
+  ruby {
+        code => "
+  event.to_hash.keys.each { |k| event[ k.gsub('.','_') ] = event.remove(k) if k.include?'.' }
+  params = event['configuration'] && event['configuration'].to_hash
+        params.keys.each { |k| params[ k.gsub('.','_') ] = params.delete(k) if k.include?'.' } unless params.nil?
+       "
+       add_field =>{
+       {% for i in range(nBolt) %}
+       "bolts_{{i}}_executors" => "%{[bolts][{{i}}][executors]}"
+       "bolts_{{i}}_emitted" => "%{[bolts][{{i}}][emitted]}"
+       "bolts_{{i}}_errorLapsedSecs" => "%{[bolts][{{i}}][errorLapsedSecs]}"
+       "bolts_{{i}}_transferred" => "%{[bolts][{{i}}][transferred]}"
+       "bolts_{{i}}_acked" => "%{[bolts][{{i}}][acked]}"
+       "bolts_{{i}}_errorPort" => "%{[bolts][{{i}}][errorPort]}"
+       "bolts_{{i}}_executeLatency" => "%{[bolts][{{i}}][executeLatency]}"
+       "bolts_{{i}}_tasks" => "%{[bolts][{{i}}][tasks]}"
+       "bolts_{{i}}_executed" => "%{[bolts][{{i}}][executed]}"
+       "bolts_{{i}}_processLatency" => "%{[bolts][{{i}}][processLatency]}"
+       "bolts_{{i}}_boltId" => "%{[bolts][{{i}}][boltId]}"
+       "bolts_{{i}}_errorHost" => "%{[bolts][{{i}}][errorHost]}"
+       "bolts_{{i}}_lastError" => "%{[bolts][{{i}}][lastError]}"
+       "bolts_{{i}}_errorWorkerLogLink" => "%{[bolts][{{i}}][errorWorkerLogLink]}"
+       "bolts_{{i}}_capacity" => "%{[bolts][{{i}}][capacity]}"
+       "bolts_{{i}}_failed" => "%{[bolts][{{i}}][failed]}"
+       "bolts_{{i}}_encodedBoltId" => "%{[bolts][{{i}}][encodedBoltId]}"
+       {% endfor %}
+       
+      {% for n in range(nSpout) %}
+       "spouts_{{n}}_executors" => "%{[spouts][{{n}}][executors]}"
+       "spouts_{{n}}_emitted" => "%{[spouts][{{n}}][emitted]}"
+       "spouts_{{n}}_errorLapsedSecs" => "%{[spouts][{{n}}][errorLapsedSecs]}"
+       "spouts_{{n}}_completeLatency" => "%{[spouts][{{n}}][completeLatency]}"
+       "spouts_{{n}}_transferred" => "%{[spouts][{{n}}][transferred]}"
+       "spouts_{{n}}_acked" => "%{[spouts][{{n}}][acked]}"
+       "spouts_{{n}}_errorPort" => "%{[spouts][{{n}}][errorPort]}"
+       "spouts_{{n}}_spoutId" => "%{[spouts][{{n}}][spoutId]}"
+       "spouts_{{n}}_tasks" => "%{[spouts][{{n}}][tasks]}"
+       "spouts_{{n}}_errorHost" => "%{[spouts][{{n}}][errorHost]}"
+       "spouts_{{n}}_lastError" => "%{[spouts][{{n}}][lastError]}"
+       "spouts_{{n}}_errorWorkerLogLink" => "%{[spouts][{{n}}][errorWorkerLogLink]}"
+       "spouts_{{n}}_failed" => "%{[spouts][{{n}}][failed]}"
+       "spouts_{{n}}_encodedSpoutId" => "%{[spouts][{{n}}][encodedSpoutId]}"
+       {% endfor %}
+       
+       "topologyStats_10m_window" => "%{[topologyStats][0][window]}"
+       "topologyStats_10m_emitted" => "%{[topologyStats][0][emitted]}"
+       "topologyStats_10m_transferred" => "%{[topologyStats][0][transferred]}"
+       "topologyStats_10m_completeLatency" => "%{[topologyStats][0][completeLatency]}"
+       "topologyStats_10m_acked" => "%{[topologyStats][0][acked]}"
+       "topologyStats_10m_failed" => "%{[topologyStats][0][failed]}"
+
+       "topologyStats_3h_window" => "%{[topologyStats][1][window]}"
+       "topologyStats_3h_emitted" => "%{[topologyStats][1][emitted]}"
+       "topologyStats_3h_transferred" => "%{[topologyStats][1][transferred]}"
+       "topologyStats_3h_completeLatency" => "%{[topologyStats][1][completeLatency]}"
+       "topologyStats_3h_acked" => "%{[topologyStats][1][acked]}"
+       "topologyStats_3h_failed" => "%{[topologyStats][1][failed]}"
+
+       "topologyStats_1d_window" => "%{[topologyStats][2][window]}"
+       "topologyStats_1d_emitted" => "%{[topologyStats][2][emitted]}"
+       "topologyStats_1d_transferred" => "%{[topologyStats][2][transferred]}"
+       "topologyStats_1d_completeLatency" => "%{[topologyStats][2][completeLatency]}"
+       "topologyStats_1d_acked" => "%{[topologyStats][2][acked]}"
+       "topologyStats_1d_failed" => "%{[topologyStats][2][failed]}"
+
+       "topologyStats_all_window" => "%{[topologyStats][3][window]}"
+       "topologyStats_all_emitted" => "%{[topologyStats][3][emitted]}"
+       "topologyStats_all_transferred" => "%{[topologyStats][3][transferred]}"
+       "topologyStats_all_completeLatency" => "%{[topologyStats][3][completeLatency]}"
+       "topologyStats_all_acked" => "%{[topologyStats][3][acked]}"
+       "topologyStats_all_failed" => "%{[topologyStats][3][failed]}"
+       }
+       remove_field => ["bolts", "spouts", "visualizationTable", "topologyStats"]
+    }
+}
+if [type] == "storm-topSum"{
+  mutate {
+    add_field =>{
+      "topology_0_id" => "%{[topologies][0][id]}"
+      "topology_0_encodedId" => "%{[topologies][0][encodedId]}"
+      "topology_0_name" => "%{[topologies][0][name]}"
+      "topology_0_status" => "%{[topologies][0][status]}"
+      "topology_0_uptime" => "%{[topologies][0][uptime]}"
+      "topology_0_tasksTotal" => "%{[topologies][0][tasksTotal]}"
+      "topology_0_workersTotal" => "%{[topologies][0][workersTotal]}"
+      "topology_0_executorsTotal" => "%{[topologies][0][executorsTotal]}"
+    }
+    remove_field => ["topologies"]
+  }
+}
+{% else %}
+##Storm role not defined
+{% endif %}
+
+{% if 'yarn' in roles %}
 if [type]=="nodemanager-metrics"{ #same as set in logstash-forwarder configuration json
   grok{
     break_on_match => false
@@ -233,12 +392,19 @@ if [type]=="mrappmaster-metrics"{
      match=>["message","\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, Hostname=%{HOSTNAME:hostname}, NumActiveSources=%{NUMBER:NumActiveSources:int}, NumAllSources=%{NUMBER:NumAllSources:int}, NumActiveSinks=%{NUMBER:NumActiveSinks:int}, NumAllSinks=%{NUMBER:NumAllSinks:int}, Sink_diceNumOps=%{NUMBER:Sink_diceNumOps:int}, Sink_diceAvgTime=%{NUMBER:Sink_diceAvgTime}, Sink_diceDropped=%{NUMBER:Sink_diceDropped:int}, Sink_diceQsize=%{NUMBER:Sink_diceQsize:int}, SnapshotNumOps=%{NUMBER:SnapshotNumOps:int}, SnapshotAvgTime=%{NUMBER:SnapshotAvgTime}, PublishNumOps=%{NUMBER:PublishNumOps:int}, PublishAvgTime=%{NUMBER:PublishAvgTime}, DroppedPubAll=%{NUMBER:DroppedPubAll}"]
     }
 }
-
+{% else %}
+#No HDFS defined
+{% endif %}
 }
 output {
   elasticsearch {
      #cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name; Only for LS version 1.5.x
      #protocol => http #Only version 1.5.x
      hosts => ["{{EShostIP}}:{{EShostPort}}"] #For version 2.x of logstash
+     {% if not myIndex %}
+     index => "logstash-%{+YYY.MM.dd}"
+     {% else %}
+     index => "{{myIndex}}-%{+YYY.MM.dd}"
+     {% endif %}
   }
 }
