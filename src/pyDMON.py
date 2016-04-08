@@ -843,7 +843,7 @@ class MonitoredNodes(Resource):
                         nLSI = qNodeLSinstance.hostIP
                         app.logger.info('[%s] : [INFO] LS Instance %s assigned to %s',
                                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
-                                        qNodes.nodeFQDN, qNodeLSinstance.hostFQDN)
+                                        nodes['NodeName'], qNodeLSinstance.hostFQDN)
                 else:
                     nLSI = nodes['LogstashInstance']
                     app.logger.info('[%s] : [INFO] LS Instance at %s assigned to %s',
