@@ -238,7 +238,6 @@ class AgentResourceConstructor():
 
 def dbBackup(db, source, destination, version=1):
     '''
-
     :param db: -> database
     :param source: -> original name
     :param destination: -> new name
@@ -252,7 +251,38 @@ def dbBackup(db, source, destination, version=1):
         os.rename(source, destination)
 
 
+def detectStormTopology(ip, port=8080):
+    '''
+    :param ip: IP of the Storm REST API
+    :param port: Port of the Storm REST API
+    :return: topology name
+    '''
+    url = 'http://%s:%s/api/v1/topology/summary' %(ip, port)
+    try:
+        r = requests.get(url, timeout=2)
+    except requests.exceptions.Timeout:
+        print "Connection timedout"
+        raise
+    except requests.exceptions.ConnectionError:
+        print "Connection error"
+        raise
 
+    topologySummary = r.json()
+    return topologySummary.get('topologies')[0]['id']
+
+
+def validateIPv4(s):
+    '''
+    :param s: -> IP as string
+    :return:
+    '''
+    pieces = s.split('.')
+    if len(pieces) != 4:
+        return False
+    try:
+        return all(0 <= int(p) < 256 for p in pieces)
+    except ValueError:
+        return False
 
 # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #

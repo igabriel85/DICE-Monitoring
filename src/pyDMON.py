@@ -1063,6 +1063,153 @@ class ClusterRoles(Resource):
         return response
 
 
+@dmon.route('/v1/overlord/detect/storm')
+class DetectStormRA(Resource):
+    def post(self):
+        qNode = dbNodes.query.all()
+        if qNode is None:
+            response = jsonify({'Status': 'No registered nodes'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        qLSStorm = dbSCore.query.all()
+        if qLSStorm is None:
+            response = jsonify({'Status': 'No registered logstash server'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No logstash instance found found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        regStorm = {}
+        for l in qLSStorm:
+            if l.LSCoreStormEndpoint != 'None':
+                app.logger.info('[%s] : [INFO] Found Storm Endpoint set to %s ',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), l.LSCoreStormEndpoint)
+                if validateIPv4(l.LSCoreStormEndpoint):
+                    if l.LSCoreStormPort.isdigit():
+                        regStorm[l.LSCoreStormEndpoint] = l.LSCoreStormPort
+                        app.logger.info('[%s] : [INFO] Storm REST Port is %s',
+                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), l.LSCoreStormPort)
+                    else:
+                        regStorm[l.LSCoreStormEndpoint] = '8080'
+                        l.LSCoreStormPort = '8080'
+                        app.logger.info('[%s] : [INFO] Storm REST Port set to default -> 8080',
+                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    if l.LSCoreStormTopology != 'None':
+                        try:
+                            getTop = detectStormTopology(l.LSCoreStormEndpoint, l.LSCoreStormPort)
+                        except Exception as inst:
+                            app.logger.warning('[%s] : [WARNING] Error while trying enpoint -> %s port -> %s;  with %s and %s',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), l.LSCoreStormEndpoint, l.LSCoreStormPort,
+                                               type(inst), inst.args)
+                            getTop = 'None'
+                        if l.LSCoreStormTopology == getTop:
+                            response = jsonify({'Status': 'Topology Verified',
+                                                'Topology': getTop})
+                            response.status_code = 200
+                            app.logger.info('[%s] : [INFO] Topology %s verified',
+                                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), getTop)
+                            return response
+        foundTopologies = set()
+        lsTopology = {}
+        if regStorm:
+            for k, v in regStorm.iteritems():
+                try:
+                    topology = detectStormTopology(k, v)
+                except Exception as inst:
+                    app.logger.warning('[%s] : [WARNING] Error while trying enpoint -> %s port -> %s;  with %s and %s',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k, v,
+                                       type(inst), inst.args)
+                    break
+                foundTopologies.add(topology)
+                lsTopology[k] = topology
+            if len(foundTopologies) > 1:
+                setTopology = next(iter(foundTopologies))
+                for k, v in lsTopology.iteritems():
+                    qLStorm = dbSCore.query.filter_by(LSCoreStormEndpoint=k).first()
+                    if v == setTopology:
+                        qLStorm.LSCoreStormTopology = setTopology
+                        app.logger.info('[%s] : [INFO] Topology %s set at IP %s',
+                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), setTopology, k)
+                    break
+                response = jsonify({'Status': 'Topologies found ' + str(len(foundTopologies)),
+                                    'Topologies': list(foundTopologies),
+                                    'SetTopology': setTopology})
+                response.status_code = 201
+                return response
+            if lsTopology:
+                for k, v in lsTopology.iteritems():
+                    qLStorm = dbSCore.query.filter_by(LSCoreStormEndpoint=k).all()
+                    #TODO: adds Port and Storm Topology for all ls instances with the same set of registered Storm Endpoints, need to change in future versions
+                    for e in qLStorm:
+                        e.LSCoreStormTopology = v
+                        app.logger.info('[%s] : [INFO] Topology %s set at IP %s',
+                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), v, k)
+                response = jsonify({'Status': 'Topology found',
+                                'Topology': list(foundTopologies)})
+                response.status_code = 201
+                return response
+
+
+        stormNodes = []
+        for n in qNode:
+            if "storm" in n.nRoles:
+                stormNodes.append(n.nodeIP)
+        if not stormNodes:
+            response = jsonify({'Status': 'Storm role not found'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARNING] No nodes have storm role',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        resList = []
+        for n in stormNodes:
+            url = 'http://%s:%s/api/v1/topology/summary' %(n, '8080')
+            resList.append(url)
+        app.logger.info('[%s] : [INFO] Resource list for topoligy discovery -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), resList)
+        dmon = GreenletRequests(resList)
+        nodeRes = dmon.parallelGet()
+
+
+        topoIDs = {}
+        for i in nodeRes:
+            nodeIP = urlparse(i['Node'])
+            data = i['Data']
+            if data !='n/a':
+               topoIDs[nodeIP.hostname] = data.get('topologies')[0]['id']
+
+        if not topoIDs:
+            response = jsonify({'Status': 'No Storm detected on registered nodes'})
+            response.status_code = 404
+            app.logger.info('[%s] : [INFO] No Storm detected on registered nodes',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        elif len(topoIDs) > 1:
+            response = jsonify({'Status': 'More than one Storm deployment detected',
+                                'Message': 'Only one deployment per monitoring solution',
+                                'Nodes': topoIDs})
+            response.status_code = 500
+            app.logger.info('[%s] : [INFO] More than one Storm detected: %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(topoIDs))
+            return response
+        for ls in qLSStorm:
+            for k, v in topoIDs.iteritems():
+                ls.LSCoreStormEndpoint = k
+                ls.LSCoreStormPort = '8080'
+                ls.LSCoreStormTopology = v
+
+        response = jsonify({'Status': 'Detected Storm deployment',
+                            'StormEndpoint': topoIDs.keys()[0],
+                            'StormTopology': topoIDs.get(topoIDs.keys()[0]),
+                            'StormPort': '8080'
+                            })
+        response.status_code = 201
+        dmon.reset()
+        return response
+
+
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
 @api.doc(params={'nodeFQDN': 'Nodes FQDN'})
 class MonitoredNodeInfo(Resource):
@@ -1195,8 +1342,8 @@ class ClusterNodeRoles(Resource):
                             str(qNode.nRoles))
             return response
 
-    def post(self, nodeFQDN):
-        return 'Redeploy configuration for node ' + nodeFQDN + '!'
+    # def post(self, nodeFQDN): #TODO -> is this  required
+    #     return 'Redeploy configuration for node ' + nodeFQDN + '!'
 
 
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>/purge')
@@ -3431,6 +3578,7 @@ class AuxInterval(Resource):
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                             qInterv.sysMet, qInterv.yarnMet, qInterv.sparkMet, qInterv.stormMet)
         return response
+
     @api.expect(resInterval)
     def put(self):
         if not request.json:
