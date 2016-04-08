@@ -26,8 +26,8 @@ from rdflib import RDFS
 from rdflib import Graph
 import sys
 from app import *
+from datetime import datetime
 import time
-from datetime import *
 
 
 def jsonToPerfMon(data, format='xml'):
