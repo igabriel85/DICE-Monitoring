@@ -169,6 +169,7 @@ class dbSCore(db.Model):
     LSCoreStormTopology = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreSparkEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreSparkPort = db.Column(db.String(64), index=True, unique=False, default='None')
+    diceIndex = db.Column(db.String(64), index=True, unique=False, default='logstash')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -335,17 +336,18 @@ lsCore = api.model('Submit LS conf', {
     'HostFQDN': fields.String(required=True, description='Host FQDN'),
     'IP': fields.String(required=True, description='Host IP'),
     'OS': fields.String(required=False, description='Host OS'),
-    'LPort': fields.Integer(required=True, description='Lumberjack port'),
-    'udpPort': fields.String(required=True, default=25826, description='UDP Collectd Port'),
+    'LPort': fields.Integer(required=False, default=5000, description='Lumberjack port'),
+    'udpPort': fields.String(required=False, default=25826, description='UDP Collectd Port'),
     'LSCoreHeap': fields.String(required=False, default='512m', description='Heap size for LS server'),
     'LSCoreWorkers': fields.String(required=False, default='4', description='Number of workers for LS server'),
-    'ESClusterName': fields.String(required=True, description='ES cluster name'),
+    'ESClusterName': fields.String(required=True, default='diceMonit', description='ES cluster name'),
 # TODO: use as foreign key same as ClusterName in esCore
     'LSCoreStormEndpoint': fields.String(required=False, default='None', description='Storm REST Endpoint'),
     'LSCoreStormPort': fields.String(required=False, default='None', description='Storm REST Port'),
     'LSCoreStormTopology': fields.String(required=False, default='None', description='Storm Topology ID'),
     'LSCoreSparkEndpoint': fields.String(required=False, default='None', description='Spark REST Endpoint'),
-    'LSCoreSparkPort': fields.String(required=False, default='None', description='Spark REST Port')
+    'LSCoreSparkPort': fields.String(required=False, default='None', description='Spark REST Port'),
+    'Index': fields.String(required=False, default='logstash', description='ES index name to be used')
 })
 # monNodes = api.model('Monitored Nodes',{
 # 	'Node':fields.List(fields.Nested(nodeDet, description="FQDN and IP of nodes"))
@@ -1829,8 +1831,6 @@ class ESControllerStart(Resource):
         response.status_code = 201
         return response
 
-    # os.kill(qESCoreStart.ESCorePID, signal.SIGTERM)
-
 
 @dmon.route('/v1/overlord/core/es/<hostFQDN>/stop')
 @api.doc(params={'hostFQDN': 'Host FQDN'})
@@ -2001,13 +2001,7 @@ class LSCoreConfiguration(Resource):
 
     @api.expect(lsCore)
     def put(self):
-        # if request.headers['Content-Type'] == 'text/plain':
-        # 	cData = request.data
-        # 	#temporaryConf =  open(tmp_loc+'/temporary.conf',"w+")
-        # 	#temporaryConf.write(cData)
-        # 	#temporaryConf.close()
-        # 	print cData
-        requiredKeys = ['ESClusterName', 'HostFQDN', 'IP', 'LPort', 'udpPort']
+        requiredKeys = ['HostFQDN', 'ESClusterName', 'IP']
         if not request.json:
             abort(400)
         for key in requiredKeys:
@@ -2021,53 +2015,75 @@ class LSCoreConfiguration(Resource):
             response = jsonify({'Status': 'Invalid cluster name: ' + request.json['ESClusterName']})
             response.status_code = 404
             return response
-        qSCore = dbSCore.query.filter_by(hostIP=request.json['IP']).first()
-        if request.json["OS"] is None:
+        qSCore = dbSCore.query.filter_by(hostIP=request.json['IP']).first() #TODO: rework which kv pair is required
+        if 'IP' not in request.json:
+            hIP = '127.0.0.1'
+        else:
+            hIP = request.json['IP']
+        if 'OS' not in request.json:
             os = "unknown"
         else:
             os = request.json["OS"]
 
-        if request.json["LSCoreHeap"] is None:
+        if 'LSCoreHeap' not in request.json:
             lsHeap = '4g'
         else:
             lsHeap = request.json["LSCoreHeap"]
 
-        if request.json["LSCoreWorkers"] is None:
+        if 'LSCoreWorkers' not in request.json:
             lsWorkers = '4'
         else:
-            lsWorkers = request.json["LsCoreWorkers"]
+            lsWorkers = request.json["LSCoreWorkers"]
 
-        if request.json['LSCoreStormEndpoint'] is None:
+        if 'LSCoreStormEndpoint' not in request.json:
             StormEnd = 'None'
         else:
             StormEnd = request.json['LSCoreStormEndpoint']
 
-        if request.json['LSCoreStormPort'] is None:
+        if 'LSCoreStormPort' not in request.json:
             StormPort = 'None'
         else:
             StormPort = request.json['LSCoreStormPort']
 
-        if request.json['LSCoreStormTopology'] is None:
+        if 'LSCoreStormTopology' not in request.json:
             StormTopo = 'None'
         else:
             StormTopo = request.json['LSCoreStormTopology']
 
-        if request.json['LSCoreSparkEndpoint'] is None:
+        if 'LSCoreSparkEndpoint' not in request.json:
             SparkEnd = 'None'
         else:
             SparkEnd = request.json['LSCoreSparkEndpoint']
 
-        if request.json['LSCoreSparkPort'] is None:
+        if 'LSCoreSparkPort' not in request.json:
             SparkPort = 'None'
         else:
             SparkPort = request.json['LSCoreSparkPort']
 
+        if 'ESClusterName' not in request.json:
+            ESCname = 'diceMonit'
+        else:
+            ESCname = request.json['ESClusterName']
+        if 'udpPort' not in request.json:
+            udpPort = 25826
+        else:
+            udpPort = request.json['udpPort']
+        if 'LPort' not in request.json:
+            lumberPort = 5000
+        else:
+            lumberPort = request.json['LPort']
+
+        if 'Index' not in request.json:
+            rIndex = 'logstash'
+        else:
+            rIndex = request.json['Index']
+
         if qSCore is None:
-            upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os,
-                          outESclusterName=request.json["ESClusterName"], udpPort=request.json["udpPort"],
-                          inLumberPort=request.json['LPort'], LSCoreWorkers=lsWorkers, LSCoreHeap=lsHeap,
+            upS = dbSCore(hostFQDN=request.json["HostFQDN"], hostIP=hIP, hostOS=os,
+                          outESclusterName=ESCname, udpPort=udpPort,
+                          inLumberPort=lumberPort, LSCoreWorkers=lsWorkers, LSCoreHeap=lsHeap,
                           LSCoreStormEndpoint=StormEnd, LSCoreStormPort=StormPort, LSCoreStormTopology=StormTopo,
-                          LSCoreSparkEndpoint=SparkEnd, LSCoreSparkPort=SparkPort)
+                          LSCoreSparkEndpoint=SparkEnd, LSCoreSparkPort=SparkPort, diceIndex=rIndex)
             db.session.add(upS)
             db.session.commit()
             response = jsonify({'Added': 'LS Config for ' + request.json["HostFQDN"]})
@@ -2075,12 +2091,20 @@ class LSCoreConfiguration(Resource):
             return response
         else:
             # qESCore.hostFQDN =request.json['HostFQDN'] #TODO document hostIP and FQDN may not change in README.md
-            qSCore.hostOS = os
-            qSCore.LSCoreWorkers = lsWorkers
-            qSCore.LSCoreHeap = lsHeap
-            qSCore.outESclusterName = request.json['ESClusterName']
-            qSCore.udpPort = request.json['udpPort']
-            qSCore.inLumberPort = request.json['LPort']
+            if 'IP' in request.json:
+                qSCore.hostIP = hIP
+            if 'OS' in request.json:
+                qSCore.hostOS = os
+            if 'LSCoreWorkers' in request.json:
+                qSCore.LSCoreWorkers = lsWorkers
+            if 'LSCoreHeap' in request.json:
+                qSCore.LSCoreHeap = lsHeap
+            if 'ESClusterName' in request.json:
+                qSCore.outESclusterName = ESCname
+            if 'udpPort' in request.json:
+                qSCore.udpPort = udpPort
+            if 'LPort' in request.json:
+                qSCore.inLumberPort = lumberPort
             if StormEnd != 'None':
                 qSCore.LSCoreStormEndpoint = StormEnd
             if StormPort != 'None':
@@ -2091,6 +2115,8 @@ class LSCoreConfiguration(Resource):
                 qSCore.LSCoreSparkEndpoint = SparkEnd
             if SparkPort != 'None':
                 qSCore.LSCoreSparkPort = SparkPort
+            if 'Index' in request.json:
+                qSCore.diceIndex = rIndex
             db.session.commit()
             response = jsonify({'Updated': 'LS config for ' + request.json["HostFQDN"]})
             response.status_code = 201
@@ -2200,7 +2226,7 @@ class LSCoreController(Resource):
                      "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
                      "EShostPort": qESCore.nodePort, "StormRestIP": StormRestIP,
                      "StormRestPort": qSCore.LSCoreStormPort, "StormTopologyID": qSCore.LSCoreStormTopology,
-                     'storm_interval': stormInterval, 'roles': uniqueRolesList, 'myIndex': 'logstash',
+                     'storm_interval': stormInterval, 'roles': uniqueRolesList, 'myIndex': qSCore.diceIndex,
                      'nSpout': spouts, 'nBolt': bolts}
         sConf = template.render(infoSCore)
         qSCore.conf = sConf
