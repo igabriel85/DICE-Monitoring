@@ -86,7 +86,7 @@ def main(argv):
 									datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 					sys.exit(2)
 				lock = open('dmon.lock', "w+")
-				lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+				lock.write(datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 				lock.close()
 				app.logger.info('[%s] : [INFO] Stopping D-Mon Controller',
 								datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))

@@ -2209,7 +2209,6 @@ class LSCoreController(Resource):
             stormInterval = '60'
         else:
             stormInterval = qMetInt.stormMet
-#TODO: check if storm in roles -> check spout and bolt number -> if fail remove storm from role list -> add to response storm status
         if 'storm' in uniqueRolesList:
             stormStatus = 'Storm registered'
             spouts, bolts = checkStormSpoutsBolts(StormRestIP, qSCore.LSCoreStormPort, qSCore.LSCoreStormTopology)
