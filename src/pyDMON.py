@@ -2150,7 +2150,7 @@ class LSCoreController(Resource):
                                     dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName,
                                     dbSCore.LSCoreStatus,
                                     dbSCore.LSCoreStormEndpoint, dbSCore.LSCoreStormPort, dbSCore.LSCoreStormTopology,
-                                    dbSCore.LSCoreSparkEndpoint, dbSCore.LSCoreSparkPort).all()
+                                    dbSCore.LSCoreSparkEndpoint, dbSCore.LSCoreSparkPort, dbSCore.LSCoreHeap).all()
         resList = []
         for hosts in hostsAll:
             confDict = {}
