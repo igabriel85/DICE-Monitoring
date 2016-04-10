@@ -2768,6 +2768,48 @@ class AuxAgentStart(Resource):
         return response
 
 
+@dmon.route('/v2/overlord/agent/stop')
+class AuxAgentStop(Resource):
+    def post(self):
+        qNodeStatus = dbNodes.query.filter_by(nMonitored=1).all()
+        if qNodeStatus is None:
+            response = jsonify({'Status': 'Agent Exception',
+                                'Message': 'No agents are registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No agents registered',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        dnode = []
+        for ns in qNodeStatus:
+            node = []
+            node.append(ns.nodeIP)
+            app.logger.info('[%s] : [INFO] Monitored nodes %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(node))
+
+            try:
+                stopAgent(node, ns.nUser, ns.nPass)
+            except Exception as inst:
+                # print >> sys.stderr, type(inst)
+                # print >> sys.stderr, inst.args
+                response = jsonify({'Status': 'Error Stopping agent on  ' + ns.nodeFQDN + '!'})
+                response.status_code = 500
+                app.logger.error('[%s] : [INFO] Error stopping agent on %s with exception %s and %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                 str(ns.nodeFQDN), type(inst), inst.args)
+                return response
+            app.logger.info('[%s] : [INFO] Stopped agent at %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(node))
+            AgentNodes = {}
+            AgentNodes['Node'] = ns.nodeFQDN
+            AgentNodes['IP'] = ns.nodeIP
+            dnode.append(AgentNodes)
+            ns.nMonitored = 0
+        response = jsonify({'Status': 'Agents Stopped',
+                            'Nodes': dnode})
+        response.status_code = 200
+        app.logger.info('[%s] : [INFO] Agents stopped on nodes %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(dnode))
+        return response
+
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
     def get(self):
