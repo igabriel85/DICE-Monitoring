@@ -2832,8 +2832,8 @@ class AuxAgentStop(Resource):
         return response
 
 
-@dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
-class AuxDeployThread(Resource):
+@dmon.route('/v2/overlord/aux/status')
+class AuxDeployStatus(Resource):
     def get(self):
         qNodes = db.session.query(dbNodes.nodeFQDN, dbNodes.nodeIP, dbNodes.nMonitored, dbNodes.nStatus,
                                   dbNodes.nCollectdState, dbNodes.nLogstashForwState).all()
@@ -2854,6 +2854,9 @@ class AuxDeployThread(Resource):
         response.status_code = 200
         return response
 
+
+@dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
+class AuxDeployThread(Resource):
     def put(self):  # TODO: used to enact new configurations
         return "Reload new Configuration"
 

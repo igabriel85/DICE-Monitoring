@@ -131,7 +131,7 @@ def main(argv):
 					if chkLSCoreDB is not None:
 						corePopLS = dbSCore(hostFQDN=socket.getfqdn(), hostIP=socket.gethostbyname(socket.gethostname()),
 										  hostOS='ubuntu', outESclusterName='diceMonit', udpPort=25680,
-										  inLumberPort=5000, LSCoreHeap=os.getenv('ES_HEAP_SIZE', '512m'))
+										  inLumberPort=5000, LSCoreHeap=os.getenv('LS_HEAP_SIZE', '512m'))
 						db.session.add(corePopLS) 
 						try:
 							db.session.commit() 
