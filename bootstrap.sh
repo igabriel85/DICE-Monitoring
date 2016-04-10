@@ -116,6 +116,14 @@ sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/
 
 openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.key -out /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.crt
 
+
+#Create Backup Dir
+echo "Creating backup Dir"
+if [ ! -d "/opt/DmonBackup" ]; then
+  mkdir -p /opt/DmonBackup
+fi
+
+
 # fix permissions
 echo "Setting permissions ...."
 cd /opt
@@ -126,7 +134,7 @@ echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
 rm -rf /opt/logstash-2.2.1.tar.gz
 rm -rf /opt/elasticsearch-2.2.0.tar.gz
-
+rm -rf /home/ubuntu/kibana-4.4.1-linux-x64*
 
 echo "Bootstrapping done!"
 

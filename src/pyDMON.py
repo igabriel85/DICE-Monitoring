@@ -2703,7 +2703,12 @@ class AuxAgentDeploy(Resource):
 
     def post(self):  # TODO: only works if all nodes have the same authentication
         qN = db.session.query(dbNodes.nodeIP, dbNodes.nStatus, dbNodes.nUser, dbNodes.nPass).all()
-
+        if not qN:
+            response = jsonify({'Status': 'No nodes registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         noAgent = []
         user = ' '
         password = ' '

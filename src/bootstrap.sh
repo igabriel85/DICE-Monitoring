@@ -133,6 +133,7 @@ echo "Finishing touches ....."
 mkdir -p /etc/logstash/conf.d
 rm -rf /opt/logstash-2.2.1.tar.gz
 rm -rf /opt/elasticsearch-2.2.0.tar.gz
+rm -rf /home/ubuntu/kibana-4.4.1-linux-x64*
 
 
 
