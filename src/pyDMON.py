@@ -2146,6 +2146,7 @@ class LSCoreController(Resource):
             confDict['StormTopology'] = hosts[11]
             confDict['SparkRestIP'] = hosts[12]
             confDict['SparkRestPort'] = hosts[13]
+            confDict['Status'] = hosts[8]
             resList.append(confDict)
         response = jsonify({'LS Instances': resList})
         response.status_code = 200

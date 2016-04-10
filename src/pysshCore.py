@@ -561,7 +561,7 @@ def deployAgent(hostlist, userName, uPassword):
 	localCopyCrt = os.path.join(credDir, 'logstash-forwarder.crt')
 
 	try:
-		mkdirOut = client.run_command('mkdir /opt/certs', sudo=True) #TODO: handle duplicate certs
+		mkdirOut = client.run_command('mkdir -p /opt/certs', sudo=True) #TODO: handle duplicate certs
 		for host in mkdirOut:
 			for line in mkdirOut[host]['stdout']:
 				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)
