@@ -1373,13 +1373,31 @@ class PurgeNode(Resource):
         try:
             serviceCtrl(lPurge, qPurge.nUser, qPurge.nPass, 'collectd', 'stop')
         except Exception as inst:
-            # print >> sys.stderr, type(inst)
-            # print >> sys.stderr, inst.args
             response = jsonify({'Error': 'Stopping collectd!'})
             response.status_code = 500
             app.logger.error('[%s] : [ERROR] While stopping collectd on %s with %s and %s',
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN, type(inst),
                              inst.args)
+            return response
+        
+        try:
+            stopAgent(lPurge, qPurge.nUser, qPurge.nPass)
+        except Exception as inst:
+            response = jsonify({'Status': 'Error Stopping agent on  ' + qPurge.nodeFQDN + '!'})
+            response.status_code = 500
+            app.logger.error('[%s] : [INFO] Error stopping agent on %s with exception %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                             str(qPurge.nodeFQDN), type(inst), inst.args)
+            return response
+
+        try:
+            purgeAgent(lPurge, qPurge.nUser, qPurge.nPass)
+        except Exception as inst:
+            response = jsonify({'Status': 'Error deleting agent on  ' + qPurge.nodeFQDN + '!'})
+            response.status_code = 500
+            app.logger.error('[%s] : [INFO] Error deleting agent on %s with exception %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                             str(qPurge.nodeFQDN), type(inst), inst.args)
             return response
 
         db.session.delete(qPurge)

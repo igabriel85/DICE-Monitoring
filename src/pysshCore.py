@@ -675,6 +675,25 @@ def stopAgent(hostlist, username, password):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 
+def purgeAgent(hostlist, username, password):
+	'''
+	:param hostlist:
+	:param username:
+	:param password:
+	:return:
+	'''
+	app.logger.info('[%s] : [INFO] dmon-agent hostlist received %s',
+					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
+	client = ParallelSSHClient(hostlist, user=username, password=password)
+	try:
+		client.run_command('(cd /opt && rm -rf dmon-agent*)', sudo=True)
+	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
+		print "An exception has occurred while deleting dmon-agent!"
+		app.logger.error('[%s] : [ERROR] Failed to delete dmon-agent',
+						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+		raise
+
+
 def main(argv):
 	'''
 		This is the main function that handles command line arguments.
