@@ -1360,7 +1360,7 @@ class PurgeNode(Resource):
         lPurge = []
         lPurge.append(qPurge.nodeIP)
         try:
-            serviceCtrl(lPurge, qPurge.uUser, qPurge.uPass, 'logstash-forwarder', 'stop')
+            serviceCtrl(lPurge, qPurge.nUser, qPurge.nPass, 'logstash-forwarder', 'stop')
         except Exception as inst:
             # print >> sys.stderr, type(inst)
             # print >> sys.stderr, inst.args
@@ -1371,7 +1371,7 @@ class PurgeNode(Resource):
                              inst.args)
             return response
         try:
-            serviceCtrl(lPurge, qPurge.uUser, qPurge.uPass, 'collectd', 'stop')
+            serviceCtrl(lPurge, qPurge.nUser, qPurge.nPass, 'collectd', 'stop')
         except Exception as inst:
             # print >> sys.stderr, type(inst)
             # print >> sys.stderr, inst.args
