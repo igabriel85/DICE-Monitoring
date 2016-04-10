@@ -1448,7 +1448,7 @@ class ESCoreConfiguration(Resource):
                 return response
 
         qESCore = dbESCore.query.filter_by(hostIP=request.json['IP']).first()
-        if request.json["OS"] is None:
+        if 'OS' not in request.json:
             os = "unknown"
         else:
             os = request.json["OS"]
