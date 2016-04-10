@@ -1642,7 +1642,7 @@ class ESCoreController(Resource):
                                     dbESCore.FieldDataCacheExpires, dbESCore.FieldDataCacheFilterSize,
                                     dbESCore.FieldDataCacheFilterExpires, dbESCore.IndexBufferSize,
                                     dbESCore.MinShardIndexBufferSize, dbESCore.MinIndexBufferSize,
-                                    dbESCore.ESCoreDebug).all()
+                                    dbESCore.ESCoreDebug, dbESCore.ESCoreHeap).all()
         resList = []
         for hosts in hostsAll:
             confDict = {}
@@ -1666,6 +1666,7 @@ class ESCoreController(Resource):
             confDict['MinShardIndexBufferSize'] = hosts[17]
             confDict['MinIndexBufferSize'] = hosts[18]
             confDict['Debug'] = hosts[19]
+            confDict['HeapSize'] = hosts[20]
             resList.append(confDict)
         response = jsonify({'ES Instances': resList})
         response.status_code = 200
@@ -2828,6 +2829,7 @@ class AuxAgentStop(Resource):
         app.logger.info('[%s] : [INFO] Agents stopped on nodes %s',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(dnode))
         return response
+
 
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
