@@ -3520,6 +3520,12 @@ class AuxStartAllThreaded(Resource):
             response.status_code = 400
             return response
         qNodes = db.session.query(dbNodes.nodeIP).all()
+        if not qNodes:
+            response = jsonify({'Status': 'No nodes registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes registrerd',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         nList = []
         for n in qNodes:
             nList.append(n[0])
@@ -3569,6 +3575,12 @@ class AuxStopAllThreaded(Resource):
             response.status_code = 400
             return response
         qNodes = db.session.query(dbNodes.nodeIP).all()
+        if not qNodes:
+            response = jsonify({'Status': 'No nodes registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes registrerd',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         nList = []
         for n in qNodes:
             nList.append(n[0])
