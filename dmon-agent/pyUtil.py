@@ -143,7 +143,7 @@ class AuxComponent():
 
     def install(self, component):
         compInstalled = []
-        if 'yarn' or 'hdfs' in component:
+        if 'yarn' in component or 'hdfs' in component:
             if 'lsf' in compInstalled:
                 pass
             else:
