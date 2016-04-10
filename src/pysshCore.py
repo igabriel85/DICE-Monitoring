@@ -640,7 +640,7 @@ def startAgent(hostlist, username, password):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	client = ParallelSSHClient(hostlist, user=username, password=password)
 	try:
-		agentStart = client.run_command('(cd /opt/dmon-agent && bash dmon-agent.sh)', sudo=True)
+		agentStart = client.run_command('(cd /opt/dmon-agent && nohup bash /opt/dmon-agent/dmon-agent.sh)', sudo=True)
 		for host in agentStart:
 			for line in agentStart[host]['stdout']:
 				app.logger.info('[%s] : [INFO] Host %s -> %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), host, line)

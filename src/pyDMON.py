@@ -1077,7 +1077,7 @@ class DetectStormRA(Resource):
             return response
 
         qLSStorm = dbSCore.query.all()
-        if qLSStorm is None:
+        if not qLSStorm:
             response = jsonify({'Status': 'No registered logstash server'})
             response.status_code = 404
             app.logger.warning('[%s] : [WARN] No logstash instance found found',
@@ -1379,7 +1379,7 @@ class PurgeNode(Resource):
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN, type(inst),
                              inst.args)
             return response
-        
+
         try:
             stopAgent(lPurge, qPurge.nUser, qPurge.nPass)
         except Exception as inst:
@@ -2744,7 +2744,8 @@ class AuxAgentDeploy(Resource):
 class AuxAgentStart(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nStatus=1).all()
-        if qNodeStatus is None:
+        print >> sys.stderr, qNodeStatus
+        if not qNodeStatus:
             response = jsonify({'Status': 'Agent Exception',
                                 'Message': 'No agents are registered'})
             response.status_code = 404
@@ -2790,7 +2791,7 @@ class AuxAgentStart(Resource):
 class AuxAgentStop(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nMonitored=1).all()
-        if qNodeStatus is None:
+        if not qNodeStatus:
             response = jsonify({'Status': 'Agent Exception',
                                 'Message': 'No agents are registered'})
             response.status_code = 404
@@ -3142,7 +3143,7 @@ class AuxStartAll(Resource):
         if auxComp == "collectd":
             qNCollectd = dbNodes.query.filter_by(nCollectdState='Stopped').all()
 
-            if qNCollectd is None:
+            if not qNCollectd:
                 response = jsonify({'Status': 'No nodes in state Stopped!'})
                 response.status_code = 404
                 return response
@@ -3171,7 +3172,7 @@ class AuxStartAll(Resource):
 
         if auxComp == "lsf":
             qNLsf = dbNodes.query.filter_by(nLogstashForwState='Stopped').all()
-            if qNLsf is None:
+            if not qNLsf:
                 response = jsonify({'Status': 'No nodes in state Stopped!'})
                 response.status_code = 404
                 return response
@@ -3213,7 +3214,7 @@ class AuxStopAll(Resource):
         if auxComp == "collectd":
             qNCollectd = dbNodes.query.filter_by(nCollectdState='Running').all()
 
-            if qNCollectd is None:
+            if not qNCollectd:
                 response = jsonify({'Status': 'No nodes in state Running!'})
                 response.status_code = 404
                 return response
@@ -3241,7 +3242,7 @@ class AuxStopAll(Resource):
 
         if auxComp == "lsf":
             qNLsf = dbNodes.query.filter_by(nLogstashForwState='Running').all()
-            if qNLsf is None:
+            if not qNLsf:
                 response = jsonify({'Status': 'No nodes in state Running!'})
                 response.status_code = 404
                 return response
