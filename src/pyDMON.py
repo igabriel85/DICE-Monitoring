@@ -2867,6 +2867,12 @@ class AuxDeployThread(Resource):
 
     def post(self):
         qNodes = db.session.query(dbNodes.nodeIP, dbNodes.nRoles).all()
+        if not qNodes:
+            response = jsonify({'Status': 'No nodes registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         nrList = []
         for nr in qNodes:
             nrNode = {}
