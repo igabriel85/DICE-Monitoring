@@ -665,7 +665,7 @@ def stopAgent(hostlist, username, password):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 	client = ParallelSSHClient(hostlist, user=username, password=password)
 	try:
-		client.run_command('(cd /opt/dmon-agent && bash nohup bash /opt/dmon-agent/dmon-agent.sh stop)', sudo=True)
+		client.run_command('(cd /opt/dmon-agent && nohup bash /opt/dmon-agent/dmon-agent.sh stop)', sudo=True)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occurred while stopping dmon-agent!"
 		app.logger.error('[%s] : [ERROR] Failed to stop dmon-agent',
