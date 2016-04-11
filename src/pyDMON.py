@@ -1654,10 +1654,10 @@ class ESCoreController(Resource):
             confDict['ESClusterName'] = hosts[5]
             confDict['Status'] = hosts[6]
             confDict['PID'] = hosts[7]
-            confDict['Master'] = hosts[8]
-            confDict['Data'] = hosts[9]
-            confDict['Shards'] = hosts[10]
-            confDict['Replicas'] = hosts[11]
+            confDict['MasterNode'] = hosts[8]
+            confDict['DataNode'] = hosts[9]
+            confDict['NumOfShards'] = hosts[10]
+            confDict['NumOfReplicas'] = hosts[11]
             confDict['FieldDataCacheSize'] = hosts[12]
             confDict['FieldDataCacheExpire'] = hosts[13]
             confDict['FieldDataCacheFilterSize'] = hosts[14]
@@ -1665,8 +1665,8 @@ class ESCoreController(Resource):
             confDict['IndexBufferSize'] = hosts[16]
             confDict['MinShardIndexBufferSize'] = hosts[17]
             confDict['MinIndexBufferSize'] = hosts[18]
-            confDict['Debug'] = hosts[19]
-            confDict['HeapSize'] = hosts[20]
+            confDict['ESCoreDebug'] = hosts[19]
+            confDict['ESCoreHeap'] = hosts[20]
             resList.append(confDict)
         response = jsonify({'ES Instances': resList})
         response.status_code = 200
@@ -1762,7 +1762,7 @@ class ESCOntrollerStatus(Resource):
                                 'Message': 'Argument ' + intProp + ' not supported'})
             response.status_code = 400
             return response
-        data = ''
+
         qESCore = dbESCore.query.filter_by(MasterNode=1).first()
         if qESCore is None:
             response = jsonify({"Status": "No master ES instances found!"})
@@ -2160,13 +2160,13 @@ class LSCoreController(Resource):
             confDict['LPort'] = hosts[3]
             confDict['udpPort'] = hosts[6]
             confDict['ESClusterName'] = hosts[7]
-            confDict['StormRestIP'] = hosts[9]
-            confDict['StormRestPort'] = hosts[10]
-            confDict['StormTopology'] = hosts[11]
+            confDict['LSCoreStormEndpoint'] = hosts[9]
+            confDict['LSCoreStormPort'] = hosts[10]
+            confDict['LSCoreStormTopology'] = hosts[11]
             confDict['SparkRestIP'] = hosts[12]
-            confDict['SparkRestPort'] = hosts[13]
+            confDict['LSCoreSparkEndpoint'] = hosts[13]
             confDict['Status'] = hosts[8]
-            confDict['HeapSize'] = hosts[14]
+            confDict['LSCoreHeap'] = hosts[14]
             resList.append(confDict)
         response = jsonify({'LS Instances': resList})
         response.status_code = 200
