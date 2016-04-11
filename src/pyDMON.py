@@ -3605,6 +3605,11 @@ class AuxStopAllThreaded(Resource):
                                     'Code': n['StatusCode']})
                 qNode.nCollectdState = 'unknown'
                 qNode.nLogstashForwState = 'unknown'
+            elif len(resourceList) == 1:
+                if auxComp == 'collectd':
+                    qNode.nCollectdState = 'Stopped'
+                if auxComp == 'lsf':
+                    qNode.nLogstashForwState = 'Stopped'
             else:
                 qNode.nCollectdState = 'Stopped'
                 qNode.nLogstashForwState = 'Stopped'

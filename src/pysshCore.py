@@ -783,15 +783,15 @@ def main(argv):
 
 if __name__=='__main__':
 	if len(sys.argv) == 1:
-		hostlist = ['109.231.126.190','109.231.126.222','109.231.126.221','109.231.126.102','109.231.126.166','109.231.126.70','109.231.126.136',
-		'109.231.126.146','109.231.126.157']
-		hostlist = ['109.231.126.189','109.231.126.177']
+		hostlist = ['109.231.126.190', '109.231.126.222', ' 109.231.126.221', '109.231.126.102', '109.231.126.166',
+					'109.231.126.70', '109.231.126.136', '109.231.126.146', '109.231.126.157']
+		hostlist = ['109.231.126.189', '109.231.126.177']
 		
 		userName = 'ubuntu'
 		uPassword = 'rexmundi220'
 		#installCollectd(hostlist,userName,uPassword)
 		#mf(hostlist,userName,uPassword)
-		installLogstashForwarder(hostlist,userName,uPassword,confDir)
+		installLogstashForwarder(hostlist, userName, uPassword, confDir)
 		#serviceCtrl(hostlist,userName,uPassword,'collectd','start')
 		#print detectOS(hostlist, 'ubuntu','rexmundi220')
 		#nmapScan(hostlist)
