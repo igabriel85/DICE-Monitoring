@@ -24,6 +24,12 @@ apt-get install python-pip -y
 apt-get install git -y
 apt-get isntall htop -y
 
+
+if [[ $EUID != 0 ]]; then
+    echo "D-Mon  requires root privilages! Exiting"
+    exit 1
+fi
+
 cd /opt
 
 git clone https://github.com/igabriel85/IeAT-DICE-Repository.git
