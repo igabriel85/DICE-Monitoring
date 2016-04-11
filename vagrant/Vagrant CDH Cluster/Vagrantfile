@@ -105,12 +105,13 @@ Vagrant.configure("2") do |config|
   
   config.vm.define :master do |master|
     master.vm.provider :virtualbox do |v|
-      v.name = "vm-cluster-oryx1"
+      v.name = "vm.cluster.oryx1"
       v.customize ["modifyvm", :id, "--memory", "4096"]
     end
     master.vm.network :private_network, ip: "10.211.55.100"
-    master.vm.hostname = "vm-cluster-oryx1"
+    master.vm.hostname = "vm.cluster.oryx1"
     master.vm.network :forwarded_port, host:7180, guest: 7180
+    master.vm.network :forwarded_port, guest: 22, host: 2185
     master.vm.provision :shell, :inline => $hosts_script
     master.vm.provision :hostmanager
     master.vm.provision :shell, :inline => $master_script
@@ -119,11 +120,12 @@ Vagrant.configure("2") do |config|
   config.vm.define :slave1 do |slave1|
     slave1.vm.box = "precise64"
     slave1.vm.provider :virtualbox do |v|
-      v.name = "vm-cluster-oryx2"
+      v.name = "vm.cluster.oryx2"
       v.customize ["modifyvm", :id, "--memory", "4096"]
     end
     slave1.vm.network :private_network, ip: "10.211.55.101"
-    slave1.vm.hostname = "vm-cluster-oryx2"
+    slave1.vm.hostname = "vm.cluster.oryx2"
+    slave1.vm.network :forwarded_port, guest: 22, host: 2186
     slave1.vm.provision :shell, :inline => $hosts_script
     slave1.vm.provision :hostmanager
   end
@@ -131,11 +133,12 @@ Vagrant.configure("2") do |config|
   config.vm.define :slave2 do |slave2|
     slave2.vm.box = "precise64"
     slave2.vm.provider :virtualbox do |v|
-      v.name = "vm-cluster-oryx3"
+      v.name = "vm.cluster.oryx3"
       v.customize ["modifyvm", :id, "--memory", "4096"]
     end
     slave2.vm.network :private_network, ip: "10.211.55.102"
-    slave2.vm.hostname = "vm-cluster-oryx3"
+    slave2.vm.hostname = "vm.cluster.oryx3"
+    slave2.vm.network :forwarded_port, guest: 22, host: 2187
     slave2.vm.provision :shell, :inline => $hosts_script
     slave2.vm.provision :hostmanager
   end
@@ -143,11 +146,12 @@ Vagrant.configure("2") do |config|
   config.vm.define :slave3 do |slave3|
     slave3.vm.box = "precise64"
     slave3.vm.provider :virtualbox do |v|
-      v.name = "vm-cluster-oryx4"
+      v.name = "vm.cluster.oryx4"
       v.customize ["modifyvm", :id, "--memory", "4096"]
     end
     slave3.vm.network :private_network, ip: "10.211.55.103"
-    slave3.vm.hostname = "vm-cluster-oryx4"
+    slave3.vm.hostname = "vm.cluster.oryx4"
+    slave3.vm.network :forwarded_port, guest: 22, host: 2188
     slave3.vm.provision :shell, :inline => $hosts_script
     slave3.vm.provision :hostmanager
   end
