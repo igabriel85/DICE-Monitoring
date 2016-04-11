@@ -1795,9 +1795,9 @@ class ESCOntrollerStatus(Resource):
         return data
 
 
-@dmon.route('/v1/overlord/core/es/<hostFQDN>/start')
+@dmon.route('/v1/overlord/core/es/<hostFQDN>/status')
 @api.doc(params={'hostFQDN': 'Host FQDN'})
-class ESControllerStart(Resource):
+class ESControllerStatusSpecific(Resource):
     def get(self, hostFQDN):
         qESCoreStatus = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
         if qESCoreStatus is None:
@@ -1809,6 +1809,10 @@ class ESControllerStart(Resource):
         response.status_code = 200
         return response
 
+
+@dmon.route('/v1/overlord/core/es/<hostFQDN>/start')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
+class ESControllerStart(Resource):
     def post(self, hostFQDN):
         qESCoreStart = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
         if qESCoreStart is None:
@@ -2286,9 +2290,9 @@ class LSCoreController(Resource):
         return response
 
 
-@dmon.route('/v1/overlord/core/ls/<hostFQDN>/start')
+@dmon.route('/v1/overlord/core/ls/<hostFQDN>/status')
 @api.doc(params={'hostFQDN': 'Host FQDN'})
-class LSCoreCOntrollerStart(Resource):
+class LSCoreControllerStatus(Resource):
     def get(self, hostFQDN):
         qLSCoreStatus = dbSCore.query.filter_by(hostFQDN=hostFQDN).first()
         if qLSCoreStatus is None:
@@ -2300,6 +2304,9 @@ class LSCoreCOntrollerStart(Resource):
         response.status_code = 200
         return response
 
+@dmon.route('/v1/overlord/core/ls/<hostFQDN>/start')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
+class LSCoreControllerStart(Resource):
     def post(self, hostFQDN):
         lsfCore = os.path.join(cfgDir, 'logstash.conf')
         lsLogfile = os.path.join(logDir, 'logstash.log')
