@@ -2163,8 +2163,8 @@ class LSCoreController(Resource):
             confDict['LSCoreStormEndpoint'] = hosts[9]
             confDict['LSCoreStormPort'] = hosts[10]
             confDict['LSCoreStormTopology'] = hosts[11]
-            confDict['SparkRestIP'] = hosts[12]
-            confDict['LSCoreSparkEndpoint'] = hosts[13]
+            confDict['LSCoreSparkEndpoint'] = hosts[12]
+            confDict['LSCoreSparkPort'] = hosts[13]
             confDict['Status'] = hosts[8]
             confDict['LSCoreHeap'] = hosts[14]
             resList.append(confDict)
