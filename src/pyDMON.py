@@ -2236,7 +2236,7 @@ class LSCoreController(Resource):
             stormInterval = qMetInt.stormMet
         if 'storm' in uniqueRolesList:
             stormStatus = 'Storm registered'
-            spouts, bolts = checkStormSpoutsBolts(StormRestIP, qSCore.LSCoreStormPort, qSCore.LSCoreStormTopology)
+            bolts, spouts = checkStormSpoutsBolts(StormRestIP, qSCore.LSCoreStormPort, qSCore.LSCoreStormTopology)
             if spouts == 0 or bolts == 0:
                 uniqueRolesList.remove('storm')
                 app.logger.warning('[%s] : [WARN] Storm topology spouts and botls not found, ignoring Storm',

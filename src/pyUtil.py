@@ -309,7 +309,7 @@ def checkStormSpoutsBolts(ip, port, topology):
     if r.status_code != 200:
         return 0, 0
 
-    return len(r.json()['spouts']), len(r.json()['bolts'])
+    return len(r.json()['bolts']), len(r.json()['spouts'])
 
 # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #
