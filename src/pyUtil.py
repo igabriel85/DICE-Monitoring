@@ -24,6 +24,7 @@ from datetime import datetime
 import time
 import requests
 import os
+import jinja2
 from app import *
 
 
@@ -310,6 +311,37 @@ def checkStormSpoutsBolts(ip, port, topology):
         return 0, 0
 
     return len(r.json()['bolts']), len(r.json()['spouts'])
+
+
+def configureComponent(settingsDict, tmpPath, filePath): #TODO modify /v1/overlord/aux/<auxComp>/config using this function
+        '''
+        :param settingsDict: dictionary containing the template information
+        :param tmpPath:  path to template file
+        :param filePath: path to save config file
+        :return:
+        '''
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        try:
+            template = templateEnv.get_template(tmpPath)
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Cannot find %s, with %s and %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath,
+                             type(inst), inst.args)
+            return 0
+        confInfo = template.render(settingsDict)
+        confFile = open(filePath, "w+")
+        confFile.write(confInfo)
+        confFile.close()
+        try:
+            subprocess.Popen('echo >> ' + filePath, shell=True) # TODO fix this
+            # subprocess.call(["echo", ">>", filePath])
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Cannot find %s, with %s and %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath,
+                             type(inst), inst.args)
+            return 0
+        return 1
 
 # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #
