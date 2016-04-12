@@ -481,6 +481,11 @@ class QueryEsCore(Resource):
             app.logger.warn('[%s] : [WARN] Unsuported output type %s',
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ftype)
             return response
+        if ftype == 'oslc' and 'collectd' not in request.json['DMON']['queryString']:
+            response = jsonify({'Status': 'Unsuported query',
+                                'Message': 'Only system metrics supported for oslc'})
+            response.status_code = 409
+            return response
 
         if 'tstop' not in request.json['DMON']:
             query = queryConstructor(tstart=request.json['DMON']['tstart'],
@@ -499,8 +504,15 @@ class QueryEsCore(Resource):
         app.logger.info('[%s] : [INFO] Index set to %s',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), myIndex)
         if not 'metrics' in request.json['DMON'] or request.json['DMON']['metrics'] == " ":
-            ListMetrics, resJson = queryESCore(query, debug=False,
-                                               myIndex=myIndex)  # TODO enclose in Try Catch if es instance unreachable
+            try:
+                ListMetrics, resJson = queryESCore(query, debug=False, myIndex=myIndex)
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Cannot connect to ES instance with %s and %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Connection error',
+                                    'Message': 'ES unreachable'})
+                response.status_code = 404
+                return response
             if not ListMetrics:
                 response = jsonify({'Status': 'No results found',
                                     'Message': 'Please check time interval and index'})
@@ -543,7 +555,15 @@ class QueryEsCore(Resource):
             metrics = request.json['DMON']['metrics']
             app.logger.info('[%s] : [INFO] Metrics filter set to %s',
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(metrics))
-            ListMetrics, resJson = queryESCore(query, allm=False, dMetrics=metrics, debug=False, myIndex=myIndex)
+            try:
+                ListMetrics, resJson = queryESCore(query, allm=False, dMetrics=metrics, debug=False, myIndex=myIndex)
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Cannot connect to ES instance with %s and %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Connection error',
+                                    'Message': 'ES unreachable'})
+                response.status_code = 404
+                return response
             if not ListMetrics:
                 response = jsonify({'Status': 'No results found!'})
                 response.status_code = 404
