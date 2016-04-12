@@ -1000,7 +1000,7 @@ class ClusterRoles(Resource):
                 nl.append(node[1])
                 uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',
                            '/etc/hadoop/conf.cloudera.yarn/hadoop-metrics2.properties')  # TODO better solution
-                uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',
+                uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',    #TODO instead of tmp add polling interval
                            '/etc/hadoop/conf.cloudera.hdfs/hadoop-metrics2.properties')  # TODO better solution
                 uploadFile(nl, node[2], node[3], propYarnFile, 'hadoop-metrics2.tmp',
                            '/etc/hadoop/conf/hadoop-metrics2.properties')  # TODO better solution
@@ -2872,8 +2872,8 @@ class AuxDeployStatus(Resource):
 
 @dmon.route('/v2/overlord/aux/deploy')  # TODO: gets current status of aux components and deploy them based on roles
 class AuxDeployThread(Resource):
-    def put(self):  # TODO: used to enact new configurations
-        return "Reload new Configuration"
+    # def put(self):  # TODO: used to enact new configurations
+    #     return "Reload new Configuration"
 
     def post(self):
         qNodes = db.session.query(dbNodes.nodeIP, dbNodes.nRoles).all()
@@ -3085,7 +3085,7 @@ class AuxDeploySelective(Resource):
                 return response
 
 
-@dmon.route('/v2/overlord/aux/deploy/<auxComp>/<nodeFQDN>')  # TODO: deploy specific configuration on the specified node
+@dmon.route('/v2/overlord/aux/<auxComp>/<nodeFQDN>/configure')  # TODO: deploy specific configuration on the specified node
 @api.doc(params={'auxComp': 'Aux Component', 'nodeFQDN': 'Node FQDN'})
 class AuxDeploySelectiveThread(Resource):
     def post(self, auxComp, nodeFQDN):
@@ -3225,7 +3225,6 @@ class AuxStartAll(Resource):
             response = jsonify({'Status': 'LSF started', 'Nodes': nodeLsfStopped})
             response.status_code = 200
             return response
-        # return nodeCollectdStopped
 
 
 @dmon.route('/v1/overlord/aux/<auxComp>/stop')  # auxCtrl(auxComp,'stop') #TODO revise from pysshCore and make it work!

@@ -88,7 +88,7 @@ There are two vagrant files in this repository. The [first](https://github.com/i
 The [second](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Monitoring) script installs D-Mon as well as the ELK stack, essentially taking the place of the '-i' flag in the above mentioned instructions. The procedure for creating a local deployment of D-Mon is the same as before.
 
 ### Chef
-* TODO not scheduled for M12
+* TODO not scheduled for M18
 
 
 ##REST API Structure
@@ -119,6 +119,8 @@ The Overlord is structured into two components:
 
 Return the log of dmon. It contains information about the last requests and the IPs from which they originated as well as status information of variouse sub components.
 
+The dmon internal logging system lists 3 types of messages. __INFO__ messages represent debug level information, __WARNING__ is for handeled exceptions and finaly __ERROR__ for caught errors.
+
 `GET` `/v1/overlord`
 
 Returns information regarding the current version of the Monitoring Platform.
@@ -148,7 +150,7 @@ Registers an application with DMON and creates a unique tag for the monitored da
 
 Deploys all monitoring core components provided they have values preset hosts. If not it deploys all components locally with default settings.
 
-**NOTE**: Currently the '-l' flag of the start script _dmon-start.sh_ does the same as the later option.
+**NOTE**: Currently the '-l' flag of the start script _dmon-start.sh_ does the same as the later option. Schedueled for M18.
 
 
 `GET` `/v1/overlord/core/database`
@@ -190,26 +192,11 @@ Returns the current status of the Monitoring platform status.
 ```
 
 **NOTE**: Only works for local deployments. It returns the current state of local ElasticSearch, Logstash server and Kibana status information.
+***
 
+`POST` `/v1/overlord/detect/storm`
 
-
-`GET` `/v1/overlord/core/chef`
-
-Returns the status of the chef-client of the monitoring core services.
-
-**TODO:** json structure.
-
-**FUTURE WORK:** This feature will be developed for future versions.
-
-
-
-`GET` `/v1/overlord/nodes/chef`
-
-Returns the status of the chef-clients from all monitored nodes.
-
-**TODO:** json structure.
-
-**FUTURE WORK:** This feature will be developed for future versions.
+Tries do detect if the current registered nodes have a valid storm deployment. It will first test if there are any nodes that have a Storm endpoint and port. If this fails it starts to scan all registered nodes. If it finds the endpoint it sets the first topology as the one to be monitored. Then, it sets all configurations necesary for storm monitoring automatically.
 
 ***
 
@@ -263,7 +250,7 @@ Input:
 
 Bootstrap of all non monitored nodes. Installs, configures and start collectd and logstash-forwarder on them. This feature is not recommended for testing, the usage of separate commands is preffered in order to detect network failures.
 
-**NOTE**: Duplicate from _../aux/.._ branch!
+**NOTE**: Meant for M24. Define one json to completely populate and set up dmon-controller. It can be then used to save and share internal state by sending the json between controller instances.
 ***
 
 `GET` `/v1/overlord/nodes/roles`
@@ -307,9 +294,18 @@ If the node has an unknown service installed, or the roles are not specified the
 
 Modifies the roles of each nodes.
 
-**TODO:** json structure.
+__Input:__
 
-**FUTURE WORK:** This feature will be developed for future versions.
+```json
+{
+  "Nodes": [
+    {
+      "NodeName": "<nodeFQDN>",
+      "Roles": [
+        "yarn"
+      ]
+    }
+```
 
 
 `POST` `/v1/overlord/nodes/roles`
@@ -350,8 +346,6 @@ Response:
       "username":"<uname|null>",
       "password":"<pass|null>",
       "chefclient":"<True|False>",
-      "CDH":"<active|inactive|unknown>",
-      "CDHVersion":"<version>",
       "Roles":"[listofroles]"
 }
 ```
@@ -372,9 +366,10 @@ Input:
   "NodeName":"<nodeFQDN>",
   "IP":"<NodeIP>",
   "OS":"<Operating_Systen>",
-  "key":"<keyName|null>",
-  "username":"<uname|null>",
-  "password":"<pass|null>"
+  "Key":"<keyName|null>",
+  "Username":"<uname|null>",
+  "Password":"<pass|null>",
+  "LogstashInstance": "<ip_logstash>"
 }
 ```
 
@@ -384,14 +379,14 @@ Input:
 
 Bootstraps specified node. 
 
-**NOTE**: Possible duplication with `../aux/..` branch.
+**NOTE**: Possible duplication with `../aux/..` branch. DEPRECATED.
 ***
 
 `DELETE` `/v1/overlord/nodes/{nodeFQDN}`
 
 Stops all auxiliary monitoring components associated with a particular node.
 
-**NOTE**: This does not delete the nodes nor the configurations it simply stops collectd and logstash-forwarder on the selected nodes.
+**NOTE**: This does not delete the nodes nor the configurations it simply stops collectd and logstash-forwarder on the selected nodes. DEPRECATED.
 
 
 `PUT` `/v1/overlord/nodes/{nodeFQDN}/roles`
@@ -426,22 +421,34 @@ Return a list of current hosts  comprising the ES cluster core components. The f
 {
   "ES Instances": [
     {
-      "ESClusterName": "<clustername>",
-      "HostFQDN": "<HostFQDN>",
-      "IP": "<Host IP>",
-      "NodeName": "<NodeName>",
-      "NodePort": "<IP:int>",
-      "OS": "<host OS>",
-      "PID": "<ES component PID>",
-      "Status": "<ES Status>",
-      "Master":"<true|false>"
-    },
-    ..................
+      "DataNode": true,
+      "ESClusterName": "diceMonit",
+      "ESCoreDebug": "0",
+      "ESCoreHeap": "3g",
+      "FieldDataCacheExpire": "6h",
+      "FieldDataCacheFilterExpires": "6h",
+      "FieldDataCacheFilterSize": "20%",
+      "FieldDataCacheSize": "20%",
+      "HostFQDN": "dice.cdh5.dmon.internal",
+      "IP": "127.0.0.1",
+      "IndexBufferSize": "30%",
+      "MasterNode": true,
+      "MinIndexBufferSize": "96mb",
+      "MinShardIndexBufferSize": "12mb",
+      "NodeName": "esCoreMaster",
+      "NodePort": 9200,
+      "NumOfReplicas": 1,
+      "NumOfShards": 5,
+      "OS": "ubuntu",
+      "PID": 2531,
+      "Status": "Running"
+    }
   ]
 }
 
 ```
 
+**NOTE:** 
 
 `POST` `/v1/overlord/core/es` 
 
@@ -468,28 +475,70 @@ Returns the current configuration file of ElasticSearch in the form of a YAML fi
 
 `PUT` `/v1/overlord/core/es/config`
 
-Changes the current configuration options of ElasticSearch.
+Changes the current configuration options for the Elasticsearch instance defined by it's FQDN and IP.
 
 Input:
 
 ```json
 {
-  "HostFQDN":"<nodeFQDN>",
-  "IP":"<NodeIP>",
-  "OS":"<Operating_Systen>",
-  "NodeName":"<ES host name>",
-  "NodePort":"<ES host port>",
-  "ClusterName":"<ES cluster name>"
+  {
+  "DataNode": true,
+  "ESClusterName": "string",
+  "ESCoreDebug": 1,
+  "ESCoreHeap": "4g",
+  "FieldDataCacheExpires": "6h",
+  "FieldDataCacheFilterExpires": "6h",
+  "FieldDataCacheFilterSize": "20%",
+  "FieldDataCacheSize": "20%",
+  "HostFQDN": "string",
+  "IP": "string",
+  "IndexBufferSize": "30%",
+  "MasterNode": true,
+  "MinIndexBufferSize": "96mb",
+  "MinShardIndexBufferSize": "12mb",
+  "NodeName": "string",
+  "NodePort": 9200,
+  "NumOfReplicas": 0,
+  "NumOfShards": 1,
+  "OS": "unknown"
+ }
 }
 
 ```
 
-**NOTE**: The new configuration will **not** be generated at this step. 
+**NOTE**: The new configuration will **not** be generated at this step. Currently only ESClusterName, HostFQDN, IP, NodeName, NodePort are required. This will be probably changed in future versions.
 ***
+
+`GET` `/v1/overlord/core/es/status/<intComp>/property/<intProp>`
+
+Returns diagnostic data about the master elasticsearch instance.
 
 `DELETE` `/v1/overlord/core/es/<hostFQDN>`
 
 Stops the ElasticSearch instance on a given host and removes all configuration data from DMON.
+
+
+***
+
+`POST` `/v1/overlord/core/es/<hostFQDN>/start`
+
+Start the es instance on the host identified by _hostFQDN_. It uses the last good generated es configuration.
+
+`POST` `/v1/overlord/core/es/<hostFQDN>/stop`
+
+Stops the es instance on the host identified by _hostFQDN_. 
+
+
+`POST` `/v1/overlord/core/halt`
+
+Stops all core components on every node.
+
+**NOTE:** Future release.
+
+
+`GET` `/v1/overlord/core/es/<hostFQDN>/status`
+
+Returns the current status (Running, Stopped, Unknown) and PID of the es instance on the host identified by _hostFQDN_.
 
 ***
  
@@ -503,16 +552,21 @@ Response:
 {
 	"LS Instances":[
 	  {
-	  	  "ESClusterName":"<name>",
-	  	  "HostFQDN":"<Host FQDN>",
-	  	  "IP":"<Host IP>",
-	  	  "LPort":"<port>",
-	  	  "OS":"<Operating_System>",
-	  	  "Status":"<status>",
-	  	  "udpPort":"<UDP Collectd port>"
+	  	"ESClusterName": "diceMonit",
+      "HostFQDN": "dice.cdh5.dmon.internal",
+      "IP": "109.231.121.210",
+      "LPort": 5000,
+      "LSCoreHeap": "512m",
+      "LSCoreSparkEndpoint": "None",
+      "LSCoreSparkPort": "None",
+      "LSCoreStormEndpoint": "None",
+      "LSCoreStormPort": "None",
+      "LSCoreStormTopology": "None",
+      "OS": "ubuntu",
+      "Status": "Running",
+      "udpPort": 25680
 	  	  
-	  },
-	  ............
+	  }
 	]
 }
 ```
@@ -526,7 +580,7 @@ Starts the logstash server based on the configuration information. During this s
 
 ***
 
-`DELETE` `/v1/overlord/core/ls/{hostFQDN}`
+`DELETE` `/v1/overlord/core/ls/<hostFQDN>`
 
 Stops the logstash server instance on a given host and removes all configuration data from DMON.
 
@@ -545,17 +599,37 @@ Input:
 
 ```json
 {
-  "HostFQDN":"<Host FQDN>",
-  "IP":"<Host IP>",
-  "OS":"<Operating_Systen>",
-  "LPort":"<Lumberjack Port>",
-  "udpPort":"<UDP Collectd port>",
-  "ESClusterName":"<ES cluster Name>"
+  "ESClusterName": "diceMonit",
+  "HostFQDN": "string",
+  "IP": "string",
+  "Index": "logstash",
+  "LPort": 5000,
+  "LSCoreHeap": "512m",
+  "LSCoreSparkEndpoint": "None",
+  "LSCoreSparkPort": "None",
+  "LSCoreStormEndpoint": "None",
+  "LSCoreStormPort": "None",
+  "LSCoreStormTopology": "None",
+  "LSCoreWorkers": "4",
+  "OS": "string",
+  "udpPort": 25826
 }
 
 ```
 **Future Work**: Only for local deployment of logstash server core service. Future versions will include distributed deployment.
  
+`GET` `/v1/overlord/core/ls/<hostFQDN>/status`
+
+Return the status of the logstash server running on the host identified by _hostFQDN_.
+
+`POST` `/v1/overlord/core/ls/<hostFQDN>/start` 
+
+Start the logstash server instance on the host identified by _hostFQDN_. It will use the last good configuration.
+ 
+`POST` `/v1/overlord/core/ls/<hostFQDN>/stop` 
+
+Stops the logstash server instance on the host identified by _hostFQDN_. 
+
 ***
 
 `GET` `/v1/overlord/core/ls/credentials`
@@ -661,7 +735,6 @@ Returns the current configuration file for Kibana. Uses the mime-type __'text/ya
 
 
 
-
 `PUT` `/v1/overlord/core/kb/config`
 Changes the current configuration for Kibana
 
@@ -690,7 +763,7 @@ Input:
 
 Returns basic information about auxiliary components.
 
-**FUTURE Work**: Information will basically be a kind of Readme.
+**FUTURE Work**: Information will basically be a kind of Readme. 
 
 ***
 
@@ -728,21 +801,24 @@ already active. It only works if all nodes have the same authentication.
 
 `GET` `/v1/overlord/aux/deploy`
 
-Returns monitoring component status of all nodes. 
+Returns monitoring component status of all nodes. Similar to __v2__ of this resource.
 
 ```json
 {
 	{
 		"NodeFQDN":"<nodeFQDN>",
 		"NodeIP":"<nodeIP>",
-		"Monit":"<True|False>",
+		"Monitored":"<boolean>",
 		"Collectd":"<status>",
-		"LSF":"<status>"
+		"LSF":"<status>",
+		"LSInstance": "<ip_logstash>"
 	},
 	............................
 }
 
 ```
+
+**NOTE:** Marked as __DEPRECATED__. Will be deleted in future versions.
 ***
 
 `POST` `/v1/overlord/aux/deploy`
@@ -759,6 +835,8 @@ If the status is _None_ than this resource will install and configure the monito
 
 All nodes can be restarted independent from their current state using the **--redeploy-all** parameter.
 
+**NOTE:** Marked as __DEPRECATED__. Will be deleted in future versions. Use __v2__ version of the same resource for parallel implementation of this resource.
+
 ***
 
 `POST` `/v1/overlord/aux/deploy/{collectd|logstashfw}/{NodeName}`
@@ -768,6 +846,40 @@ Deploys either collectd or logstash-forwarder to the specified node. In order to
 **FUTURE Work**: Currently configurations of both collectd and logstash-forwarder are global and can't be changed on a node by node basis.
 
 ***
+
+`GET` `/v1/overlord/aux/interval`
+
+Returns the current polling time interval for all tools. This is a global setting. Future versions may be implemented for a node by node interval setting.
+
+__Output:__
+
+```json
+{
+	"Spark": "5",
+	"Storm": "60",
+	"System": "15",
+	"YARN": "15"
+}
+```
+`PUT` `/v1/overlord/aux/interval`
+
+Changes the settings for all monitored systems.
+
+
+__Input:__
+
+```json
+{
+	"Spark": "5",
+	"Storm": "60",
+	"System": "15",
+	"YARN": "15"
+}
+```
+
+
+***
+
 
 `GET` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
@@ -785,26 +897,52 @@ Changes the configuration/status of collectd or logstashforwarder and restarts a
 
 Starts the specified auxiliary component on all nodes.
 
+**NOTE:** This resource is DEPRECATED. Use _v2_ instead.
+
 
 `POST` `/v1/overlord/aux/{auxComp}/stop`
 
 Stops the specified auxiliary components on all nodes.
+
+**NOTE:** This resource is DEPRECATED. Use _v2_ instead.
+
 ***
 
 `POST` `/v1/overlord/aux/{auxComp}/{nodeFQDN}/start`
 
 Starts the specified auxiliary component on a specific node.
 
+**NOTE:** This resource is DEPRECATED. Use _v2_ instead.
+
 
 `POST` `/v1/overlord/aux/{auxComp}/{nodeFQDN}/stop`
 
 Stops the specified auxiliary component on a specific node.
+
+**NOTE:** This resource is DEPRECATED. Use _v2_ instead.
 
 
 
 __Note:__ Some resources have been redesigned with parallel processing in mind. These use greenlets (gevent) to parallelize as much as possible the first version of the resources. These paralel resources are marked with _../v2/.._. All other functionality and return functions are the same.
 
 For the sake of brevity these resources will not be detailed. Only additional functionality will be documented.
+
+
+***
+
+`POST` `/v2/overlord/aux/deploy`
+
+Sets up the dmon-agent based on what roles are registerd for each nodes.
+
+
+`POST` `/v2/overlord/aux/{auxComp}/{nodeFQDN}/configure`
+
+Configures  dmon-agent _auxComp_  on node _nodeFQDN_.
+
+
+`POST` `/v2/overlord/aux/{auxComp}/configure`
+
+Configures  dmon-agent _auxComp_  on all nodes.
 
 
 `GET` `/v2/overlord/aux/deploy/check`
@@ -823,6 +961,71 @@ Polls dmon-agents from the current monitored cluster.
 
 If nodes don't respon they are added to the _Failed_ list togheter with the appropiate HTTP error code.
 
+
+`GET` `/v2/overlord/aux/status`
+
+Returns the current status of all nodes and auxiliary components:
+
+__Outputs:__
+
+```json
+{
+  "Aux Status": [
+    {
+      "Collectd": "Running",
+      "LSF": "Running",
+      "Monitored": true,
+      "NodeFQDN": "dice.cdh5.mng.internal",
+      "NodeIP": "109.231.121.135",
+      "Status": true
+    },
+    {
+      "Collectd": "Running",
+      "LSF": "Running",
+      "Monitored": true,
+      "NodeFQDN": "dice.cdh5.w1.internal",
+      "NodeIP": "109.231.121.194",
+      "Status": true
+    },
+    {
+      "Collectd": "Running",
+      "LSF": "Running",
+      "Monitored": true,
+      "NodeFQDN": "dice.cdh5.w2.internal",
+      "NodeIP": "109.231.121.134",
+      "Status": true
+    },
+    {
+      "Collectd": "Running",
+      "LSF": "Running",
+      "Monitored": true,
+      "NodeFQDN": "dice.cdh5.w3.internal",
+      "NodeIP": "109.231.121.156",
+      "Status": true
+    }
+  ]
+}
+```
+
+***
+
+`POST` `/v2/overlord/aux/{auxComp}/start`
+
+Start _auxComp_ on all nodes using parallel calls to the dmon-agent.
+
+`POST` `/v2/overlord/aux/{auxComp}/stop`
+
+Stops _auxComp_ on all nodes using parallel calls to the dmon-agent.
+
+
+`POST` `/v2/overlord/aux/{auxComp}/{nodeFQDN}/start`
+
+Start _auxComp_ on node _nodeFQDN_ using parallel calls to the dmon-agent.
+
+`POST` `/v2/overlord/aux/{auxComp}/{nodeFQDN{/stop`
+
+Stops _auxComp_ on node _nodeFQDN_ using parallel calls to the dmon-agent.
+
 -
 ### Observer
 
@@ -831,7 +1034,7 @@ If nodes don't respon they are added to the _Failed_ list togheter with the appr
 
 Returns a list of all YARN applications/jobs on the current monitored big data cluster.
 
-**NOTE**: Scheduled for future release.
+**NOTE**: Scheduled for future release. After M18.
 
 ***
 
@@ -840,7 +1043,7 @@ Returns a list of all YARN applications/jobs on the current monitored big data c
 Returns information on a particular YARN application identified by _{appID}_.
 The information will not contain monitoring data only a general overview. Similar to YARN History Server.
 
-**NOTE**: Scheduled for future release.
+**NOTE**: Scheduled for future release. After M18
 
 ***
 
@@ -848,7 +1051,7 @@ The information will not contain monitoring data only a general overview. Simila
  
  Returns the current monitored nodes list. Listing is only limited to node FQDN and current node IP.
  
- **NOTE**: Some cloud providers assign the UP dynamically at VM startup. Because of this D-Mon treats the FQDN as a form of UUID. In future versions this might change, the FQDN being replaced/augmented with a hash.
+ **NOTE**: Some cloud providers assign the IP dynamically at VM startup. Because of this D-Mon treats the FQDN as a form of UUID. In future versions this might change, the FQDN being replaced/augmented with a hash.
  
  Response:
  
@@ -864,30 +1067,31 @@ The information will not contain monitoring data only a general overview. Simila
 ***
 `GET` `/v1/observer/nodes/{nodeFQDN}`
 
-Returns information of a particular monitored node. No information is limited to non confidential information, no authentication credentials are returned.
+Returns information of a particular monitored node. No information is limited to non confidential information, no authentication credentials are returned. The _Status_ field is true if dmon-agent has been already deployed while _Monitored_ is true if it is also started. _LSInstance_ represents the to witch logstash instance the node is assigned to.
 
 Response:
 
 ```json
 {
     "<nodeFQDN>":{
-      "Status":"<online|offline>",
+      "Status":"<boolean>",
       "IP":"<NodeIP>",
-      "Monitored":"<true|false>",
-      "OS":"Operating_Systen"
+      "Monitored":"<boolean>",
+      "OS":"<Operating_System>",
+      "LSInstance": "<ip_of_logstash>"
     }
 }
 ```
 ***
 `GET` `/v1/observer/nodes/{nodeFQDN}/roles`
 
-Returns roles the node identified by _'nodeFQDN'_.
+Returns roles of the node identified by _'nodeFQDN'_.
 
 Response:
 
 ```json
 {
-	'Roles':['yarn','spark','storm']
+	'Roles':['yarn','spark']
 }
 ```
 
@@ -918,7 +1122,7 @@ Output depends on the option selected by the user: csv, json or plain.
 
 **NOTE**: The filter metrics must be in the form of a list. Also, filtering currently works only for CSV and plain output. Future versions will include the ability to export metrics in the form of RDF+XML in concordance with the OSLC Performance Monitoring 2.0 standard. It is important to note that we will export in this format only system metrics. No Big Data framework specific metrics.
 
-From Version __0.1.3__ it is possible to ommit the _tstop_ parameter, instead it is possible to define a time window based on the current  system time:
+From version __0.1.3__ it is possible to ommit the _tstop_ parameter, instead it is possible to define a time window based on the current  system time:
 
 ```json
 {
@@ -935,6 +1139,23 @@ From Version __0.1.3__ it is possible to ommit the _tstop_ parameter, instead it
 ```
 
 where __s__ stands for second or __m__ for minites and __h__ for hours. 
+
+From version __0.2.0__ it is possible to specify custom index to be used in the query. The index definiton supports the __*__ wildcard character.
+
+```json
+{
+  "DMON":{
+    "query":{
+      "size":"<SIZEinINT>",
+      "index":"logstash-*",
+      "ordering":"<asc|desc>",
+      "queryString":"<query>",
+      "tstart":"now-30s"
+    }
+  }
+}
+
+```
 
 
 #License
