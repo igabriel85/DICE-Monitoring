@@ -583,8 +583,9 @@ class QueryEsCore(Resource):
 @dmon.route('/v1/overlord')
 class OverlordInfo(Resource):
     def get(self):
-        message = 'Message goes Here and is not application/json (TODO)!'
-        return message
+        response = jsonify({'Status': 'Current version is 0.2.0'})
+        response.status_code = 200
+        return response
 
 
 @dmon.route('/v1/overlord/framework')
@@ -2529,7 +2530,9 @@ class LSKeyControl(Resource):
 @dmon.route('/v1/overlord/aux')
 class AuxInfo(Resource):
     def get(self):
-        return "Returns Information about AUX components"
+        response = jsonify({'AuxComponents': ['collectd', 'logstash-forwarder', 'jmx']})
+        response.status_code = 200
+        return response
 
 
 @dmon.route('/v1/overlord/aux/deploy')
