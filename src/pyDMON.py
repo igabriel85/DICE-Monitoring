@@ -3822,15 +3822,23 @@ class AuxInterval(Resource):
         return response
 
 
-@dmon.route('/v1/reset')
+@dmon.route('/vx/reset/<type>')
 class DMONReset(Resource):
-    def post(self):
+    def post(self, type):
+        listP = ['status', 'monitored']
+        if type not in listP:
+            return "Not Supported"
         qn = dbNodes.query.all()
-        listT = []
         for n in qn:
-            print str(n.nStatus)
-            n.nStatus = 0
-            print str(n.nStatus)
+            if type == 'status':
+                print str(n.nStatus)
+                n.nStatus = 0
+                print str(n.nStatus)
+            elif type == 'monitored':
+                print str(n.nMonitored)
+                n.nMonitored = 0
+                print str(n.nMonitored)
+        return "Done"
 
 
 
