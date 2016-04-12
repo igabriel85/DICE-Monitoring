@@ -190,6 +190,10 @@ if [type] == "storm-topology"{
        remove_field => ["bolts", "spouts", "visualizationTable", "topologyStats"]
        convert => {"bolts_0_capacity" => "float"}
     }
+
+    mutate{
+        convert => {"bolts_0_capacity" => "float"}
+    }
 }
 if [type] == "storm-topSum"{
   mutate {
