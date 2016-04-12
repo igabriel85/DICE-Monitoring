@@ -252,7 +252,7 @@ queryES = api.model('query details Model', {
     'fname': fields.String(required=False, default="output", description='Name of output file.'),
     'size': fields.Integer(required=True, default=500, description='Number of record'),
     'ordering': fields.String(required=True, default='desc', description='Ordering of records'),
-    'queryString': fields.String(required=True, default="hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\""
+    'queryString': fields.String(required=True, default="host:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\""
                                  , description='ElasticSearc Query'),
     'tstart': fields.Integer(required=True, default="now-1d", description='Start Date'),
     'tstop': fields.Integer(required=False, default="None", description='Stop Date'),
