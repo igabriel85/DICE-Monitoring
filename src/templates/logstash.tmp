@@ -118,7 +118,10 @@ if [type] == "storm-topology"{
   params = event['configuration'] && event['configuration'].to_hash
         params.keys.each { |k| params[ k.gsub('.','_') ] = params.delete(k) if k.include?'.' } unless params.nil?
        "
-       add_field =>{
+    }
+
+    mutate{
+        add_field =>{
        {% for i in range(nBolt) %}
        "bolts_{{i}}_executors" => "%{[bolts][{{i}}][executors]}"
        "bolts_{{i}}_emitted" => "%{[bolts][{{i}}][emitted]}"
@@ -185,6 +188,7 @@ if [type] == "storm-topology"{
        "topologyStats_all_failed" => "%{[topologyStats][3][failed]}"
        }
        remove_field => ["bolts", "spouts", "visualizationTable", "topologyStats"]
+       convert => {"bolts_0_capacity" => "float"}
     }
 }
 if [type] == "storm-topSum"{
