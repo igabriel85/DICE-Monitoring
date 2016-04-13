@@ -1845,6 +1845,12 @@ class ESControllerStatusSpecific(Resource):
             response = jsonify({'Status': 'Unknown host ' + hostFQDN})
             response.status_code = 404
             return response
+        pid = qESCoreStatus.ESCorePID
+        if not checkPID(pid):
+            if pid != 0:
+                qESCoreStatus.ESCoreStatus = 'Stopped'
+            else:
+                qESCoreStatus.ESCoreStatus = 'unknown'
         response = jsonify({'Status': qESCoreStatus.ESCoreStatus,
                             'PID': qESCoreStatus.ESCorePID})
         response.status_code = 200
@@ -2195,7 +2201,7 @@ class LSCoreController(Resource):
                                     dbSCore.sslCert, dbSCore.sslKey, dbSCore.udpPort, dbSCore.outESclusterName,
                                     dbSCore.LSCoreStatus,
                                     dbSCore.LSCoreStormEndpoint, dbSCore.LSCoreStormPort, dbSCore.LSCoreStormTopology,
-                                    dbSCore.LSCoreSparkEndpoint, dbSCore.LSCoreSparkPort, dbSCore.LSCoreHeap).all()
+                                    dbSCore.LSCoreSparkEndpoint, dbSCore.LSCoreSparkPort, dbSCore.LSCoreHeap, dbSCore.LSCorePID).all()
         resList = []
         for hosts in hostsAll:
             confDict = {}
@@ -2211,6 +2217,7 @@ class LSCoreController(Resource):
             confDict['LSCoreSparkEndpoint'] = hosts[12]
             confDict['LSCoreSparkPort'] = hosts[13]
             confDict['Status'] = hosts[8]
+            confDict['PID'] = hosts[15]
             confDict['LSCoreHeap'] = hosts[14]
             resList.append(confDict)
         response = jsonify({'LS Instances': resList})
@@ -2340,10 +2347,17 @@ class LSCoreControllerStatus(Resource):
             response = jsonify({'Status': 'Unknown host ' + hostFQDN})
             response.status_code = 404
             return response
+        pid = qLSCoreStatus.LSCorePID
+        if not checkPID(pid):
+            if pid != 0:
+                qLSCoreStatus.LSCoreStatus = 'Stopped'
+            else:
+                qLSCoreStatus.LSCoreStatus = 'unknown'
         response = jsonify({'Status': qLSCoreStatus.LSCoreStatus,
                             'PID': qLSCoreStatus.LSCorePID})
         response.status_code = 200
         return response
+
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>/start')
 @api.doc(params={'hostFQDN': 'Host FQDN'})
