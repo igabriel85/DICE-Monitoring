@@ -1201,7 +1201,13 @@ class DetectStormRA(Resource):
             nodeIP = urlparse(i['Node'])
             data = i['Data']
             if data !='n/a':
-               topoIDs[nodeIP.hostname] = data.get('topologies')[0]['id']
+                if not data:
+                    response = jsonify({'Status': 'No topology Loaded'})
+                    response.status_code = 404
+                    app.logger.warning('[%s] : [WARNING] No topology loaded',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                topoIDs[nodeIP.hostname] = data.get('topologies')[0]['id']
 
         if not topoIDs:
             response = jsonify({'Status': 'No Storm detected on registered nodes'})
