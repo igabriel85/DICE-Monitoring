@@ -616,6 +616,8 @@ Input:
 }
 
 ```
+
+**NOTE:** LS instances are bound by their FQDN this meanst that it can't change.
 **Future Work**: Only for local deployment of logstash server core service. Future versions will include distributed deployment.
  
 `GET` `/v1/overlord/core/ls/<hostFQDN>/status`
