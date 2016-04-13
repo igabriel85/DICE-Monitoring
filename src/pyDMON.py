@@ -1457,7 +1457,7 @@ class ESCoreConfiguration(Resource):
 
     @api.expect(esCore)
     def put(self):
-        requiredKeys = ['ESClusterName', 'HostFQDN', 'IP', 'NodeName', 'NodePort']
+        requiredKeys = ['ESClusterName', 'HostFQDN', 'NodeName']
         if not request.json:
             abort(400)
         for key in requiredKeys:
@@ -1468,12 +1468,20 @@ class ESCoreConfiguration(Resource):
                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 return response
 
-        qESCore = dbESCore.query.filter_by(hostIP=request.json['IP']).first()
+        qESCore = dbESCore.query.filter_by(hostFQDN=request.json['HostFQDN']).first()
+        if 'IP' not in request.json:
+            ip = '127.0.0.1'
+        else:
+            ip = request.json['IP']
+        if 'NodePort' not in request.json:
+            nodePort = 9200
+        else:
+            nodePort = request.json['NodePort']
         if 'OS' not in request.json:
             os = "unknown"
         else:
             os = request.json["OS"]
-        if request.json['ESCoreHeap'] is None:
+        if 'ESCoreHeap' not in request.json:
             ESHeap = '4g'
         else:
             ESHeap = request.json['ESCoreHeap']
@@ -1529,9 +1537,9 @@ class ESCoreConfiguration(Resource):
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 
         if qESCore is None:
-            upES = dbESCore(hostFQDN=request.json["HostFQDN"], hostIP=request.json["IP"], hostOS=os,
+            upES = dbESCore(hostFQDN=request.json["HostFQDN"], hostIP=ip, hostOS=os,
                             nodeName=request.json["NodeName"], clusterName=request.json["ESClusterName"],
-                            conf='None', nodePort=request.json['NodePort'], MasterNode=master, DataNode=data,
+                            conf='None', nodePort=nodePort, MasterNode=master, DataNode=data,
                             ESCoreHeap=ESHeap, NumOfShards=shards, NumOfReplicas=rep, FieldDataCacheSize=fdcs,
                             FieldDataCacheExpires=fdce, FieldDataCacheFilterSize=fdcfs,
                             FieldDataCacheFilterExpires=fdcfe, IndexBufferSize=ibs, MinShardIndexBufferSize=msibs,
@@ -1551,7 +1559,14 @@ class ESCoreConfiguration(Resource):
             qESCore.hostOS = os
             qESCore.nodename = request.json['NodeName']
             qESCore.clusterName = request.json['ESClusterName']
-            qESCore.nodePort = request.json['NodePort']
+            if 'IP' not in request.json:
+                print >> sys.stderr, 'IP unchanged'
+            elif request.json['IP'] == ip:
+                qESCore.hostIP = ip
+            if 'NodePort' not in request.json:
+                print >> sys.stderr, 'NodePort unchanged'
+            elif request.json['NodePort'] == nodePort:
+                qESCore.nodePort = nodePort
             if 'DataNode' not in request.json:
                 print >> sys.stderr, 'DataNode unchanged'
             elif request.json['DataNode'] == data:
@@ -1624,8 +1639,10 @@ class ESCoreRemove(Resource):
             response = jsonify({'Status': 'Unknown host ' + hostFQDN})
             response.status_code = 404
             return response
-
-        os.kill(qESCorePurge.ESCorePID, signal.SIGTERM)
+        try:
+            os.kill(qESCorePurge.ESCorePID, signal.SIGTERM)
+        except:
+            app.logger.warning('[%s] : [WARN] No ES instance with PID %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qESCorePurge.ESCorePID)
 
         db.session.delete(qESCorePurge)
         db.session.commit()
@@ -1643,8 +1660,11 @@ class LSCoreRemove(Resource):
             response = jsonify({'Status': 'Unknown host ' + hostFQDN})
             response.status_code = 404
             return response
-
-        os.kill(qLSCorePurge.LSCorePID, signal.SIGTERM)
+        try:
+            os.kill(qLSCorePurge.LSCorePID, signal.SIGTERM)
+        except:
+            app.logger.warning('[%s] : [WARN] No LS instance with PID %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qLSCorePurge.LSCorePID)
         db.session.delete(qLSCorePurge)
         db.session.commit()
         response = jsonify({'Status': 'Deleted LS at host ' + hostFQDN})
@@ -2045,7 +2065,7 @@ class LSCoreConfiguration(Resource):
 
     @api.expect(lsCore)
     def put(self):
-        requiredKeys = ['HostFQDN', 'ESClusterName', 'IP']
+        requiredKeys = ['HostFQDN', 'ESClusterName']
         if not request.json:
             abort(400)
         for key in requiredKeys:
@@ -2059,7 +2079,7 @@ class LSCoreConfiguration(Resource):
             response = jsonify({'Status': 'Invalid cluster name: ' + request.json['ESClusterName']})
             response.status_code = 404
             return response
-        qSCore = dbSCore.query.filter_by(hostIP=request.json['IP']).first() #TODO: rework which kv pair is required
+        qSCore = dbSCore.query.filter_by(hostFQDN=request.json['HostFQDN']).first() #TODO: rework which kv pair is required
         if 'IP' not in request.json:
             hIP = '127.0.0.1'
         else:
