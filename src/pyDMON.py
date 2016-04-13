@@ -1206,7 +1206,7 @@ class DetectStormRA(Resource):
                 except Exception as inst:
                     app.logger.warning('[%s] : [WARN] No topology has been loaded,  with %s and %s',
                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
-                    response = jsonify({'Status': 'NO topology has been loaded'})
+                    response = jsonify({'Status': 'No topology has been loaded'})
                     response.status_code = 404
                     return response
 
