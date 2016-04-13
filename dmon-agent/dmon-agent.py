@@ -58,7 +58,7 @@ nodeRoles = api.model('query details Model', {
 
 collectdConfModel = api.model('configuration details Model for collectd', {
     'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
-    'UDPPort': fields.String(required=True, default='25826', description='Port of UDP plugin from Logstash Server'),
+    'UDPPort': fields.String(required=True, default='25680', description='Port of UDP plugin from Logstash Server'),
     'Interval': fields.String(required=False, default='15', description='Polling interval for all resources')
 })
 
