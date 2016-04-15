@@ -1,6 +1,6 @@
 # pyDMON - DICE Monitoring Platform
 
-It is designed as a web service that serves as the main interface (REST API) and controlling agent for the other monitoring components.
+It is designed as a web service that represents the main interface (REST API) and the controlling service for the other monitoring components.
 These components include:
 
 * ElasticsSearch
@@ -13,9 +13,7 @@ These components include:
 
 It is designed for:
 
-* **first design choice** - something
-
-**TODO**
+* **Design choices** - See Deliverable [D4.1](http://wp.doc.ic.ac.uk/dice-h2020/wp-content/uploads/sites/75/2016/02/D4.1_Monitoring-and-data-warehousing-tools-Initial-version.pdf)
 
 ##Changelog
 
@@ -24,12 +22,12 @@ It is designed for:
 
 ##Installation
 
-The installation is largely based on bash scripts. Future versions will most likely be based on chef recepies and/or deb or rpm packages. There are 2 types of installation procedures currently supported.
+The installation is mostly based on bash scripts. Future versions will likely be based on chef recepies and/or deb/rpm packages. Currently there are two types of supported installation procedures.
 
 ### Cloud
-This type of installation is for client/cloud deployment. It will install all python modules as well as the ELK (ElasticSearch, logstash and kibana 4) stack. Only local  deployment  is currently supported.
+This type of installation is for client/cloud deployment. It installs all python modules as well as the ELK  stack (ElasticSearch, logstash and kibana 4). In this particular case only local  deployment is currently supported.
 
-* Download the installation script to the desired host and make it executable
+* Download the installation script to the desired host and make it executable, example using wget and chmod
 
 ```
 wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.1-install/install-dmon.sh && sudo chmod +x install-dmon.sh
@@ -38,7 +36,7 @@ wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.1-i
 
     
 
-* After which execute the installation script
+* Afterwards execute the installation script using sudo
 
 ```
 sudo ./install-dmon.sh
@@ -46,49 +44,48 @@ sudo ./install-dmon.sh
 
 **Note**: This script will clone the D-Mon repository into */opt* and change the owner of this directory to _ubuntu.ubuntu_!
 
-* Next co inside the cloned repository and run
+* Next change directory to the newly cloned repository and run
 
 ```
 sudo ./dmon-start.sh -i -p 5001
 ```
-The '-i' flag will install all Core components of the monitoring platform (i.e. ELK) as well as setting the appropriate permissions for all folders and files. The '-p' flag designates the port on which D-Mon will be deployed.
+The '-i' flag will install all *Core* components of the monitoring platform (i.e. ELK stack) and sets the appropriate permissions for all folders and files. The '-p' flag specifies the port on which D-Mon will be deployed.
 
-* In order deploy D-Mon localy execute:
-
+* For local deployment of D-Mon one needs to issue the following command:
 ```
 ./dmon-start.sh -l -p 5001
 ``` 
-The '-l' flag signas the service that this is a local deployment of both ElasticSearch and Logstash server. The service will start logging into stdout.
+By using '-l' flag it signas to the service that this is a local deployment of both ElasticSearch and Logstash server. The service will start logging into stdout.
 
 **Note**: Do not execute this command as root! It will corrupt the previously set permissions and the service will be inoperable.
 
-If you do not wish to create a local deployment run the command.
+In case one is not interested in creating a local deployment of the service, issue the following command: 
 
 ```
 ./dmon-start.sh -p 5001
 ```
 
-This will only start the service and not load the local deployment module.
+By doing so it will only start the service and *does not load* the local deployment module.
 
-**Note**: By default all the IP is set to _0.0.0.0_. This can be change using the '-e' flag.
+**Note**: By default all the IP's are set to _0.0.0.0_. This can be change using the '-e' flag when issuing the command.
 
-**Observation**: Kibana 4 service is started during the bootstrapping process. You can check the service by running:
+**Observation**: Kibana 4 service is started during the bootstrapping process. After this step one can check the service status by running:
 
 ```
 sudo service kibana4 status
 ```
 
-For starting toping the service replace the _status_ command with _start_, _stop_ or _restart_.
+In order to start the top-ing service replace the _status_ command with _start_, _stop_ or _restart_.
 
 
 ### Vagrant
 
-There are two vagrant files in this repository. The [first](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Vagrant%20CDH%20Cluster) one creates a deployment of 4 VM on which it automatically installs the Cloudera Manager  suite. 
+There are two vagrant files in this repository. The [first](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Vagrant%20CDH%20Cluster) file creates a deployment of 4 VM on which it automatically installs the Cloudera Manager suite. 
 
-The [second](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Monitoring) script installs D-Mon as well as the ELK stack, essentially taking the place of the '-i' flag in the above mentioned instructions. The procedure for creating a local deployment of D-Mon is the same as before.
+The [second](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Monitoring) file is a script that installs D-Mon and the ELK stack. This script replaces the use of '-i' flag in the above presented instructions. In order to create a local deployment for the D-Mon one has to follow the same steps as the ones previously described. 
 
 ### Chef
-* TODO not scheduled for M18
+* TODO This feature is still under investigation (not scheduled for M18)
 
 
 ##REST API Structure
@@ -97,17 +94,17 @@ The [second](https://github.com/igabriel85/IeAT-DICE-Repository/tree/master/Moni
 There are two main components from this API: 
 
 * First we have the management and deployment/provisioning component called **Overlord** (Monitoring Management API).
- * It is responsible for the deployment and management of the Monitoring Core components: ElasticSearch, Logstash Server and Kibana.
- * It is also responsible for the auxiliary component management and deployment. These include: Collectd, Logstash-forwarder
+ * It is responsible for deployment and management of the Monitoring Core components: ElasticSearch, Logstash Server and Kibana.
+ * Besides it is also responsible for the auxiliary component management and deployment. These include: Collectd, Logstash-forwarder.
 * Second, we have the interface used by other applications to query the DataWarehouse represented by ElasticSearch. This component is called **Observer**.
- * It is responsible for the returning of monitoring metrics in the form of: CSV, JSON, simple output. 
+ * It is responsible for returning the monitoring metrics in various formats (CSV, JSON, simple output).  
 
 
 **NOTE**: Future versions will include authentication for the _Overlord_ resources. 
 
 ### Overlord (Monitoring Management API)
 
-The Overlord is structured into two components:
+The Overlord is composed from two major components:
 
 * **Monitoring Core** represented by: ElasticSearch, LogstashServer and Kibana
 * **Monitoring Auxiliary** represented by: Collectd, Logstash-Forwarder
@@ -117,9 +114,9 @@ The Overlord is structured into two components:
 
 `GET` `/v1/log`
 
-Return the log of dmon. It contains information about the last requests and the IPs from which they originated as well as status information of variouse sub components.
+Return the log of dmon. It contains information about the last requests and the IPs from which they originated as well as the status information from variouse sub components.
 
-The dmon internal logging system lists 3 types of messages. __INFO__ messages represent debug level information, __WARNING__ is for handeled exceptions and finaly __ERROR__ for caught errors.
+The D-Mon internal logging system lists 3 types of messages. __INFO__ messages represent debug level information, __WARNING__ is for handeled exceptions and finaly __ERROR__ for caught errors.
 
 `GET` `/v1/overlord`
 
@@ -141,30 +138,30 @@ Returns the metrics configuration file for big data technologies. The response w
 
 `PUT` `/v1/overlord/application/{appID}`
 
-Registers an application with DMON and creates a unique tag for the monitored data. The tag is defined by _appID_.
+Registers an application with D-MON and creates a unique tag for the monitored data. The tag is defined by _appID_.
 
-**NOTE**: Scheduled for future versions!
+**NOTE**: This feature is scheduled for development in future versions!
 
 
 `POST` `/v1/overlord/core`
 
-Deploys all monitoring core components provided they have values preset hosts. If not it deploys all components locally with default settings.
+Deploys all monitoring core components provided that they have values for the preset hosts. If not it deploys all components locally with default settings.
 
 **NOTE**: Currently the '-l' flag of the start script _dmon-start.sh_ does the same as the later option. Schedueled for M18.
 
 
 `GET` `/v1/overlord/core/database`
 
-Return the current internal state of Dmon in the form of an sqlite2 database. The response has _application/x-sqlite3_ mimetype.
+Return the current internal state of D-MON in the form of an sqlite2 database. The response has _application/x-sqlite3_ mimetype.
 
 `PUT` `/v1/overlord/core/database`
 
-Can submit a new version of the internal database to dmon. It will replace the current states with new states. The old states are backed up before applying the new ones. Database should take the form of sqlite3 database file and sent unsing the _application/x-sqlite3_ mimetype.
+Can submit a new version of the internal database to dmon by replacing the current states with new ones. The old states are backed up before applying the changes. The database should be formatted as a sqlite3 database file and sent unsing the _application/x-sqlite3_ mimetype.
 
 
 `GET` `/v1/overlord/core/status`
 
-Returns the current status of the Monitoring platform status.
+Returns the current status of the Monitoring platform.
 
 ```json
 {
@@ -196,7 +193,7 @@ Returns the current status of the Monitoring platform status.
 
 `POST` `/v1/overlord/detect/storm`
 
-Tries do detect if the current registered nodes have a valid storm deployment. It will first test if there are any nodes that have a Storm endpoint and port. If this fails it starts to scan all registered nodes. If it finds the endpoint it sets the first topology as the one to be monitored. Then, it sets all configurations necesary for storm monitoring automatically.
+Tries do detect if the current registered nodes have a valid storm deployment. It will first test if there are any nodes that have a Storm endpoint and port set. If this step fails it starts to scan all registered nodes. In case it finds the endpoint, the first topology is set in order to be monitored. Then, it sets all configurations necesary for monitoring storm automatically.
 
 ***
 
