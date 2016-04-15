@@ -245,7 +245,7 @@ Input:
 
 `POST` `/v1/overlord/nodes`
 
-Bootstrap of all non monitored nodes. Installs, configures and start collectd and logstash-forwarder on them. This feature is not recommended for testing, the usage of separate commands is preffered in order to detect network failures.
+Bootstrap of all non monitored nodes. Installs, configures and starts collectd and logstash-forwarder on them. This feature is not recommended for testing, the usage of separate commands is preffered in order to detect network failures.
 
 **NOTE**: Meant for M24. Define one json to completely populate and set up dmon-controller. It can be then used to save and share internal state by sending the json between controller instances.
 ***
@@ -307,7 +307,7 @@ __Input:__
 
 `POST` `/v1/overlord/nodes/roles`
 
-Generates metrics configuration files for each role assigned to a node and uploads it to the required directory. It returns a list of all nodes to which a configuration of a certain type (i.e. yarn, spark, storm etc) has been uploaded.
+Generates metrics configuration files for each role assigned to a node and uploads them to the required directory. It returns a list of all nodes to which a configuration of a certain type (i.e. yarn, spark, storm etc) has been uploaded.
 
 ```json
 {
@@ -323,7 +323,7 @@ Generates metrics configuration files for each role assigned to a node and uploa
 
 
 **NOTE:** The directory structure is based on the Vanilla and Cloudera distribution of HDFS, Yarn and Spark. Custom installtions are not yet supported.
-As __yarn__ and __HDFS__ have the same metrics system their tags (i.e. hdfs and yarn) are interchangable in the context of D-Mon.
+As __yarn__ and __HDFS__ have the same metrics system, their tags (i.e. hdfs and yarn) are interchangable in the context of D-Mon.
 
 
 
@@ -383,7 +383,7 @@ Bootstraps specified node.
 
 Stops all auxiliary monitoring components associated with a particular node.
 
-**NOTE**: This does not delete the nodes nor the configurations it simply stops collectd and logstash-forwarder on the selected nodes. DEPRECATED.
+**NOTE**: This does *not* delete nodes or configurations; it only stops collectd and logstash-forwarder on the selected nodes. DEPRECATED.
 
 
 `PUT` `/v1/overlord/nodes/{nodeFQDN}/roles`
@@ -408,11 +408,11 @@ Redeploys metrics configuration for a specific node based on the roles assigned 
 ***
 `DELETE` `/v1/overlord/nodes/{nodeFQDN}/purge`
 
-This resource deletes auxiliary tools from the given node. It also removes all setting from D-Mon. This process is **irreversible**.
+This resource deletes auxiliary tools from a given node and also removes all setting from D-Mon. This process is **irreversible**.
 ***
 `GET` `/v1/overlord/core/es`
 
-Return a list of current hosts  comprising the ES cluster core components. The first registered host is set as the default master node. All subsequent nodes are set as workers.
+Return a list of current hosts comprising the ES cluster core components. The first registered host is set as the default master node. All subsequent nodes are set as workers.
 
 ```json
 {
@@ -449,10 +449,10 @@ Return a list of current hosts  comprising the ES cluster core components. The f
 
 `POST` `/v1/overlord/core/es` 
 
-Generates and applies the new configuration options of the ES Core components. During this request the new configuration will be generated.
+Generates and applies the new configuration options for the ES Core components. During this request the new configuration will be generated.
 
-**NOTE**: If configuration is unchanged ES Core will not be restarted!
-It is possible to deploy the monitoring platform on different hosts than elasticsearch provided that the FQDN or IP is provided.
+**NOTE**: If the configuration is unchanged ES Core will not be restarted!
+It is possible to deploy the monitoring platform on different hosts than elasticsearch only in case that the FQDN or IP is provided.
 
 
 
@@ -462,7 +462,7 @@ It is possible to deploy the monitoring platform on different hosts than elastic
 
 `GET` `/v1/overlord/core/es/config`
 
-Returns the current configuration file of ElasticSearch in the form of a YAML file.
+Returns the current configuration file for ElasticSearch in the form of a YAML file.
 
 
 
@@ -503,7 +503,7 @@ Input:
 
 ```
 
-**NOTE**: The new configuration will **not** be generated at this step. Currently only ESClusterName, HostFQDN, IP, NodeName, NodePort are required. This will be probably changed in future versions.
+**NOTE**: The new configuration will **not** be generated at this step. Currently only ESClusterName, HostFQDN, IP, NodeName, NodePort are required. This will be changed in future versions.
 ***
 
 `GET` `/v1/overlord/core/es/status/<intComp>/property/<intProp>`
@@ -512,7 +512,7 @@ Returns diagnostic data about the master elasticsearch instance.
 
 `DELETE` `/v1/overlord/core/es/<hostFQDN>`
 
-Stops the ElasticSearch instance on a given host and removes all configuration data from DMON.
+Stops the ElasticSearch (es) instance on a given host and removes all configuration data from DMON.
 
 
 ***
@@ -614,7 +614,7 @@ Input:
 
 ```
 
-**NOTE:** LS instances are bound by their FQDN this meanst that it can't change.
+**NOTE:** LS instances are bound by their FQDN this means that it can't change.
 **Future Work**: Only for local deployment of logstash server core service. Future versions will include distributed deployment.
  
 `GET` `/v1/overlord/core/ls/<hostFQDN>/status`
@@ -723,9 +723,9 @@ Returns information for all kibana instances.
 
 `POST` `/v1/overlord/core/kb`
 
-Generates the configuration file and  Starts or restarts a kibana session.
+Generates the configuration file and Starts or Restarts a kibana session.
 
-**NOTE:** Currently supports only one instance. No dostributed deployment.
+**NOTE:** Currently supports only one instance. No distributed deployment.
 
 
 `GET` `/v1/overlord/core/kb/config`
@@ -795,7 +795,7 @@ Returns the current deployment status of dmon-agents.
 
 `POST` `/v1/overlord/aux/agent`
 
-Bootstraps the installation of dmon-agent services on nodes who are note marked as
+Bootstraps the installation of dmon-agent services on nodes that are note marked as
 already active. It only works if all nodes have the same authentication.
 
 `GET` `/v1/overlord/aux/deploy`
@@ -827,7 +827,7 @@ Deploys all auxiliary monitoring components on registered nodes and configures t
 **NOTE**: There are three statuses associated with each auxiliary component. 
 
 * __None__ -> There is no aux component on the registered node
-* __Running__ -> There is the aux component on the registered node an it is currently running
+* __Running__ -> There is the aux component on the registered node and it is currently running
 * __Stopped__ -> There is the aux component on the registered node and it is currently stopped
 
 If the status is _None_ than this resource will install and configure the monitoring components. However if the status is _Running_ nothing will be done. The services with status _Stopped_ will be restarted.
@@ -840,7 +840,7 @@ All nodes can be restarted independent from their current state using the **--re
 
 `POST` `/v1/overlord/aux/deploy/{collectd|logstashfw}/{NodeName}`
 
-Deploys either collectd or logstash-forwarder to the specified node. In order to reload the configuration file the **--redeploy** parameter has to be set. If the  current node status is _None_ than the defined component (collectd or lsf) will be installed.
+Deploys either collectd or logstash-forwarder to the specified node. In order to reload the configuration file the **--redeploy** parameter has to be set. If the  current node status is _None_ then the defined component (collectd or lsf) will be installed.
 
 **FUTURE Work**: Currently configurations of both collectd and logstash-forwarder are global and can't be changed on a node by node basis.
 
@@ -882,13 +882,13 @@ __Input:__
 
 `GET` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
-Returns the current collectd or logstashfw configuration file.
+Returns the current collectd or logstashforwarder configuration file.
 
 
 
 `PUT` `/v1/overlord/aux/{collectd|logstashfw}/config`
 
-Changes the configuration/status of collectd or logstashforwarder and restarts all aux components.
+Changes the configuration/status of collectd or logstashforwarder and restarts all auxiliary components.
 
 ***
 
