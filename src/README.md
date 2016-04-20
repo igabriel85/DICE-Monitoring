@@ -128,7 +128,7 @@ Returns the currently supported frameworks.
 
 ```json
 {
-	Supported Frameworks:[<list_of_frameoworks>]
+	"Supported Frameworks":["list_of_frameoworks"]
 }
 ```
 
@@ -311,11 +311,11 @@ Generates metrics configuration files for each role assigned to a node and uploa
 
 ```json
 {
-	'Status':{
-		'yarn':[list_of_yarn_nodes],
-		'spark':[list_of_spark_nodes],
-		'storm':[list_of_storm_nodes],
-		'unknown':[list_of_unknown_nodes]
+	"Status":{
+		"yarn":["list_of_yarn_nodes"],
+		"spark":["list_of_spark_nodes"],
+		"storm":["list_of_storm_nodes"],
+		"unknown":["list_of_unknown_nodes"]
 		}
 }
 ```
@@ -708,15 +708,14 @@ Returns information for all kibana instances.
 
 ```json
 {
-	KB Instances:[{
-		"HostFQDN":<FQDN>,
-		"IP":<host_ip>,
-		"OS":<os_type>,
-		"KBPort":<kibana_port>
-		"PID":<kibana_pid>,
-		"KBStatus":<Running|Stopped|Unknown>
-	},
-	......................
+	"KB Instances|:[{
+		"HostFQDN":"<FQDN>",
+		"IP":"<host_ip>",
+		"OS":"<os_type>",
+		"KBPort":"<kibana_port>"
+		"PID":"<kibana_pid>",
+		"KBStatus":"<Running|Stopped|Unknown>"
+	}
 	]
 }
 ```
@@ -741,10 +740,10 @@ Input:
 
 ```json
 {
-	"HostFQDN":<FQDN>,
-	"IP":<host_ip>,
-	"OS":<os_type>,
-	"KBPort":<kibana_port>
+	"HostFQDN":"<FQDN>",
+	"IP":"<host_ip>",
+	"OS":"<os_type>",
+	"KBPort":"<kibana_port>"
 }
 ```
 
@@ -1090,7 +1089,7 @@ Response:
 
 ```json
 {
-	'Roles':['yarn','spark']
+	"Roles":["yarn","spark"]
 }
 ```
 
