@@ -708,7 +708,7 @@ Returns information for all kibana instances.
 
 ```json
 {
-	"KB Instances|:[{
+	"KB Instances":[{
 		"HostFQDN":"<FQDN>",
 		"IP":"<host_ip>",
 		"OS":"<os_type>",
