@@ -21,3 +21,24 @@
 	* added parallel processing of some requests (marked with _../v2/.._)
 	* added new dmon-agent for controlling auxiliary monitoring components
 	* added dmon-wui template to respoitory
+* v0.2.0 - Major alpha release
+	* updated minimum requirements
+		* Elasticsearch 2.*
+		* Logstash 2.*
+		* Kibana 4.4.*
+		* updated start scripts for default metrics (env. variables)
+		* added aditional metrics to ls and es configurations
+		* added automatic storm topology detection
+		* added polling period definition
+		* added dmon-agent bootstrapping resources
+		* split app from main reource file
+		* added OSLC Perf Mon v2 for system metrics
+		* created additional resources
+			* dmon-logstash
+			* dmon-elastisearch
+		* added branding to kibana dashboard
+		* added logging system to all services
+		* updated stop scripts with pid file removal
+		* added root user check in start scripts
+		* added support for Storm monitoring
+		* major overhaul of logstash template   	 	
