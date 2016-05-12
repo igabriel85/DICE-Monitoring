@@ -44,7 +44,7 @@ def installLsf(listLocation, lsfGPG):
                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
     else:
         try:
-            p1 = subprocess.Popen('sudo mv ' + listLocation + ' /etc/apt/source.list.d/',
+            p1 = subprocess.Popen('sudo mv ' + listLocation + ' /etc/apt/sources.list.d/',
                                   shell=True)
             p1.wait()
             app.logger.info('[%s] : [INFO] Moved sourcelist for lsf',
