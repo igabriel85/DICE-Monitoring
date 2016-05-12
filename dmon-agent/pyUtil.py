@@ -109,18 +109,18 @@ def installJmxTrans():  # TODO: create jmxtrans installation
     return "Install jmxtrans"
 
 def checkPID(pid):
-	"""
-	Check For the existence of a unix pid.
-	Sending signal 0 to a pid will raise an OSError exception if the pid is not running, and do nothing otherwise.
-	"""
-	if pid == 0:	#If PID newly created return False
-		return 0
-	try:
-		os.kill(pid, 0)
-	except OSError:
-		return 0
-	else:
-		return 1
+    """
+    Check For the existence of a unix pid.
+    Sending signal 0 to a pid will raise an OSError exception if the pid is not running, and do nothing otherwise.
+    """
+    if pid == 0:	#If PID newly created return False
+        return 0
+    try:
+        os.kill(pid, 0)
+    except OSError:
+        return 0
+    else:
+        return 1
 
 
 class AuxComponent():
@@ -276,9 +276,6 @@ class AuxComponent():
                              datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), filePath,
                              type(inst), inst.args)
 
-    def getRoles(self):  # TODO:  implement role identification based on JPS and possibly pid files in /var/run
-        return 'check vm roles using JPS!'
-
 
 class BDPlatform():
     sparkLoc = '/etc/spark/conf/metrics.properties'
@@ -303,17 +300,22 @@ class BDPlatform():
         print "Done"
 
 
-    def checkRole(self, role):
-        if role == 'spark':
-            if os.path.isdir('/etc/spark'):
-                return 1
-            else:
-                return 0
-        if role == 'yarn':
-            if os.path.isdir('/etc/hadoop'):
-                return 1
-            else:
-                return 0
+    def getRoles(self): # TODO: if no processes detected check dir structure /etc/hadoop etc.
+        roleList = []
+        p = subprocess.Popen(['sudo', 'jps'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        output, err = p.communicate()
+        if 'DataNode' in output:
+            roleList.append('yarn')
+        if 'NameNode' in output:
+            roleList.append('yarn')
+        if 'SecondaryNameNode' in output:
+            roleList.append('yarn')
+        if 'NodeManager' in output:
+            roleList.append('yarn')
+        if 'ResourceManager' in output:
+            roleList.append('yarn')
+        roleSet = set(roleList)
+        return roleSet
 
 
 def generateConf(tmpPath, settingsDict, filePath):
