@@ -333,7 +333,13 @@ class QueryEsCore(Resource):
                                 'Message': 'Only system metrics supported for oslc'})
             response.status_code = 409
             return response
-
+        if request.json['DMON'] is None:
+            response = jsonify({'Status': 'Empty payload',
+                                'Message': 'Request has empty payload'})
+            response.status_code = 417
+            app.logger.error('[%s] : [ERROR] Empty payload received for query, returned error 417',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         if 'tstop' not in request.json['DMON']:
             query = queryConstructor(tstart=request.json['DMON']['tstart'],
                                      queryString=request.json['DMON']['queryString'],
