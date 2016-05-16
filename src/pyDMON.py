@@ -46,7 +46,6 @@ from pyESController import *
 from pysshCore import *
 from dmonPerfMon import *
 from app import *
-# from dbModel import *
 from pyUtil import *
 from dbModel import *
 # from threadRequest import *
@@ -83,6 +82,9 @@ lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 
 # changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
 # dmon = api.namespace('dmon', description='D-MON operations')
+
+
+
 
 # argument parser
 dmonAux = api.parser()
@@ -1449,7 +1451,7 @@ class ESCoreConfiguration(Resource):
                 print >> sys.stderr, 'DataNode unchanged'
             elif request.json['DataNode'] == data:
                 qESCore.DataNode = data
-                print >> sys.stderr, 'DataNode set to ' + data
+                print >> sys.stderr, 'DataNode set to ' + str(data)
             if 'ESCoreHeap' not in request.json:
                 print >> sys.stderr, 'ESCoreHeap unchanged'
             elif request.json['ESCoreHeap'] == ESHeap:
@@ -1459,12 +1461,12 @@ class ESCoreConfiguration(Resource):
                 print >> sys.stderr, 'NumOfShards unchanged'
             elif request.json['NumOfShards'] == shards:
                 qESCore.NumOfShards = shards
-                print >> sys.stderr, 'NumOfShards set to ' + shards
+                print >> sys.stderr, 'NumOfShards set to ' + str(shards)
             if 'NumOfReplicas' not in request.json:
                 print >> sys.stderr, 'NumOfReplicas unchanged'
             elif request.json['NumOfReplicas'] == rep:
                 qESCore.NumOfReplicas = rep
-                print >> sys.stderr, 'NumOfReplicas set to ' + rep
+                print >> sys.stderr, 'NumOfReplicas set to ' + str(rep)
             if 'FieldDataCacheSize' not in request.json:
                 print >> sys.stderr, 'FieldDataCacheSize unchanged'
             elif request.json['FieldDataCacheSize'] == fdcs:
@@ -1571,8 +1573,16 @@ class ESCoreController(Resource):
             confDict['NodeName'] = hosts[3]
             confDict['NodePort'] = hosts[4]
             confDict['ESClusterName'] = hosts[5]
-            confDict['Status'] = hosts[6]
-            confDict['PID'] = hosts[7]
+            if checkPID(hosts[7]):
+                confDict['Status'] = hosts[6]
+                confDict['PID'] = hosts[7]
+            else:
+                app.logger.warning('[%s] : ES Core service not found at PID %s, setting to failed',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hosts[7]))
+                #hosts.ESCorePID = 0
+                #hosts.ESCoreStatus = 'unknown'
+                confDict['Status'] = 'failed'  #TODO: Document failed message if PID is not assigned to an ES Instance
+                confDict['PID'] = 0
             confDict['MasterNode'] = hosts[8]
             confDict['DataNode'] = hosts[9]
             confDict['NumOfShards'] = hosts[10]
@@ -1869,8 +1879,16 @@ class KKCoreController(Resource):
             confDict['IP'] = hosts[1]
             confDict['OS'] = hosts[2]
             confDict['KBPort'] = hosts[3]
-            confDict['PID'] = hosts[4]
-            confDict['KBStatus'] = hosts[5]
+            if checkPID(hosts[4]):
+                confDict['Status'] = hosts[5]
+                confDict['PID'] = hosts[4]
+            else:
+                app.logger.warning('[%s] : KB Core service not found at PID %s, setting to failed',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hosts[7]))
+                #hosts.ESCorePID = 0
+                #hosts.ESCoreStatus = 'unknown'
+                confDict['Status'] = 'failed'  #TODO: Document failed message if PID is not assigned to an KB Instance
+                confDict['PID'] = 0
             resList.append(confDict)
         response = jsonify({'KB Instances': resList})
         response.status_code = 200
@@ -2094,8 +2112,14 @@ class LSCoreController(Resource):
             confDict['LSCoreStormTopology'] = hosts[11]
             confDict['LSCoreSparkEndpoint'] = hosts[12]
             confDict['LSCoreSparkPort'] = hosts[13]
-            confDict['Status'] = hosts[8]
-            confDict['PID'] = hosts[15]
+            if checkPID(hosts[15]):
+                confDict['Status'] = hosts[8]
+                confDict['PID'] = hosts[15]
+            else:
+                app.logger.warning('[%s] : LS Core service not found at PID %s, setting to failed',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hosts[7]))
+                confDict['Status'] = 'failed'  #TODO: Document failed message if PID is not assigned to an LS Instance
+                confDict['PID'] = 0
             confDict['LSCoreHeap'] = hosts[14]
             resList.append(confDict)
         response = jsonify({'LS Instances': resList})
