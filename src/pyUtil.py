@@ -428,7 +428,7 @@ class DetectBDService():
                 yarnJobs['Status'] = 'Detected'
 
         if qDBS is None:
-            upBDS = dbBDService(yarnHPort=yarnJobs['NodePort'], yarnHEnd=yarnJobs['NodePort'])
+            upBDS = dbBDService(yarnHPort=yarnJobs['NodePort'], yarnHEnd=yarnJobs['NodeIP'])
             db.session.add(upBDS)
             db.session.commit()
             app.logger.info('[%s] : [INFO] Registred Yarn History server at %s and port %s',
