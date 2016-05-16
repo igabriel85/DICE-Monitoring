@@ -1,4 +1,3 @@
-from pyDMON import db
 from datetime import datetime
 from app import *
 from flask.ext.sqlalchemy import SQLAlchemy
@@ -14,13 +13,16 @@ class dbNodes(db.Model):
     nUser = db.Column(db.String(64), index=True, unique=False)
     nPass = db.Column(db.String(64), index=True, unique=False)
     nkey = db.Column(db.String(120), index=True, unique=False)
-    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown') # hadoop roles running on server
+    nRoles = db.Column(db.String(120), index=True, unique=False, default='unknown')  # hadoop roles running on server
     nStatus = db.Column(db.Boolean, index=True, unique=False, default='0')
     nMonitored = db.Column(db.Boolean, index=True, unique=False, default='0')
-    nCollectdState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
-    nLogstashForwState = db.Column(db.String(64), index=True, unique=False, default='None') # Running, Pending, Stopped, None
+    nCollectdState = db.Column(db.String(64), index=True, unique=False,
+                               default='None')  # Running, Pending, Stopped, None
+    nLogstashForwState = db.Column(db.String(64), index=True, unique=False,
+                                   default='None')  # Running, Pending, Stopped, None
     nLogstashInstance = db.Column(db.String(64), index=True, unique=False, default='None')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
     # ES = db.relationship('ESCore', backref='nodeFQDN', lazy='dynamic')
 
     # TODO: Create init function/method to populate db.Model
@@ -38,7 +40,8 @@ class dbESCore(db.Model):
     nodePort = db.Column(db.Integer, index=True, unique=False, default=9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
     conf = db.Column(db.LargeBinary, index=True, unique=False)
-    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)  # Running, Pending, Stopped, unknown
+    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown',
+                             unique=False)  # Running, Pending, Stopped, unknown
     ESCorePID = db.Column(db.Integer, index=True, default=0, unique=False)  # pid of current running process
     ESCoreHeap = db.Column(db.String(64), index=True, unique=False, default='4g')
     MasterNode = db.Column(db.Boolean, index=True, unique=False, default=True)  # which node is master
@@ -55,7 +58,7 @@ class dbESCore(db.Model):
     ESCoreDebug = db.Column(db.String(64), index=True, unique=False, default=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
         return '<dbESCore %r>' % (self.hostFQDN)
@@ -76,14 +79,17 @@ class dbSCore(db.Model):
     conf = db.Column(db.String(140), index=True, unique=False)
     LSCoreHeap = db.Column(db.String(120), index=True, unique=False, default='512m')
     LSCoreWorkers = db.Column(db.String(120), index=True, unique=False, default='4')
-    LSCoreStatus = db.Column(db.String(64), index=True, unique=False, default='unknown')  # Running, Pending, Stopped, None
+    LSCoreStatus = db.Column(db.String(64), index=True, unique=False,
+                             default='unknown')  # Running, Pending, Stopped, None
     LSCorePID = db.Column(db.Integer, index=True, unique=False, default=0)
     LSCoreStormEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreStormPort = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreStormTopology = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreSparkEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreSparkPort = db.Column(db.String(64), index=True, unique=False, default='None')
+    diceIndex = db.Column(db.String(64), index=True, unique=False, default='logstash')
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
@@ -96,27 +102,32 @@ class dbKBCore(db.Model):
     hostIP = db.Column(db.String(64), index=True, unique=True)
     hostOS = db.Column(db.String(120), index=True, unique=False)
     kbPort = db.Column(db.Integer, index=True, unique=False, default=5601)
-    KBCorePID = db.Column(db.Integer, index=True, default=0, unique=False) # pid of current running process
+    KBCorePID = db.Column(db.Integer, index=True, default=0, unique=False)  # pid of current running process
     conf = db.Column(db.String(140), index=True, unique=False)
-    KBCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)#Running, Pending, Stopped, None
+    KBCoreStatus = db.Column(db.String(64), index=True, default='unknown',
+                             unique=False)  # Running, Pending, Stopped, None
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
-    #user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
     def __repr__(self):
         return '<dbKBCore %r>' % (self.hostFQDN)
 
-#Not Used Yet
+
+# Not Used Yet
 class dbApp(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     appName = db.Column(db.String(64), index=True, unique=False)
     appVersion = db.Column(db.String(64), index=True, unique=False)
     jobID = db.Column(db.String(64), index=True, unique=True)
     startTime = db.Column(db.String(64), index=True, unique=False)
+    loggingPeriod = db.Column(db.Integer, index=True, unique=False)
     stopTime = db.Column(db.String(64), index=True, unique=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
     def __repr__(self):
         return '<dbApp %r>' % (self.appName)
+
 
 class dbCDHMng(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -127,4 +138,26 @@ class dbCDHMng(db.Model):
 
     def __repr__(self):
         return '<dbCDHMng %r>' % (self.cdhMng)
-#%--------------------------------------------------------------------%
+
+class dbBDService(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    yarnHPort = db.Column(db.Integer, index=True, unique=False, default=19888)
+    yarnHEnd = db.Column(db.String(64), index=True, unique=False)
+    yarnHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
+    sparkHPort = db.Column(db.Integer, index=True, unique=False, default=666) #TODO: Change to corect default
+    sparkHEnd = db.Column(db.String(64), index=True, unique=False)
+    sparkHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
+
+    def __repr__(self):
+        return '<dbBDService %r>' % (self.dbDBService)
+
+class dbMetPer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sysMet = db.Column(db.String(64), index=True, unique=False, default="15")
+    yarnMet = db.Column(db.String(64), index=True, unique=False, default="15")
+    sparkMet = db.Column(db.String(64), index=True, unique=False, default="5")
+    stormMet = db.Column(db.String(64), index=True, unique=False, default="60")
+
+    def __repr__(self):
+        return '<dbMetPer %r>' % (self.dbMetPer)
+# %--------------------------------------------------------------------%
