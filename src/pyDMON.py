@@ -215,6 +215,13 @@ resInterval = api.model('Polling interval', {
     'System': fields.String(required=False, default='15', description='Polling period for System metrics'),
     'YARN': fields.String(required=False, default='15', description='Polling period for YARN metrics')
 })
+
+yarnHistorySettings = api.model('Settings for Yarn history server', {
+    'NodeIP': fields.String(required=False, default='127.0.0.1', description='History Server IP'),
+    'NodePort': fields.Integer(required=False, default=19888, description='History Server Port'),
+    'Polling': fields.String(required=False, default=30, description='History Server Polling Period')
+})
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 db.create_all()
@@ -1097,11 +1104,82 @@ class DetectStormRA(Resource):
 
 @dmon.route('/v1/overlord/detect/yarn')
 class DetectYarnHS(Resource):
+    def get(self):
+        qDBS = dbBDService.query.first()
+        if qDBS is None:
+            response = jsonify({'Status': 'Not Found',
+                                'Message': 'No Yarn history server instance found'})
+            response.status_code = 404
+            return response
+
+        response = jsonify({'NodePort': qDBS.yarnHPort,
+                            'NodeIP': qDBS.yarnHEnd,
+                            'Polling': qDBS.yarnHPoll})
+        response.status_code = 200
+        return response
+
+    @api.expect(yarnHistorySettings)
     def put(self):
-        return 'Define or modify yarn history server endpoint'
+        if not request.json:
+            abort(400)
+        qBDS = dbBDService.query.first()
+        if 'NodeIP' not in request.json:
+            nodeIP = 0
+        else:
+            nodeIP = request.json['NodeIP']
+
+        if 'NodePort' not in request.json:
+            nodePort = 0
+        else:
+            nodePort = request.json['NodePort']
+
+        if 'Polling' not in request.json:
+            poll = 0
+        else:
+            poll = request.json['Polling']
+
+        if qBDS is None:
+            if not nodeIP:
+                response = jsonify({'Status': 'Missing parameter',
+                                    'Message': 'Yarn History server IP must be defined at first submit'})
+                response.status_code = 406
+                return response
+            if not nodePort:
+                nodePort = 19888
+            if not poll:
+                poll = 30
+            upBDS = dbBDService(yarnHPort=nodePort, yarnHEnd=nodeIP, yarnHPoll=poll)
+            db.session.add(upBDS)
+            db.session.commit()
+            app.logger.info('[%s] : [INFO] Added Yarn History Server Node info',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Added Yarn History',
+                                'Message': 'Added Yarn History server info'})
+            response.status_code = 200
+            return response
+        else:
+            if nodeIP:
+                qBDS.yarnHEnd = nodeIP
+                app.logger.info('[%s] : [INFO] Updated Yarn History Server Endpoint to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeIP)
+            if nodePort:
+                qBDS.yarnHPort = nodePort
+                app.logger.info('[%s] : [INFO] Updated Yarn History Server Port to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nodePort))
+            if poll:
+                qBDS.yarnHPoll = poll
+                app.logger.info('[%s] : [INFO] Updated Yarn History Server Polling period to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nodePort))
+
+            response = jsonify({'Status': 'Updated Yarn History',
+                                'Message': 'Update Yarn History server info'})
+            response.status_code = 200
+            return response
 
     def post(self):
-        return 'Detect yarn history server'
+        yarnDetect = DetectBDService()
+        response = yarnDetect.detectYarnHS()
+        return response
 
 
 @dmon.route('/v1/overlord/detect/spark')

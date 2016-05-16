@@ -4,6 +4,7 @@ from flask.ext.sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy(app)
 
+
 class dbNodes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nodeFQDN = db.Column(db.String(64), index=True, unique=True)
@@ -56,6 +57,7 @@ class dbESCore(db.Model):
     MinShardIndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='12mb')
     MinIndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='96mb')
     ESCoreDebug = db.Column(db.String(64), index=True, unique=False, default=False)
+    local = db.Column(db.Integer, index=True, unique=False, default=1) #TODO: if it is on the same machine as dmon-ctrl
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -88,6 +90,7 @@ class dbSCore(db.Model):
     LSCoreSparkEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreSparkPort = db.Column(db.String(64), index=True, unique=False, default='None')
     diceIndex = db.Column(db.String(64), index=True, unique=False, default='logstash')
+    local = db.Column(db.Integer, index=True, unique=False, default=1) #TODO: if it is on the same machine as dmon-ctrl
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -106,6 +109,7 @@ class dbKBCore(db.Model):
     conf = db.Column(db.String(140), index=True, unique=False)
     KBCoreStatus = db.Column(db.String(64), index=True, default='unknown',
                              unique=False)  # Running, Pending, Stopped, None
+    local = db.Column(db.Integer, index=True, unique=False, default=1) #TODO: if it is on the same machine as dmon-ctrl
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -142,7 +146,7 @@ class dbCDHMng(db.Model):
 class dbBDService(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     yarnHPort = db.Column(db.Integer, index=True, unique=False, default=19888)
-    yarnHEnd = db.Column(db.String(64), index=True, unique=False)
+    yarnHEnd = db.Column(db.String(64), index=True, unique=False, default='None')
     yarnHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
     sparkHPort = db.Column(db.Integer, index=True, unique=False, default=666) #TODO: Change to corect default
     sparkHEnd = db.Column(db.String(64), index=True, unique=False)

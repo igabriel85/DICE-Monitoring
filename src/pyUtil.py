@@ -25,11 +25,14 @@ import time
 import requests
 import os
 import jinja2
+from flask import jsonify
 from app import *
 from dbModel import *
+from greenletThreads import *
+from urlparse import urlparse
 
 
-def portScan(addrs,ports):
+def portScan(addrs, ports):
     '''
         Check if a range of ports are open or not
     '''
@@ -357,12 +360,93 @@ class DetectBDService():
 
         return 'Check registered %s information' %service
 
-    def detectYarnHS(self, dbNodes):
+    def detectYarnHS(self): #TODO: Document detected at first detection, unchanged if server still responds and updated if it has to be redetected and no longer matches stored values
         '''
         :param dbNodes: Query for all database nodes
         :return:
         '''
-        return 'Detects Yarn History Server in given nodes'
+        qNode = dbNodes.query.all()
+        qDBS = dbBDService.query.first()
+        if qDBS is not None:
+            yhUrl = 'http://%s:%s/ws/v1/history/mapreduce/jobs'%(qDBS.yarnHEnd, qDBS.yarnHPort)
+            try:
+                yarnResp = requests.get(yhUrl)
+                yarnData = yarnResp.json()
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Cannot connect to yarn history service with %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                             type(inst), inst.args)
+                yarnData = 0
+
+            if yarnData:
+                rspYarn = {}
+                rspYarn['Jobs'] = yarnData['jobs']
+                rspYarn['NodeIP'] = qDBS.yarnHEnd
+                rspYarn['NodePort'] = qDBS.yarnHPort
+                rspYarn['Status'] = 'Unchanged'
+                response = jsonify(rspYarn)
+                response.status_code = 200
+                return response
+
+        if qNode is None:
+            response = jsonify({'Status': 'No registered nodes'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        yarnNodes = []
+        for n in qNode:
+            if "yarn" in n.nRoles:
+                yarnNodes.append(n.nodeIP)
+        if not yarnNodes:
+            response = jsonify({'Status': 'Yarn role not found'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARNING] No nodes have yarn role',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        resList = []
+        for n in yarnNodes:
+            url = 'http://%s:%s/ws/v1/history/mapreduce/jobs' %(n, '19888')
+            resList.append(url)
+        app.logger.info('[%s] : [INFO] Resource list for yarn history server discovery -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), resList)
+        dmonYarn = GreenletRequests(resList)
+        nodeRes = dmonYarn.parallelGet()
+        yarnJobs = {}
+        for i in nodeRes:  #TODO: not handled if more than one node resonds as a history server
+            nodeIP = urlparse(i['Node'])
+            data = i['Data']
+            if data !='n/a':
+                try:
+                    yarnJobs['Jobs'] = data['jobs']['job']
+                except Exception as inst:
+                    app.logger.warning('[%s] : [WARN] Cannot read job list,  with %s and %s',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                       inst.args)
+                yarnJobs['NodeIP'] = nodeIP.hostname
+                yarnJobs['NodePort'] = nodeIP.port
+                yarnJobs['Status'] = 'Detected'
+
+        if qDBS is None:
+            upBDS = dbBDService(yarnHPort=yarnJobs['NodePort'], yarnHEnd=yarnJobs['NodePort'])
+            db.session.add(upBDS)
+            db.session.commit()
+            app.logger.info('[%s] : [INFO] Registred Yarn History server at %s and port %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), yarnJobs['NodeIP'],
+                         yarnJobs['NodePort'])
+        else:
+            qDBS.yarnHEnd = yarnJobs['NodeIP']
+            qDBS.yarnHPort = yarnJobs['NodePort']
+            yarnJobs['Status'] = 'Updated'
+            app.logger.info('[%s] : [INFO] Updated Yarn History server at %s and port %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), yarnJobs['NodeIP'],
+                         yarnJobs['NodePort'])
+        response = jsonify(yarnJobs)
+        if yarnJobs['Status'] == 'Updated':
+            response.status_code = 201
+        else:
+            response.status_code = 200
+        return response
 
     def detectStormRS(self, dbNodes):
         '''
