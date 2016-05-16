@@ -41,8 +41,7 @@ class dbESCore(db.Model):
     nodePort = db.Column(db.Integer, index=True, unique=False, default=9200)
     clusterName = db.Column(db.String(64), index=True, unique=False)
     conf = db.Column(db.LargeBinary, index=True, unique=False)
-    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown',
-                             unique=False)  # Running, Pending, Stopped, unknown
+    ESCoreStatus = db.Column(db.String(64), index=True, default='unknown', unique=False)  # Running, Pending, Stopped, unknown
     ESCorePID = db.Column(db.Integer, index=True, default=0, unique=False)  # pid of current running process
     ESCoreHeap = db.Column(db.String(64), index=True, unique=False, default='4g')
     MasterNode = db.Column(db.Boolean, index=True, unique=False, default=True)  # which node is master
@@ -57,7 +56,6 @@ class dbESCore(db.Model):
     MinShardIndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='12mb')
     MinIndexBufferSize = db.Column(db.String(64), index=True, unique=False, default='96mb')
     ESCoreDebug = db.Column(db.String(64), index=True, unique=False, default=False)
-    local = db.Column(db.Integer, index=True, unique=False, default=1) #TODO: if it is on the same machine as dmon-ctrl
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -90,7 +88,6 @@ class dbSCore(db.Model):
     LSCoreSparkEndpoint = db.Column(db.String(64), index=True, unique=False, default='None')
     LSCoreSparkPort = db.Column(db.String(64), index=True, unique=False, default='None')
     diceIndex = db.Column(db.String(64), index=True, unique=False, default='logstash')
-    local = db.Column(db.Integer, index=True, unique=False, default=1) #TODO: if it is on the same machine as dmon-ctrl
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
@@ -109,7 +106,6 @@ class dbKBCore(db.Model):
     conf = db.Column(db.String(140), index=True, unique=False)
     KBCoreStatus = db.Column(db.String(64), index=True, default='unknown',
                              unique=False)  # Running, Pending, Stopped, None
-    local = db.Column(db.Integer, index=True, unique=False, default=1) #TODO: if it is on the same machine as dmon-ctrl
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     # user_id = db.Column(db.Integer, db.ForeignKey('user.id'))

@@ -22,8 +22,6 @@ limitations under the License.
 from pyDMON import *
 #from dbMode import *
 from pyESController import *
-
-
 import datetime
 import time
 from sqlalchemy import desc
@@ -40,10 +38,6 @@ def main(argv):
     '''
     port = 5001
     ip = '0.0.0.0'
-    app.logger.info('[%s] : [INFO] Checking status of Core services')
-    esPidFile = os.path.join(pidDir, 'elasticsearch.pid')
-    lsPidFile = os.path.join(pidDir, 'logstash.pid')
-    kbPidFile = os.path.join(pidDir, 'kibana.pid')
 
     try:
         opts, args = getopt.getopt(argv, "hi:p:e:l:", ["core-install", "port", "endpoint-ip", "local"])
@@ -177,7 +171,11 @@ def main(argv):
                             app.logger.warning('[%s] : [WARNING] Duplicate MetPer entry exception! Local deployment can be run only once. With %s and %s',
                                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                             pass
-
+    app.logger.info('[%s] : [INFO] Checking status of Core services')
+    esPidFile = os.path.join(pidDir, 'elasticsearch.pid')
+    lsPidFile = os.path.join(pidDir, 'logstash.pid')
+    kbPidFile = os.path.join(pidDir, 'kibana.pid')
+    checkCoreState(esPidFile, lsPidFile, kbPidFile)
     app.run(host=ip, port=port, debug=True)
 
 if __name__ == '__main__':
