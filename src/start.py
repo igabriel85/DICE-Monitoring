@@ -180,6 +180,7 @@ def main(argv):
     qESCore = dbESCore.query.first()
     qLSCore = dbSCore.query.first()
     qKBCore = dbKBCore.query.first()
+	
     if not os.path.isfile(esPidFile):
         if qESCore is None:
             app.logger.warning('[%s] : [WARN] No ES Core service registered to DMon',
