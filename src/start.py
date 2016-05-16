@@ -193,6 +193,13 @@ if __name__ == '__main__':
 	log = logging.getLogger('werkzeug')
 	log.setLevel(logging.DEBUG)
 	log.addHandler(handler)
+
+	app.logger.info('[%s] : [INFO] Checking status of Core services')
+	esPidFile = os.path.join(pidDir, 'elasticsearch.pid')
+	lsPidFile = os.path.join(pidDir, 'logstash.pid')
+	kbPidFile = os.path.join(pidDir, 'kibana.pid')
+	checkCoreState(esPidFile, lsPidFile, kbPidFile)
+	
 	print '''
 	██████╗       ███╗   ███╗ ██████╗ ███╗   ██╗
 	██╔══██╗      ████╗ ████║██╔═══██╗████╗  ██║
