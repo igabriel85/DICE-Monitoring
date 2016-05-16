@@ -333,7 +333,7 @@ class QueryEsCore(Resource):
                                 'Message': 'Only system metrics supported for oslc'})
             response.status_code = 409
             return response
-        if request.json['DMON'] is None:
+        if request.json is None:
             response = jsonify({'Status': 'Empty payload',
                                 'Message': 'Request has empty payload'})
             response.status_code = 417
