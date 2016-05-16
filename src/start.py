@@ -40,6 +40,12 @@ def main(argv):
 	'''
 	port = 5001
 	ip = '0.0.0.0'
+	app.logger.info('[%s] : [INFO] Checking status of Core services')
+	esPidFile = os.path.join(pidDir, 'elasticsearch.pid')
+	lsPidFile = os.path.join(pidDir, 'logstash.pid')
+	kbPidFile = os.path.join(pidDir, 'kibana.pid')
+	checkCoreState(esPidFile, lsPidFile, kbPidFile)
+
 	try:
 		opts, args = getopt.getopt(argv, "hi:p:e:l:", ["core-install", "port", "endpoint-ip", "local"])
 	except getopt.GetoptError:
@@ -194,12 +200,7 @@ if __name__ == '__main__':
 	log.setLevel(logging.DEBUG)
 	log.addHandler(handler)
 
-	app.logger.info('[%s] : [INFO] Checking status of Core services')
-	esPidFile = os.path.join(pidDir, 'elasticsearch.pid')
-	lsPidFile = os.path.join(pidDir, 'logstash.pid')
-	kbPidFile = os.path.join(pidDir, 'kibana.pid')
-	checkCoreState(esPidFile, lsPidFile, kbPidFile)
-	
+
 	print '''
 	██████╗       ███╗   ███╗ ██████╗ ███╗   ██╗
 	██╔══██╗      ████╗ ████║██╔═══██╗████╗  ██║
