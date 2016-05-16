@@ -1,6 +1,7 @@
 from datetime import datetime
 from app import *
 from flask.ext.sqlalchemy import SQLAlchemy
+import os
 
 db = SQLAlchemy(app)
 
@@ -165,3 +166,9 @@ class dbMetPer(db.Model):
     def __repr__(self):
         return '<dbMetPer %r>' % (self.dbMetPer)
 # %--------------------------------------------------------------------%
+
+#DB Initialization
+baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+db.create_all()
