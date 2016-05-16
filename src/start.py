@@ -189,10 +189,10 @@ if __name__ == '__main__':
     pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
     #TODO add escore and lscore executable locations
 
-    # #DB Initialization
-    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
-    # app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-    # db.create_all()
+    #DB Initialization
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
+    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+    db.create_all()
 
     #Logger settings
     handler = RotatingFileHandler(logDir + '/dmon-controller.log', maxBytes=10000000, backupCount=5)

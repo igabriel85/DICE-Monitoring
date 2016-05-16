@@ -1687,8 +1687,7 @@ class ESCoreController(Resource):
         templateEnv = jinja2.Environment(loader=templateLoader)
         esTemp = os.path.join(tmpDir, 'elasticsearch.tmp')  # tmpDir+"/collectd.tmp"
         esfConf = os.path.join(cfgDir, 'elasticsearch.yml')
-        qESCore = dbESCore.query.filter_by(
-            MasterNode=1).first()  # TODO -> curerntly only generates config file for master node
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()  # TODO -> curerntly only generates config file for master node
         if qESCore is None:
             response = jsonify({"Status": "No master ES instances found!"})
             response.status_code = 500

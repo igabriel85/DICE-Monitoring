@@ -9,6 +9,8 @@ export ES_USE_GC_LOGGING=yes
 export LS_VERSION="2.2.0"
 export KB_VERSION="4.3.1"
 export DMON_AGENT="https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz"
+#Logging can be set to INFO, WARN or ERROR
+export DMON_LOGGING="INFO"
 
 if [ $ARCH == "Linux" ]; then
    DIR=`readlink -f "$( dirname "$0" )"`
