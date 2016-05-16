@@ -1184,6 +1184,9 @@ class DetectYarnHS(Resource):
 
 @dmon.route('/v1/overlord/detect/spark')
 class DetectSparkHS(Resource):
+    def get(self):
+        return 'Get spark history server settings'
+
     def put(self):
         return 'Define or modify spark history server endpoint'
 
@@ -3905,15 +3908,6 @@ def bad_mediatype(e):
 
 
 if __name__ == '__main__':
-    # app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+os.path.join(baseDir,'dmon.db')
-    # app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-    # db.create_all()
-
-    # print >>sys.stderr, "Running as: %s:%s" % (os.getuid(), os.getgid())
-    # testQuery = queryConstructor(1438939155342,1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
-    # metrics = ['type','@timestamp','host','job_id','hostname','AvailableVCores']
-    # test, test2 = queryESCore(testQuery, debug=False)
-    # print >>sys.stderr, test2
     handler = RotatingFileHandler(logDir + '/dmon-controller.log', maxBytes=10000000, backupCount=5)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)
@@ -3921,9 +3915,6 @@ if __name__ == '__main__':
     log.setLevel(logging.DEBUG)
     log.addHandler(handler)
     if len(sys.argv) == 1:
-        # esDir=
-        # lsDir=
-        # kibanaDir=
         app.run(port=5001, debug=True, threaded=True)
     else:
         app.run(host='0.0.0.0', port=8080, debug=True)

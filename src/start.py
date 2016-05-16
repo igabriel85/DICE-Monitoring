@@ -189,17 +189,37 @@ if __name__ == '__main__':
 	baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 	pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 	#TODO add escore and lscore executable locations
-	
+
+	#DB Initialization
 	app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
 	app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 	db.create_all()
-	handler = RotatingFileHandler(logDir + '/dmon-controller.log', maxBytes=10000000, backupCount=5)
-	handler.setLevel(logging.INFO)
-	app.logger.addHandler(handler)
-	log = logging.getLogger('werkzeug')
-	log.setLevel(logging.DEBUG)
-	log.addHandler(handler)
 
+	#Logger settings
+	handler = RotatingFileHandler(logDir + '/dmon-controller.log', maxBytes=10000000, backupCount=5)
+	logLevel = os.getenv('DMON_LOGGING', 'WARN')
+	if logLevel == 'INFO':
+		handler.setLevel(logging.INFO)
+		app.logger.addHandler(handler)
+		log = logging.getLogger('werkzeug')
+		log.setLevel(logging.DEBUG)
+	elif logLevel == 'WARN':
+		handler.setLevel(logging.WARNING)
+		app.logger.addHandler(handler)
+		log = logging.getLogger('werkzeug')
+		log.setLevel(logging.DEBUG)
+	elif logLevel == 'ERROR':
+		handler.serLevel(logging.ERROR)
+		app.logger.addHandler(handler)
+		log = logging.getLogger('werkzeug')
+		log.setLevel(logging.ERROR)
+	else:
+		handler.setLevel(logging.WARNING)
+		app.logger.addHandler(handler)
+		log = logging.getLogger('werkzeug')
+		log.setLevel(logging.DEBUG)
+
+	log.addHandler(handler)
 
 	print '''
 	██████╗       ███╗   ███╗ ██████╗ ███╗   ██╗
