@@ -26,6 +26,7 @@ import requests
 import os
 import jinja2
 from app import *
+from dbModel import *
 
 
 def portScan(addrs,ports):
@@ -342,6 +343,137 @@ def configureComponent(settingsDict, tmpPath, filePath): #TODO modify /v1/overlo
                              type(inst), inst.args)
             return 0
         return 1
+
+
+class DetectBDService():
+
+    def checkRegistered(self, service, dbNodes):
+        '''
+        :param service: Name of BD service role to check for
+        :param dbNodes: Query for all database nodes
+        :return:
+        '''
+        return 'Check registered %s information' %service
+
+    def detectYarnHS(self, dbNodes):
+        '''
+        :param dbNodes: Query for all database nodes
+        :return:
+        '''
+        return 'Detects Yarn History Server in given nodes'
+
+    def detectStormRS(self, dbNodes):
+        '''
+        :param dbNodes: Query for all database nodes
+        :return:
+        '''
+        return 'Detect Storm Rest Service'
+
+    def detectSparkHS(self, dbNodes):
+        '''
+        :param dbNodes: Query for all database nodes
+        :return:
+        '''
+        return 'Detect Spark History servire'
+
+
+def checkCoreState(esPidf, lsPidf, kbPidf):  #TODO: works only for local deployment, change for distributed
+    '''
+    :param esPidf: Elasticserch PID file location
+    :param lsPidf: Logstash PID file location
+    :param kbPidf: Kibana PID file location
+    '''
+    qESCore = dbESCore.query.first()
+    qLSCore = dbSCore.query.first()
+    qKBCore = dbKBCore.query.first()
+    if not os.path.isfile(esPidf):
+        if qESCore is None:
+            app.logger.warning('[%s] : [WARN] No ES Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        else:
+            app.logger.info('[%s] : [INFO] PID file not found, setting pid to 0 for local ES Core')
+            qESCore.ESCorePID = 0
+    else:
+        with open(esPidf) as esPid:
+            vpid = esPid.read()
+            esStatus = checkPID(int(vpid))
+            if esStatus:
+                if qESCore is None:
+                    app.logger.warning('[%s] : [WARN] No ES Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    app.logger.info('[%s] : [INFO] PID file found for LS Core service with value %s',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                    str(vpid))
+                    qESCore.ESCorePID = int(vpid)
+            else:
+                if qESCore is None:
+                    app.logger.warning('[%s] : [WARN] No ES Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    app.logger.info('[%s] : [INFO] PID file found for ES Core service, not service tunning at pid %s. Setting value to 0',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                    str(vpid))
+                    qESCore.ESCorePID = 0
+
+    if not os.path.isfile(lsPidf):
+        if qLSCore is None:
+            app.logger.warning('[%s] : [WARN] No LS Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        else:
+            app.logger.info('[%s] : [INFO] PID file not found, setting pid to 0 for local LS Core',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            qLSCore.LSCorePID = 0
+    else:
+        with open(lsPidf) as lsPid:
+            wpid = lsPid.read()
+            lsStatus = checkPID(int(wpid))
+            if lsStatus:
+                if qLSCore is None:
+                    app.logger.warning('[%s] : [WARN] No LS Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    app.logger.info('[%s] : [INFO] PID file  found for LS Core service, with value %s',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                    str(wpid))
+                    qLSCore.LSCorePID = int(wpid)
+            else:
+                if qLSCore is None:
+                    app.logger.warning('[%s] : [WARN] No LS Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    app.logger.info('[%s] : [INFO] PID file found for ES Core service, not service tunning at pid %s. Setting value to 0',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    qLSCore.LSCorePID = 0
+
+    if not os.path.isfile(kbPidf):
+        if qKBCore is None:
+            app.logger.warning('[%s] : [WARN] No KB Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        else:
+            app.logger.info('[%s] : [INFO] PID file not found, setting pid to 0 for local KB Core')
+            qKBCore.KBCorePID = 0
+    else:
+        with open(kbPidf) as kbPid:
+            qpid = kbPid.read()
+            kbStatus = checkPID(int(qpid))
+            if kbStatus:
+                if qKBCore is None:
+                    app.logger.warning('[%s] : [WARN] No KB Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    app.logger.info('[%s] : [INFO] PID file  found for KB Core service, with value %s',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                    str(qpid))
+                    qKBCore.KBCorePID = int(qpid)
+            else:
+                if qKBCore is None:
+                    app.logger.warning('[%s] : [WARN] No KB Core service registered to DMon',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                else:
+                    app.logger.info('[%s] : [INFO] PID file found for KB Core service, not service tunning at pid %s. Setting value to 0',
+                                    datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    qKBCore.KBCorePID = 0
 
 # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #

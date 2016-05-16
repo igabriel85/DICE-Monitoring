@@ -173,6 +173,11 @@ def main(argv):
 											   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
 							pass
 
+	app.logger.info('[%s] : [INFO] Checking status of Core services')
+	esPidFile = os.path.join(pidDir, 'elasticsearch.pid')
+	lsPidFile = os.path.join(pidDir, 'logstash.pid')
+	kbPidFile = os.path.join(pidDir, 'kibana.pid')
+	checkCoreState(esPidFile, lsPidFile, kbPidFile)
 	app.run(host=ip, port=port, debug=True)
 
 if __name__ == '__main__':
