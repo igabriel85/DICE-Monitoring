@@ -2330,8 +2330,10 @@ class LSCoreController(Resource):
         try:
             lsPid = subprocess.Popen(LSServerCmd, shell=True).pid
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] Cannot start LS instance with %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
             qSCore.LSCoreStatus = 'unknown'
         qSCore.LSCorePID = lsPid
         lsPIDFileLoc = os.path.join(pidDir, 'logstash.pid')
@@ -2342,10 +2344,15 @@ class LSCoreController(Resource):
         except IOError:
             response = jsonify({'Error': 'File I/O!'})
             response.status_code = 500
+            app.logger.error('[%s] : [ERROR] Cannot write LS pid file',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         qSCore.LSCoreStatus = 'Running'
+        app.logger.info('[%s] : [INFO] LS instance started with PID %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(lsPid))
         response = jsonify({'Status': 'Logstash Core PID ' + str(lsPid),
-                            'Storm': stormStatus})
+                            'Storm': stormStatus,
+                            'YarnHistory': yarnStatus})
         response.status_code = 200
         return response
 

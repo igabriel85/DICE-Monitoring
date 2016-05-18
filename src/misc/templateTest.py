@@ -52,6 +52,12 @@ infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": udpPort,
                      "ESCluster": outESclusterName, "EShostIP": hostIP,
                      "EShostPort": nodePort,
                      "StormRestIP": StormRestIP, "StormRestPort": LSCoreStormPort,
-                     "StormTopologyID": LSCoreStormTopology, "roles": ['unknown'], 'myIndex':'testhttp', 'storm_interval': stormInterval, 'nSpout': int(nSpout), 'nBolt': int(nBolt)}
+                     "StormTopologyID": LSCoreStormTopology, "roles": ['yarn'],
+             'myIndex': 'testhttp', 'storm_interval': stormInterval,
+             'nSpout': int(nSpout),
+             'nBolt': int(nBolt),
+             'yarnHEnd': yarnHEnd,
+             'yarnHPort': yarnHPort,
+             'yarnHPoll': yarnHPoll}
 
 configureComponent(infoSCore, tmpFile, cfgFile)
