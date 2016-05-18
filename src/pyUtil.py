@@ -462,6 +462,9 @@ class DetectBDService():
         '''
         return 'Detect Spark History servire'
 
+    def detectServiceRA(self, service):
+        return 'Generic detection of services'
+
 
 def checkCoreState(esPidf, lsPidf, kbPidf):  #TODO: works only for local deployment, change for distributed
     '''
