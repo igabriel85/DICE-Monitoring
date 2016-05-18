@@ -2212,23 +2212,36 @@ class LSCoreController(Resource):
         if qSCore is None:
             response = jsonify({"Status": "No LS instances registered"})
             response.status_code = 500
+            app.logger.warning('[%s] : [WARN] No LS instance registred',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         qESCore = dbESCore.query.filter_by(MasterNode=1).first()  # TODO: only works with the master node
         if qESCore is None:
             response = jsonify({"Status": "No ES instances registered"})
             response.status_code = 500
+            app.logger.warning('[%s] : [WARN] No ES instance registred',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
         if checkPID(qSCore.LSCorePID) is True:
             subprocess.call(['kill', '-9', str(qSCore.LSCorePID)])
+            app.logger.info('[%s] : [INFO] Killed LS Instance at %s',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(qSCore.LSCorePID))
 
         try:
             template = templateEnv.get_template(lsTemp)
         # print >>sys.stderr, template
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
-            return "LS Tempalte file unavailable!"
+            app.logger.error('[%s] : [ERROR] LS tempalte file unavailable with %s and %s',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            response = jsonify({"Status": "LS Tempalte file unavailable!"})
+            response.status_code = 404
+            return response
+
+
 
         if qSCore.sslCert == 'default':
             certLoc = os.path.join(credDir, 'logstash-forwarder.crt')
@@ -2271,12 +2284,31 @@ class LSCoreController(Resource):
             stormStatus = 'Not registered'
             spouts = 0
             bolts = 0
+        app.logger.info('[%s] : [INFO] Storm Status -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), stormStatus)
+
+        qBDService = dbBDService.query.first()
+        if qBDService is None:
+            yarnHEnd = 'None'
+            yarnHPort = '19888'
+            yarnHPoll = '30'
+            yarnStatus = 'Not Registered'
+        else:
+            yarnHEnd = qBDService.yarnHEnd
+            yarnHPort = qBDService.yarnHPort
+            yarnHPoll = qBDService.yarnHPoll
+            yarnStatus = 'Registered'
+
+        app.logger.info('[%s] : [INFO] Yarn History Status -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), yarnStatus)
+
         infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort,
                      "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
                      "EShostPort": qESCore.nodePort, "StormRestIP": StormRestIP,
                      "StormRestPort": qSCore.LSCoreStormPort, "StormTopologyID": qSCore.LSCoreStormTopology,
                      'storm_interval': stormInterval, 'roles': uniqueRolesList, 'myIndex': qSCore.diceIndex,
-                     'nSpout': spouts, 'nBolt': bolts}
+                     'nSpout': spouts, 'nBolt': bolts, 'yarnHEnd': yarnHEnd, 'yarnHPort': yarnHPort,
+                     'yarnHPoll': yarnHPoll}
         sConf = template.render(infoSCore)
         qSCore.conf = sConf
         # print >>sys.stderr, esConf
@@ -2288,6 +2320,9 @@ class LSCoreController(Resource):
 
         os.environ['LS_HEAP_SIZE'] = os.getenv('LS_HEAP_SIZE',
                                                qSCore.LSCoreHeap)  # TODO: if heap size set in env then use it if not use db one
+        app.logger.info('[%s] : [INFO] LS Heap size set to %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                        str(os.environ['LS_HEAP_SIZE']))
 
         lsLogfile = os.path.join(logDir, 'logstash.log')
         lsPid = 0

@@ -6,27 +6,6 @@ input {
     ssl_certificate => "{{sslcert}}"
     ssl_key=> "{{sslkey}}"
 }
-    {% if yarnHEnd == 'None' %}
-    #No Yarn History Server Set
-    {% else %}
-    http_poller {
-        urls => {
-            Topology => {
-            method => get
-            url => "http://{{yarnHEnd}}:{{yarnHPort}}/ws/v1/history/mapreduce/jobs"
-            headers => {
-                Accept => "application/json"
-                }
-            }
-        }
-        request_timeout => 60
-        interval => {{yarnHPoll}}
-        codec => "json"
-        # A hash of request metadata info (timing, response headers, etc.) will be sent here
-        # metadata_target => "http_poller_metadata"
-        type =>"yarn-history"
-    }
-    {% endif %}
 {% else %}
 #No lumberjack needed
 {% endif %}
@@ -139,10 +118,7 @@ if [type] == "storm-topology"{
   params = event['configuration'] && event['configuration'].to_hash
         params.keys.each { |k| params[ k.gsub('.','_') ] = params.delete(k) if k.include?'.' } unless params.nil?
        "
-    }
-
-    mutate{
-        add_field =>{
+       add_field =>{
        {% for i in range(nBolt) %}
        "bolts_{{i}}_executors" => "%{[bolts][{{i}}][executors]}"
        "bolts_{{i}}_emitted" => "%{[bolts][{{i}}][emitted]}"
@@ -209,11 +185,6 @@ if [type] == "storm-topology"{
        "topologyStats_all_failed" => "%{[topologyStats][3][failed]}"
        }
        remove_field => ["bolts", "spouts", "visualizationTable", "topologyStats"]
-       convert => {"bolts_0_capacity" => "float"}
-    }
-
-    mutate{
-        convert => {"bolts_0_capacity" => "float"}
     }
 }
 if [type] == "storm-topSum"{
@@ -426,28 +397,14 @@ if [type]=="mrappmaster-metrics"{
 {% endif %}
 }
 output {
-    if [type]=="yarn-history"{
-        elasticsearch {
-        #cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name; Only for LS version 1.5.x
-        #protocol => http #Only version 1.5.x
-        hosts => ["{{EShostIP}}:{{EShostPort}}"] #For version 2.x of logstash
-        {% if not myIndex %}
-        index => "logstash-%{+YYY.MM.dd}"
-        {% else %}
-        index => "{{myIndex}}-%{+YYY.MM.dd}"
-        {% endif %}
-        document_id =>"yarn_history"
-        }
-    } else {
-        elasticsearch {
-        #cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name; Only for LS version 1.5.x
-        #protocol => http #Only version 1.5.x
-        hosts => ["{{EShostIP}}:{{EShostPort}}"] #For version 2.x of logstash
-        {% if not myIndex %}
-        index => "logstash-%{+YYY.MM.dd}"
-        {% else %}
-        index => "{{myIndex}}-%{+YYY.MM.dd}"
-        {% endif %}
-        }
-    }
+  elasticsearch {
+     #cluster  => {{ESCluster}} # this matches out elasticsearch cluster.name; Only for LS version 1.5.x
+     #protocol => http #Only version 1.5.x
+     hosts => ["{{EShostIP}}:{{EShostPort}}"] #For version 2.x of logstash
+     {% if not myIndex %}
+     index => "logstash-%{+YYY.MM.dd}"
+     {% else %}
+     index => "{{myIndex}}-%{+YYY.MM.dd}"
+     {% endif %}
+  }
 }

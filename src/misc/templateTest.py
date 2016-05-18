@@ -39,6 +39,10 @@ LSCoreStormTopology = 'test'
 stormInterval = '55555'
 nSpout = '4'
 nBolt = '4'
+#YarnHistory
+yarnHEnd = '127.0.0.1'
+yarnHPort = '19888'  #Has default
+yarnHPoll = '30' #Has default
 
 
 #myindex is optional
