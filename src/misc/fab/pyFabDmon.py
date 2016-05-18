@@ -19,10 +19,10 @@ from fabric.contrib.console import confirm
 env.hosts = ['109.231.122.207', '109.231.122.156', '109.231.122.240', '109.231.122.127']
 
 # Set the username
-env.user = "ubuntu"
+env.user = " "
 
 # Set the password [NOT RECOMMENDED]
-env.password = "rexmundi220"
+env.password = " "
 
 
 def uploadSparkConf():
