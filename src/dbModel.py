@@ -145,7 +145,7 @@ class dbBDService(db.Model):
     yarnHEnd = db.Column(db.String(64), index=True, unique=False, default='None')
     yarnHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
     sparkHPort = db.Column(db.Integer, index=True, unique=False, default=666) #TODO: Change to corect default
-    sparkHEnd = db.Column(db.String(64), index=True, unique=False)
+    sparkHEnd = db.Column(db.String(64), index=True, unique=False, default='None')
     sparkHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
 
     def __repr__(self):
