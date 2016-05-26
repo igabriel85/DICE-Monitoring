@@ -1,6 +1,6 @@
 """
 
-Copyright 2015, Institute e-Austria, Timisoara, Romania
+Copyright 2016, Institute e-Austria, Timisoara, Romania
     http://www.ieat.ro/
 Developers:
  * Gabriel Iuhasz, iuhasz.gabriel@info.uvt.ro
@@ -29,4 +29,4 @@ log.setLevel(logging.DEBUG)
 log.addHandler(handler)
 app.config['PROFILE'] = True
 app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[30])
-app.run(debug=True)
+app.run('0.0.0.0', port=5001, debug=True)
