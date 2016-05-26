@@ -423,9 +423,19 @@ class DetectBDService():
                     app.logger.warning('[%s] : [WARN] Cannot read job list,  with %s and %s',
                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
                                        inst.args)
+                    response = jsonify({'Status': 'Cannot read job list'})
+                    response.status_code = 500
+                    return response
                 yarnJobs['NodeIP'] = nodeIP.hostname
                 yarnJobs['NodePort'] = nodeIP.port
                 yarnJobs['Status'] = 'Detected'
+
+        if not yarnJobs:
+            response = jsonify({'Status': 'No Yarn history Server detected'})
+            response.status_code = 404
+            app.logger.error('[%s] : [ERROR] No Yarn History Server detected',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
 
         if qDBS is None:
             upBDS = dbBDService(yarnHPort=yarnJobs['NodePort'], yarnHEnd=yarnJobs['NodeIP'])
@@ -460,7 +470,88 @@ class DetectBDService():
         :param dbNodes: Query for all database nodes
         :return:
         '''
-        return 'Detect Spark History servire'
+        qNode = dbNodes.query.all()
+        qDBS = dbBDService.query.first()
+        if qDBS is not None:
+            yhUrl = 'http://%s:%s/api/v1/applications'%(qDBS.sparkHEnd, qDBS.sparkHPort)
+            try:
+                sparkResp = requests.get(yhUrl)
+                ysparkData = sparkResp.json()
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Cannot connect to spark history service with %s and %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                             type(inst), inst.args)
+                ysparkData = 0
+
+            if ysparkData:
+                rspSpark = {}
+                rspSpark['Jobs'] = ysparkData['jobs']
+                rspSpark['NodeIP'] = qDBS.sparkHEnd
+                rspSpark['NodePort'] = qDBS.sparkHPort
+                rspSpark['Status'] = 'Unchanged'
+                response = jsonify(rspSpark)
+                response.status_code = 200
+                return response
+
+        if qNode is None:
+            response = jsonify({'Status': 'No registered nodes'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        sparkNodes = []
+        for n in qNode:
+            if "spark" in n.nRoles:
+                sparkNodes.append(n.nodeIP)
+        if not sparkNodes:
+            response = jsonify({'Status': 'Spark role not found'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARNING] No nodes have spark role',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        resList = []
+        for n in sparkNodes:
+            url = 'http://%s:%s/api/v1/applications' %(n, '19888')
+            resList.append(url)
+        app.logger.info('[%s] : [INFO] Resource list for spark history server discovery -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), resList)
+        dmonSpark = GreenletRequests(resList)
+        nodeRes = dmonSpark.parallelGet()
+        sparkJobs = {}
+        for i in nodeRes:  #TODO: not handled if more than one node resonds as a history server
+            nodeIP = urlparse(i['Node'])
+            data = i['Data']
+            if data !='n/a':
+                try:
+                    sparkJobs['Jobs'] = data
+                except Exception as inst:
+                    app.logger.warning('[%s] : [WARN] Cannot read job list,  with %s and %s',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                       inst.args)
+                sparkJobs['NodeIP'] = nodeIP.hostname
+                sparkJobs['NodePort'] = nodeIP.port
+                sparkJobs['Status'] = 'Detected'
+
+        if qDBS is None:
+            upBDS = dbBDService(sparkHPort=sparkJobs['NodePort'], sparkHEnd=sparkJobs['NodeIP'])
+            db.session.add(upBDS)
+            db.session.commit()
+            app.logger.info('[%s] : [INFO] Registred Spark History server at %s and port %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), sparkJobs['NodeIP'],
+                         sparkJobs['NodePort'])
+        else:
+            qDBS.yarnHEnd = sparkJobs['NodeIP']
+            qDBS.yarnHPort = sparkJobs['NodePort']
+            sparkJobs['Status'] = 'Updated'
+            app.logger.info('[%s] : [INFO] Updated Spark History server at %s and port %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), sparkJobs['NodeIP'],
+                         sparkJobs['NodePort'])
+        response = jsonify(sparkJobs)
+        if sparkJobs['Status'] == 'Updated':
+            response.status_code = 201
+        else:
+            response.status_code = 200
+        return response
 
     def detectServiceRA(self, service):
         return 'Generic detection of services'

@@ -81,6 +81,9 @@ lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 # changes the descriptor on the Swagger WUI and appends to api /dmon and then /v1
 # dmon = api.namespace('dmon', description='D-MON operations')
 
+#Initialize detect service
+servDet=DetectBDService()
+
 # argument parser
 dmonAux = api.parser()
 dmonAux.add_argument('redeploy', type=str, required=False,
@@ -1172,8 +1175,8 @@ class DetectYarnHS(Resource):
             return response
 
     def post(self):
-        yarnDetect = DetectBDService()
-        response = yarnDetect.detectYarnHS()
+        #yarnDetect = DetectBDService()
+        response = servDet.detectYarnHS()
         return response
 
 

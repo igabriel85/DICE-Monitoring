@@ -144,7 +144,7 @@ class dbBDService(db.Model):
     yarnHPort = db.Column(db.Integer, index=True, unique=False, default=19888)
     yarnHEnd = db.Column(db.String(64), index=True, unique=False, default='None')
     yarnHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
-    sparkHPort = db.Column(db.Integer, index=True, unique=False, default=666) #TODO: Change to corect default
+    sparkHPort = db.Column(db.Integer, index=True, unique=False, default=18088) #TODO: Change to corect default
     sparkHEnd = db.Column(db.String(64), index=True, unique=False, default='None')
     sparkHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
 
