@@ -347,6 +347,13 @@ class QueryEsCore(Resource):
             app.logger.error('[%s] : [ERROR] Empty payload received for query, returned error 417',
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
+        if 'queryString' not in request.json['DMON']:
+            response = jsonify({'Status': 'No queryString',
+                                'Message': 'Query string not found in payload'})
+            response.status_code = 404
+            app.logger.error('[%s] : [ERROR] Empty queryString received for query, returned error 404',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
         if 'tstop' not in request.json['DMON']:
             query = queryConstructor(tstart=request.json['DMON']['tstart'],
                                      queryString=request.json['DMON']['queryString'],
