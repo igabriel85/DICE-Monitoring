@@ -829,7 +829,7 @@ class ClusterRoles(Resource):
                 response = jsonify({'Status': 'Node Name Error',
                                     'Message': 'Node' + n["NodeName"] + ' not found!'})
                 response.status_code = 404
-                app.logger.warrning('[%s] : [WARN] Node %s not found',
+                app.logger.warning('[%s] : [WARN] Node %s not found',
                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                                     str(n["NodeName"]))
                 return response
