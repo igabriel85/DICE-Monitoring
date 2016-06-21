@@ -1246,7 +1246,11 @@ class MonitoredNodeInfo(Resource):
         else:
             qNode.nodeIP = request.json['IP']
             qNode.nodeOS = request.json['OS']
-            qNode.nkey = request.json['Key']
+            if 'Key' not in request.json:
+                app.logger.warning('[%s] : [WARN] Key not changed for node  %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
+            else:
+                qNode.nkey = request.json['Key']
             qNode.nPass = request.json['Password']
             qNode.nUser = request.json['User']
             if 'LogstashInstance' not in request.json:
