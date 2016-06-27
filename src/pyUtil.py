@@ -142,8 +142,6 @@ class AgentResourceConstructor():
         self.IPList = IPList
         self.Port = Port
 
-
-
     def check(self):
         resourceList = []
         for ip in self.IPList:

@@ -1199,6 +1199,145 @@ class DetectSparkHS(Resource):
         return 'Define or modify spark history server endpoint'
 
 
+@dmon.route('/v1/overlord/history/yarn')
+class YarnHistoryServer(Resource):
+    def get(self):
+        qBDService = dbBDService.query.first()
+        if qBDService is None:
+            app.logger.warning('[%s] : [WARN] No entry for Yarn History server found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'No Yarn History server entry found'})
+            response.status_code = 404
+            return response
+        elif qBDService.yarnHEnd == 'None':
+            app.logger.warning('[%s] : [WARN] Yarn History server not registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Yarn History server not registered'})
+            response.status_code = 404
+            return response
+        else:
+            try:
+                yarnJobsStatus, yarnJobs = getYarnJobs(qBDService.yarnHEnd, qBDService.yarnHPort)
+            except Exception as inst:
+                app.logger.warning('[%s] : [WARN] Yarn History server not responding at %s with port %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qBDService.yarnHEnd, str(qBDService.yarnHPort))
+                response = jsonify({'Status': 'Yarn History server not responding'})
+                response.status_code = 408
+                return response
+
+            return yarnJobs
+
+
+@dmon.route('/v1/overlord/history/yarn/jobs')
+class YarnHistoryServerJobs(Resource):
+    def get(self):
+        qBDService = dbBDService.query.first()
+        if qBDService is None:
+            app.logger.warning('[%s] : [WARN] No entry for Yarn History server found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'No Yarn History server entry found'})
+            response.status_code = 404
+            return response
+        elif qBDService.yarnHEnd == 'None':
+            app.logger.warning('[%s] : [WARN] Yarn History server not registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Yarn History server not registered'})
+            response.status_code = 404
+            return response
+        else:
+            try:
+                yarnJobsStatus, yarnJobs = getYarnJobs(qBDService.yarnHEnd, qBDService.yarnHPort)
+            except Exception as inst:
+                app.logger.warning('[%s] : [WARN] Yarn History server not responding at %s with port %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qBDService.yarnHEnd, str(qBDService.yarnHPort))
+                response = jsonify({'Status': 'Yarn History server not responding'})
+                response.status_code = 408
+                return response
+
+            try:
+                jStatJob = getYarnJobsStatistic(qBDService.yarnHEnd, qBDService.yarnHPort, yarnJobs)
+            except Exception as inst:
+                app.logger.warning('[%s] : [WARN] Yarn History server not responding at %s with port %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qBDService.yarnHEnd, str(qBDService.yarnHPort))
+                response = jsonify({'Status': 'Yarn History server not responding'})
+                response.status_code = 408
+                return response
+            #TODO: Stronger sync index with logstash server needed
+            dindex = 'logstash-%s' %datetime.now().strftime("%Y.%m.%d")
+            qES = dbESCore.query.filter_by(MasterNode=1).first()
+            if qES is None:
+                response = jsonify({'Status': 'ES not registered'})
+                response.status_code = 404
+                app.logger.error('[%s] : [ERROR] ES core not registered into dmon', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return response
+
+            try:
+                rIndex = dmonESIndexer(qES.hostIP, dmonindex='test', dmondoc_type='yarn_jobstat', docId='yarn-jobstat', body=jStatJob)
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Indexing failed with %s and %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error while indexing'})
+                response.status_code = 503
+                return response
+            app.logger.info('[%s] : [INFO] Jobs indexed %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(rIndex))
+            # return rIndex
+            return jStatJob
+
+
+@dmon.route('/v1/overlord/history/yarn/jobs/tasks')
+class YarnHistoryServerJobTasks(Resource):
+    def get(self):
+        qBDService = dbBDService.query.first()
+        if qBDService is None:
+            app.logger.warning('[%s] : [WARN] No entry for Yarn History server found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'No Yarn History server entry found'})
+            response.status_code = 404
+            return response
+        elif qBDService.yarnHEnd == 'None':
+            app.logger.warning('[%s] : [WARN] Yarn History server not registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Yarn History server not registered'})
+            response.status_code = 404
+            return response
+        else:
+            try:
+                yarnJobsStatus, yarnJobs = getYarnJobs(qBDService.yarnHEnd, qBDService.yarnHPort)
+            except Exception as inst:
+                app.logger.warning('[%s] : [WARN] Yarn History server not responding at %s with port %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qBDService.yarnHEnd, str(qBDService.yarnHPort))
+                response = jsonify({'Status': 'Yarn History server not responding'})
+                response.status_code = 408
+                return response
+
+            try:
+                jStatTask = getYarnJobTasks(qBDService.yarnHEnd, qBDService.yarnHPort, yarnJobs)
+            except Exception as inst:
+                app.logger.warning('[%s] : [WARN] Yarn History server not responding at %s with port %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qBDService.yarnHEnd, str(qBDService.yarnHPort))
+                response = jsonify({'Status': 'Yarn History server not responding'})
+                response.status_code = 408
+                return response
+            qES = dbESCore.query.filter_by(MasterNode=1).first()
+            if qES is None:
+                response = jsonify({'Status': 'ES not registered'})
+                response.status_code = 404
+                app.logger.error('[%s] : [ERROR] ES core not registered into dmon', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return response
+
+            try:
+                rIndex = dmonESIndexer(qES.hostIP, dmonindex='test', dmondoc_type='yarn_jobstasks', docId='yarn-jobstat', body=jStatTask)
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Indexing failed with %s and %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error while indexing'})
+                response.status_code = 503
+                return response
+            app.logger.info('[%s] : [INFO] Jobs indexed %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(rIndex))
+            # return rIndex
+            return jStatTask
+
+
 @dmon.route('/v1/overlord/nodes/<nodeFQDN>')
 @api.doc(params={'nodeFQDN': 'Nodes FQDN'})
 class MonitoredNodeInfo(Resource):

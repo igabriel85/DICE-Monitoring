@@ -21,16 +21,19 @@ from datetime import datetime
 from elasticsearch import Elasticsearch
 import csv
 import unicodedata
+import requests
 import os
 import sys, getopt
-#from addict import Dict
+
+# from addict import Dict
 
 
-#ouptu dir location
+# ouptu dir location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 
-#Global es
+# Global es
 es = Elasticsearch()
+
 
 # class ESCoreInit:
 #   def __init__(self, IP):
@@ -39,8 +42,8 @@ es = Elasticsearch()
 #     self.
 
 
-def queryConstructor(tstart, queryString,tstop = 'None',  size=500,ordering="desc"):
-  '''
+def queryConstructor(tstart, queryString, tstop='None', size=500, ordering="desc"):
+    '''
       Function generates a query string reprezented by a dictionary/json.
       It has the following arguments:
 
@@ -56,52 +59,52 @@ def queryConstructor(tstart, queryString,tstop = 'None',  size=500,ordering="des
 
       Function returns a dictionary of the query body required for elasticsearch.
   '''
-  if tstop == 'None':
-    nestedBody = {'gte': tstart}
-  else:
-    nestedBody = {'gte': tstart,'lte': tstop}
+    if tstop == 'None':
+        nestedBody = {'gte': tstart}
+    else:
+        nestedBody = {'gte': tstart, 'lte': tstop}
 
-  queryBody= {
-  "size": size,
-  "sort": {
-    "@timestamp": ordering
-  },
-  "query": {
-    "filtered": {
-      "query": {
-        "query_string": {
-          "query": queryString,
-          "analyze_wildcard": True
-        }
-      },
-      "filter": {
-        "bool": {
-          "must": [
-            {
-              "range": {
-                "@timestamp": nestedBody
-              }
+    queryBody = {
+        "size": size,
+        "sort": {
+            "@timestamp": ordering
+        },
+        "query": {
+            "filtered": {
+                "query": {
+                    "query_string": {
+                        "query": queryString,
+                        "analyze_wildcard": True
+                    }
+                },
+                "filter": {
+                    "bool": {
+                        "must": [
+                            {
+                                "range": {
+                                    "@timestamp": nestedBody
+                                }
+                            }
+                        ],
+                        "must_not": []
+                    }
+                }
             }
-          ],
-          "must_not": []
-        }
-      }
+        },
+        "fields": [
+            "*",
+            "_source"
+        ],
+        "script_fields": {},
+        "fielddata_fields": [
+            "@timestamp"
+        ]
     }
-  },
-  "fields": [
-    "*",
-    "_source"
-  ],
-  "script_fields": {},
-  "fielddata_fields": [
-    "@timestamp"
-  ]
-}
-  return queryBody
+    return queryBody
 
 
-def queryESCore(queryBody, allm=True, dMetrics=[ ], debug=False, myIndex="logstash-*"):
-  '''
+def queryESCore(queryBody, allm=True, dMetrics=[], debug=False, myIndex="logstash-*"):
+    '''
       Function to query the Elasticsearch monitoring (ESM) core.
       It has the following arguments:
       queryBody -> is a dictionary that reprezents the query for ESM Core
@@ -120,48 +123,48 @@ def queryESCore(queryBody, allm=True, dMetrics=[ ], debug=False, myIndex="logsta
       - filter by removing terms/metrics from all not only specifying desired metrics
 
   '''
-  #these are the metrics listed in the response JSON under "_source"
-  res = es.search(index=myIndex, body=queryBody)
-  if debug == True:
-    print "%---------------------------------------------------------%"
-    print "Raw JSON Ouput"
-    print res
-    print("%d documents found" % res['hits']['total'])
-    print "%---------------------------------------------------------%"
-  termsList = []
-  termValues = []
-  ListMetrics = []
-  for doc in res['hits']['hits']:
-    if allm == False:
-      if not dMetrics:
-        sys.exit("dMetrics argument not set. Please supply valid list of metrics!")
-      for met in dMetrics:
-      #prints the values of the metrics defined in the metrics list
-        if debug == True:
-          print "%---------------------------------------------------------%"
-          print "Parsed Output -> ES doc id, metrics, metrics values."
-          print("doc id %s) metric %s -> value %s" % (doc['_id'], met, doc['_source'][met]))
-          print "%---------------------------------------------------------%"
-        termsList.append(met)
-        termValues.append(doc['_source'][met]) 
-      dictValues=dict(zip(termsList, termValues))
-    else:
-      for terms in doc['_source']:
-      #prints the values of the metrics defined in the metrics list
-        if debug == True:
-          print "%---------------------------------------------------------%"
-          print "Parsed Output -> ES doc id, metrics, metrics values."
-          print("doc id %s) metric %s -> value %s" % (doc['_id'], terms, doc['_source'][terms]))
-          print "%---------------------------------------------------------%"
-        termsList.append(terms)
-        termValues.append(doc['_source'][terms])
-        dictValues = dict(zip(termsList, termValues))
-    ListMetrics.append(dictValues)
-  return ListMetrics, res
-  
+    # these are the metrics listed in the response JSON under "_source"
+    res = es.search(index=myIndex, body=queryBody)
+    if debug == True:
+        print "%---------------------------------------------------------%"
+        print "Raw JSON Ouput"
+        print res
+        print("%d documents found" % res['hits']['total'])
+        print "%---------------------------------------------------------%"
+    termsList = []
+    termValues = []
+    ListMetrics = []
+    for doc in res['hits']['hits']:
+        if allm == False:
+            if not dMetrics:
+                sys.exit("dMetrics argument not set. Please supply valid list of metrics!")
+            for met in dMetrics:
+                # prints the values of the metrics defined in the metrics list
+                if debug == True:
+                    print "%---------------------------------------------------------%"
+                    print "Parsed Output -> ES doc id, metrics, metrics values."
+                    print("doc id %s) metric %s -> value %s" % (doc['_id'], met, doc['_source'][met]))
+                    print "%---------------------------------------------------------%"
+                termsList.append(met)
+                termValues.append(doc['_source'][met])
+            dictValues = dict(zip(termsList, termValues))
+        else:
+            for terms in doc['_source']:
+                # prints the values of the metrics defined in the metrics list
+                if debug == True:
+                    print "%---------------------------------------------------------%"
+                    print "Parsed Output -> ES doc id, metrics, metrics values."
+                    print("doc id %s) metric %s -> value %s" % (doc['_id'], terms, doc['_source'][terms]))
+                    print "%---------------------------------------------------------%"
+                termsList.append(terms)
+                termValues.append(doc['_source'][terms])
+                dictValues = dict(zip(termsList, termValues))
+        ListMetrics.append(dictValues)
+    return ListMetrics, res
 
-def dict2CSV(ListValues,fileName="output"):
-  '''
+
+def dict2CSV(ListValues, fileName="output"):
+    '''
       Function that creates a csv file from a list of dictionaries.
       It has the arguments:
       ListValues  -> is a list containing dictionaries with individual timestamped metrics.
@@ -169,66 +172,162 @@ def dict2CSV(ListValues,fileName="output"):
                   -> default is "ouput"
 
   '''
-  if not ListValues:
+    if not ListValues:
         sys.exit("listValues argument is empty. Please supply valid input!")
-  fileType = fileName + ".csv"
-  csvOut = os.path.join(outDir, fileType)
-  try:
-    with open(csvOut, 'wb') as csvfile:
-      uniqueColumns = set()
-      for d in ListValues:
-        # print >>sys.stderr, d.keys()
-        for e in d.keys():
-          if e not in uniqueColumns:
-            uniqueColumns.add(e)
-      csvHeaders = list(uniqueColumns)
-      w = csv.DictWriter(csvfile, csvHeaders)
-      w.writeheader()
-      for dictMetrics in ListValues:
-        w.writerow(dictMetrics)
-    csvfile.close()
-  except EnvironmentError:
-    print "ops"
+    fileType = fileName + ".csv"
+    csvOut = os.path.join(outDir, fileType)
+    try:
+        with open(csvOut, 'wb') as csvfile:
+            uniqueColumns = set()
+            for d in ListValues:
+                # print >>sys.stderr, d.keys()
+                for e in d.keys():
+                    if e not in uniqueColumns:
+                        uniqueColumns.add(e)
+            csvHeaders = list(uniqueColumns)
+            w = csv.DictWriter(csvfile, csvHeaders)
+            w.writeheader()
+            for dictMetrics in ListValues:
+                w.writerow(dictMetrics)
+        csvfile.close()
+    except EnvironmentError:
+        print "ops"
+
+
+def getYarnJobs(yhIP, yhPort):
+    '''
+  :param yhIP: History Server IP
+  :param yhPort: History Server Port
+  :return: Jobs descriptor
+  '''
+    jURL = 'http://%s:%s/ws/v1/history/mapreduce/jobs' % (yhIP, str(yhPort))
+    try:
+        rJobs = requests.get(jURL)
+    except Exception as inst:
+        print "Exception %s with %s while getting jobs" % (type(inst), inst.args)
+        raise
+    return rJobs.status_code, rJobs.json()
+
+
+def getYarnJobsStatistic(yhIP, yhPort, jDescriptor):
+    '''
+    :param yhIP: History server IP
+    :param yhPort: History Server Port
+    :param jDescriptor: Jobs descriptor
+    :return: Jobs statistics
+    '''
+
+    #print >> sys.stderr, jDescriptor
+    if jDescriptor['jobs'] is None:
+        raise Exception('No jobs found')
+    jList = []
+    # print >> sys.stderr, len(jDescriptor['jobs']['job'])
+    for j in jDescriptor['jobs']['job']:
+        # print >> sys.stderr, j
+        jList.append(j['id'])
+        # print >> sys.stderr, jList
+        responseList = []
+    for id in jList:
+        jURL = 'http://%s:%s/ws/v1/history/mapreduce/jobs/%s' % (yhIP, str(yhPort), id)
+        try:
+            rJobId = requests.get(jURL)
+        except Exception as inst:
+            raise "Exception %s with %s while getting job details" % (type(inst), inst.args)
+        data = rJobId.json()
+        # data['timestamp'] = datetime.now()
+        responseList.append(data)
+    retDict = {}
+    retDict['jobs'] = responseList
+
+    return retDict
+
+
+def getYarnJobTasks(yhIP, yhPort, jDescriptor):
+    '''
+    :param yhIP: History Server IP
+    :param yhPort: History Server Port
+    :param jDescriptor: Jobs descriptor
+    :return: Tasks statistics
+    '''
+    if jDescriptor['jobs'] is None:
+        raise Exception('No jobs found')
+    jList = []
+    for j in jDescriptor['jobs']['job']:
+        jList.append(j['id'])
+
+    responseList = []
+    for id in jList:
+        jURL = 'http://%s:%s/ws/v1/history/mapreduce/jobs/%s/tasks' % (yhIP, str(yhPort), id)
+        try:
+            rJobId = requests.get(jURL)
+        except Exception as inst:
+            raise Exception("Exception %s with %s while getting job details") % (type(inst), inst.args)
+        data = rJobId.json()
+        data['jobId'] = id
+        # data['timestamp'] = datetime.now()
+        responseList.append(data)
+    retDict = {}
+    retDict['jobs'] = responseList
+
+    return retDict
+
+def dmonESIndexer(esCoreEndpoint, dmonindex, dmondoc_type, docId, body):
+    '''
+    :param esCoreEndpoint: ES Endpoint
+    :param index: Index elasticsearch index
+    :param doc_type: Type of document
+    :param docId: Document id
+    :param body: Data to be indexed
+    :return:
+    '''
+
+    es = Elasticsearch(esCoreEndpoint)
+    res = es.index(index=dmonindex, doc_type=dmondoc_type, id=docId, body=body, timestamp=datetime.now(),
+                   request_timeout=30)
+    return res
 
 
 def main(argv):
-  try:
-    opts, args = getopt.getopt(argv, "hd")
-  except getopt.GetoptError:
-    print "%-------------------------------------------------------------------------------------------%"
-    print "Invalid argument! Arguments must take the form:"
-    print ""
-    print "pyESController.py {-h| -d}"
-    print ""
-    print "%-------------------------------------------------------------------------------------------%"
-    sys.exit(2)
-  for opt, arg in opts:
-      if opt == '-h':
+    try:
+        opts, args = getopt.getopt(argv, "hd")
+    except getopt.GetoptError:
         print "%-------------------------------------------------------------------------------------------%"
+        print "Invalid argument! Arguments must take the form:"
         print ""
-        print "pyESController is desigend to facilitate the querying of ElasticSearch Monitoring Core."
-        print "Only two arguments are currently supported: -h for help or -d for debug mode"
-        print "Usage Example:"
-        print "pyESController.py {-h|-d}"
-        print "                                                                                              "
+        print "pyESController.py {-h| -d}"
+        print ""
         print "%-------------------------------------------------------------------------------------------%"
-        sys.exit()
-      elif opt in ("-d"):
-        testQuery = queryConstructor(1438939155342, 1438940055342,"hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
-        metrics = ['type', '@timestamp', 'host', 'job_id', 'hostname', 'AvailableVCores']
-        test, test2 = queryESCore(testQuery, debug=True)
-        dict2CSV(test)
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print "%-------------------------------------------------------------------------------------------%"
+            print ""
+            print "pyESController is desigend to facilitate the querying of ElasticSearch Monitoring Core."
+            print "Only two arguments are currently supported: -h for help or -d for debug mode"
+            print "Usage Example:"
+            print "pyESController.py {-h|-d}"
+            print "                                                                                              "
+            print "%-------------------------------------------------------------------------------------------%"
+            sys.exit()
+        elif opt in ("-d"):
+            testQuery = queryConstructor(1438939155342, 1438940055342,
+                                         "hostname:\"dice.cdh5.s4.internal\" AND serviceType:\"dfs\"")
+            metrics = ['type', '@timestamp', 'host', 'job_id', 'hostname', 'AvailableVCores']
+            test, test2 = queryESCore(testQuery, debug=True)
+            dict2CSV(test)
 
-if __name__=='__main__':
-  #ElasticSearch object that defines the endpoint
-  es = Elasticsearch('85.120.206.43')
-  if len(sys.argv) == 1:  # only for development
-    testQuery = queryConstructor(1438939155342, 1438940055342, "hostname:\"dice.chd5.mng.internal\" AND serviceType:\"dfs\"")
-    print testQuery
-    #metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
-    test, test2 = queryESCore(testQuery, allm=True, debug=True)
-    dict2CSV(test)
-    print test2
-    #queryESCoreCSV(test, True)
-  else:
-    main(sys.argv[1:])
+
+if __name__ == '__main__':
+    # ElasticSearch object that defines the endpoint
+    es = Elasticsearch('85.120.206.43')
+    if len(sys.argv) == 1:  # only for development
+        testQuery = queryConstructor(1438939155342, 1438940055342,
+                                     "hostname:\"dice.chd5.mng.internal\" AND serviceType:\"dfs\"")
+        print testQuery
+        # metrics = ['type','@timestamp','host','job_id','hostname','RamDiskBlocksDeletedBeforeLazyPersisted']
+        test, test2 = queryESCore(testQuery, allm=True, debug=True)
+        dict2CSV(test)
+        print test2
+        # queryESCoreCSV(test, True)
+    else:
+        main(sys.argv[1:])
