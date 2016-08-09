@@ -119,12 +119,14 @@ http_poller{
 
 filter{
 {% if 'spark' in roles%}
-if [type]=="graphite"{
- grok{
-  break_on_match => false
-  #spark metrics
-  match=>["message","\A%{WORD:appID}.%{NOTSPACE:sparkMetric} %{NUMBER:Value} %{NUMBER:timestamp}"]
-}
+if [type] == "graphite"{
+  ruby {
+        code => "
+        event.to_hash.keys.each { |k| event[ k.gsub('.','_') ] = event.remove(k) if k.include?'.' }
+        params = event['configuration'] && event['configuration'].to_hash
+        params.keys.each { |k| params[ k.gsub('.','_') ] = params.delete(k) if k.include?'.' } unless params.nil?
+       "
+    }
 }
 {% else %}
 #No spark node defined
