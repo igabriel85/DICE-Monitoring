@@ -282,8 +282,7 @@ def dmonESIndexer(esCoreEndpoint, dmonindex, dmondoc_type, docId, body):
     '''
 
     es = Elasticsearch(esCoreEndpoint)
-    res = es.index(index=dmonindex, doc_type=dmondoc_type, id=docId, body=body, timestamp=datetime.now(),
-                   request_timeout=30)
+    res = es.index(index=dmonindex, doc_type=dmondoc_type, id=docId, body=body, request_timeout=30)
     return res
 
 

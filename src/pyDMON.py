@@ -1272,7 +1272,7 @@ class YarnHistoryServerJobs(Resource):
                 return response
 
             try:
-                rIndex = dmonESIndexer(qES.hostIP, dmonindex='test', dmondoc_type='yarn_jobstat', docId='yarn-jobstat', body=jStatJob)
+                rIndex = dmonESIndexer(qES.hostIP, dmonindex='ystat', dmondoc_type='yarn_jobstat', docId='yarn-jobstat', body=jStatJob)
             except Exception as inst:
                 app.logger.error('[%s] : [ERROR] Indexing failed with %s and %s',
                                  datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
@@ -1326,7 +1326,7 @@ class YarnHistoryServerJobTasks(Resource):
                 return response
 
             try:
-                rIndex = dmonESIndexer(qES.hostIP, dmonindex='test', dmondoc_type='yarn_jobstasks', docId='yarn-jobstat', body=jStatTask)
+                rIndex = dmonESIndexer(qES.hostIP, dmonindex='ystat', dmondoc_type='yarn_jobstasks', docId='yarn-jobstasks', body=jStatTask)
             except Exception as inst:
                 app.logger.error('[%s] : [ERROR] Indexing failed with %s and %s',
                                  datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
