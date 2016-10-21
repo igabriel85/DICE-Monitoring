@@ -417,6 +417,16 @@ if [type]=="reducetask-metrics"{
     }
 }
 
+if [type]=="maptask-metrics"{
+    grok{
+      break_on_match => false
+
+      #jvm.JvmMetrics
+      match=>["message", "\A%{NUMBER:job_id} %{WORD:serviceType}.%{WORD:serviceMetrics}: Context=%{WORD:context}, ProcessName=%{WORD:ProcessName}, SessionId=, Hostname=%{HOSTNAME:hostname}, MemNonHeapUsedM=%{NUMBER:MemNonHeapUsedM:float}, MemNonHeapCommittedM=%{NUMBER:MemNonHeapCommittedM:float}, MemNonHeapMaxM=%{NUMBER:MemNonHeapMaxM:float}, MemHeapUsedM=%{NUMBER:MemHeapUsedM:float}, MemHeapCommittedM=%{NUMBER:MemHeapCommittedM:float}, MemHeapMaxM=%{NUMBER:MemHeapMaxM:float}, MemMaxM=%{NUMBER:MemMaxM:float}, GcCountPS Scavenge=%{NUMBER:GcCountPS_Scavenge:float}, GcTimeMillisPS Scavenge=%{NUMBER:GcTimeMillisPS_Scavenge:float}, GcCountPS MarkSweep=%{NUMBER:GcCountPS_MarkSweep:float}, GcTimeMillisPS MarkSweep=%{NUMBER:GcTimeMillisPS_MarkSweep:float}, GcCount=%{NUMBER:GcCount:float}, GcTimeMillis=%{NUMBER:GcTimeMillis:float}, ThreadsNew=%{NUMBER:ThreadsNew:float}, ThreadsRunnable=%{NUMBER:ThreadsRunnable:float}, ThreadsBlocked=%{NUMBER:ThreadsBlocked:float}, ThreadsWaiting=%{NUMBER:ThreadsWaiting:float}, ThreadsTimedWaiting=%{NUMBER:ThreadsTimedWaiting:float}, ThreadsTerminated=%{NUMBER:ThreadsTerminated:float}, LogFatal=%{NUMBER:LogFatal:float}, LogError=%{NUMBER:LogError:float}, LogWarn=%{NUMBER:LogWarn:float}, LogInfo=%{NUMBER:LogInfo:float}"]
+
+    }
+}
+
 if [type]=="mrappmaster-metrics"{
     grok{
       break_on_match => false
