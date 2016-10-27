@@ -1263,7 +1263,7 @@ class YarnHistoryServerJobs(Resource):
                 response.status_code = 408
                 return response
             #TODO: Stronger sync index with logstash server needed
-            dindex = 'logstash-%s' %datetime.now().strftime("%Y.%m.%d")
+            # dindex = 'logstash-%s' %datetime.now().strftime("%Y.%m.%d")
             qES = dbESCore.query.filter_by(MasterNode=1).first()
             if qES is None:
                 response = jsonify({'Status': 'ES not registered'})
