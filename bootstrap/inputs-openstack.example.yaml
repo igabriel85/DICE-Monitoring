@@ -1,0 +1,45 @@
+# DMON uses this to name the cluster
+cluster_name: diceMonitoringCluster
+# Change the C, ST, L, O in the following template.
+openssl_conf: |
+  [req]
+  distinguished_name = req_distinguished_name
+  x509_extensions = v3_req
+  prompt = no
+  [req_distinguished_name]
+  C = SL
+  ST = Slovenia
+  L =  Ljubljana
+  O = YourOrgLtd
+  CN = *
+  [v3_req]
+  subjectKeyIdentifier = hash
+  authorityKeyIdentifier = keyid,issuer
+  basicConstraints = CA:TRUE
+  subjectAltName = IP:0.0.0.0
+  [v3_ca]
+  keyUsage = digitalSignature, keyEncipherment
+  subjectAltName = IP:0.0.0.0
+# Alternatively, set lsf_cert and lsf_key to pre-existing certicate 
+# and key
+lsf_cert: {}
+lsf_key: {}
+
+# this blueprint requires only large image
+large_image_id: ca290f2d-5163-483b-9dd5-fafe21517c0a
+large_flavor_id: 93e4960e-9b6d-454f-b422-0d50121b01c6
+
+# linux image's user name, probably ubuntu
+agent_user: ubuntu
+
+# fixed parametes - change only when you know what you are doing
+repository_url: git://github.com/igabriel85/IeAT-DICE-Repository.git
+java_flavor: openjdk
+java_version: '7'
+
+# the following inputs are not used, so dummy names are ok
+dns_server: DONT_CARE
+medium_flavor_id: DONT_CARE
+medium_image_id: DONT_CARE
+small_flavor_id: DONT_CARE
+small_image_id: DONT_CARE
