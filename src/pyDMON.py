@@ -1878,7 +1878,7 @@ class ESCoreController(Resource):
         esPid = 0
         try:
             esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',
-                                     stdout=subprocess.PIPE).pid  # TODO: Try -p to set pid file location
+                                     stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location
         except Exception as inst:
             print >> sys.stderr, 'Error while starting elasticsearch'
             print >> sys.stderr, type(inst)
@@ -4103,6 +4103,10 @@ if __name__ == '__main__':
     log = logging.getLogger('werkzeug')
     log.setLevel(logging.DEBUG)
     log.addHandler(handler)
+    #DB Initialization
+    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
+    # app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
+    # db.create_all()
     if len(sys.argv) == 1:
         app.run(port=5001, debug=True, threaded=True)
     else:
