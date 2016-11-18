@@ -8,15 +8,16 @@
 # Modified for Tomcat6 by Thierry Carrez <thierry.carrez@ubuntu.com>.
 # Additional improvements by Jason Brittain <jason.brittain@mulesoft.com>.
 # Modified by Nicolas Huray for Elasticsearch <nicolas.huray@gmail.com>.
+# Modified by Gabriel Iuhasz for DICE Monitoring Elasticsearch core <iuhasz.gabriel@e-uvt.ro>
 #
 ### BEGIN INIT INFO
-# Provides:          elasticsearch
+# Provides:          dmon-es
 # Required-Start:    $network $remote_fs $named
 # Required-Stop:     $network $remote_fs $named
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Starts elasticsearch
-# Description:       Starts elasticsearch using start-stop-daemon
+# Short-Description: Starts dmon-es
+# Description:       Starts dmon-es using start-stop-daemon
 ### END INIT INFO
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
