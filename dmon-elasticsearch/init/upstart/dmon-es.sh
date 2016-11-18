@@ -21,7 +21,8 @@
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin
 NAME=elasticsearch
-DESC="Elasticsearch Server"
+DMONHOME=/opt/Iea
+DESC="DMON Elasticsearch Server"
 DEFAULT=/etc/default/$NAME
 
 if [ `id -u` -ne 0 ]; then
@@ -40,11 +41,11 @@ fi
 # The following variables can be overwritten in $DEFAULT
 
 # Run Elasticsearch as this user ID and group ID
-ES_USER=elasticsearch
-ES_GROUP=elasticsearch
+#ES_USER=elasticsearch
+#ES_GROUP=elasticsearch
 
 # Directory where the Elasticsearch binary distribution resides
-ES_HOME=/usr/share/$NAME
+ES_HOME=/opt/$NAME
 
 # Heap size defaults to 256m min, 1g max
 # Set ES_HEAP_SIZE to 50% of available RAM, but no more than 31g
@@ -66,13 +67,13 @@ MAX_OPEN_FILES=65535
 #MAX_LOCKED_MEMORY=
 
 # Elasticsearch log directory
-LOG_DIR=/var/log/$NAME
+LOG_DIR=/opt/IeAT-DICE-Repository/src/logs
 
 # Elasticsearch data directory
-DATA_DIR=/var/lib/$NAME
+DATA_DIR=/opt/$NAME/data
 
 # Elasticsearch configuration directory
-CONF_DIR=/etc/$NAME
+CONF_DIR=/opt/IeAT-DICE-Repository/src/conf
 
 # Maximum number of VMA (Virtual Memory Areas) a process can own
 MAX_MAP_COUNT=262144
@@ -81,7 +82,7 @@ MAX_MAP_COUNT=262144
 #ES_GC_LOG_FILE=/var/log/elasticsearch/gc.log
 
 # Elasticsearch PID file directory
-PID_DIR="/var/run/elasticsearch"
+PID_DIR="/opt/IeAT-DICE-Repository/src/pid/elasticsearch"
 
 # End of variables that can be overwritten in $DEFAULT
 
