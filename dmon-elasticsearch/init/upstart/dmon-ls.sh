@@ -26,13 +26,14 @@ fi
 name=logstash
 pidfile="/var/run/$name.pid"
 
-LS_USER=logstash
-LS_GROUP=logstash
+#LS_USER=logstash
+#LS_GROUP=logstash
 LS_HOME=/var/lib/logstash
+DMONHOME=/opt/IeAT-DICE-Repository
 LS_HEAP_SIZE="1g"
-LS_LOG_DIR=/var/log/logstash
+LS_LOG_DIR=/opt/$DMONHOME/src/logs
 LS_LOG_FILE="${LS_LOG_DIR}/$name.log"
-LS_CONF_DIR=/etc/logstash/conf.d
+LS_CONF_DIR=/opt/$DMONHOME/src/conf
 LS_OPEN_FILES=16384
 LS_NICE=19
 LS_OPTS=""
