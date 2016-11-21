@@ -564,7 +564,7 @@ class OverlordFrameworkProperties(Resource):
                              as_attachment=True)  # TODO: Swagger returns same content each time, however sent file is correct
 
 
-@dmon.route('/v1/overlord/applicaiton/<appID>')
+@dmon.route('/v1/overlord/application/<appID>')
 @api.doc(params={'appID': 'Application identification'})
 class OverlordAppSubmit(Resource):
     def put(self):
@@ -1810,6 +1810,7 @@ class ESCoreController(Resource):
                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hosts[7]))
                 #hosts.ESCorePID = 0
                 #hosts.ESCoreStatus = 'unknown'
+                # todo status detached if pid only in file not in sqlite, read pid from file
                 confDict['Status'] = 'failed'  #TODO: Document failed message if PID is not assigned to an ES Instance
                 confDict['PID'] = 0
             confDict['MasterNode'] = hosts[8]
@@ -1878,7 +1879,8 @@ class ESCoreController(Resource):
         esPid = 0
         try:
             esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',
-                                     stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location
+                                     stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location and -d for daemon
+                                     stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location and -d for daemon
         except Exception as inst:
             print >> sys.stderr, 'Error while starting elasticsearch'
             print >> sys.stderr, type(inst)
