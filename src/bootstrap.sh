@@ -107,6 +107,12 @@ wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
 tar zxf logstash-2.2.1.tar.gz
 ln -sf logstash-2.2.1 logstash
 
+
+echo "Setting up init script for dmon-ls ..."
+cp $DMONHOME/src/init/dmon-ls /etc/init.d/dmon-ls
+chmod +x /etc/init.d/dmon-ls
+update-rc.d dmon-ls defaults 96 9
+
 #Setup Logrotate
 echo "Setting up logrotate ..."
 
