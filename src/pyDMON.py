@@ -247,7 +247,10 @@ class ObsApplications(Resource):
 @api.doc(params={'appID': 'Application identification'})
 class ObsAppbyID(Resource):
     def get(self, appID):
-        return 'Returns information on a particular YARN applicaiton identified by ' + appID + '!'
+        # todo sync with dev brach to add missing code
+        response = jsonify({'Status': 'Registered application', 'AppID': appID})
+        response.status_code(201)
+        return response
 
 
 @dmon.route('/v1/observer/nodes')
@@ -1879,7 +1882,6 @@ class ESCoreController(Resource):
         esPid = 0
         try:
             esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',
-                                     stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location and -d for daemon
                                      stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location and -d for daemon
         except Exception as inst:
             print >> sys.stderr, 'Error while starting elasticsearch'
