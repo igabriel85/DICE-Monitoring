@@ -35,13 +35,6 @@ outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 es = Elasticsearch()
 
 
-# class ESCoreInit:
-#   def __init__(self, IP):
-#     self.IP = IP
-#   def initialize(self,IP):
-#     self.
-
-
 def queryConstructor(tstart, queryString, tstop='None', size=500, ordering="desc"):
     '''
       Function generates a query string reprezented by a dictionary/json.

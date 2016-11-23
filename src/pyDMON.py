@@ -267,7 +267,9 @@ class NodesMonitored(Resource):
             return response
         for nl in nodesAll:
             nodeDict = {}
-            print >> sys.stderr, nl[0]
+            app.logger.info('[%s] : [INFO] Nodes - > %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nl[0]))
+            # print >> sys.stderr, nl[0]
             nodeDict.update({nl[0]: nl[1]})
             nodeList.append(nodeDict)
         response = jsonify({'Nodes': nodeList})
@@ -570,7 +572,7 @@ class OverlordFrameworkProperties(Resource):
 @dmon.route('/v1/overlord/application/<appID>')
 @api.doc(params={'appID': 'Application identification'})
 class OverlordAppSubmit(Resource):
-    def put(self):
+    def put(self, appID):
         return 'Registers an applicaiton with DMON and creates a unique tag!'
 
 
@@ -1045,7 +1047,6 @@ class DetectStormRA(Resource):
                 response.status_code = 201
                 return response
 
-
         stormNodes = []
         for n in qNode:
             if "storm" in n.nRoles:
@@ -1064,7 +1065,6 @@ class DetectStormRA(Resource):
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), resList)
         dmon = GreenletRequests(resList)
         nodeRes = dmon.parallelGet()
-
 
         topoIDs = {}
         for i in nodeRes:
@@ -1672,68 +1672,114 @@ class ESCoreConfiguration(Resource):
             qESCore.nodename = request.json['NodeName']
             qESCore.clusterName = request.json['ESClusterName']
             if 'IP' not in request.json:
-                print >> sys.stderr, 'IP unchanged'
+                # print >> sys.stderr, 'IP unchanged'
+                app.logger.info('[%s] : [INFO] IP unchanged', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['IP'] == ip:
                 qESCore.hostIP = ip
             if 'NodePort' not in request.json:
-                print >> sys.stderr, 'NodePort unchanged'
+                # print >> sys.stderr, 'NodePort unchanged'
+                app.logger.info('[%s] : [INFO] NodePort unchanged', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['NodePort'] == nodePort:
                 qESCore.nodePort = nodePort
             if 'DataNode' not in request.json:
-                print >> sys.stderr, 'DataNode unchanged'
+                # print >> sys.stderr, 'DataNode unchanged'
+                app.logger.info('[%s] : [INFO] DataNode unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['DataNode'] == data:
                 qESCore.DataNode = data
-                print >> sys.stderr, 'DataNode set to ' + str(data)
+                # print >> sys.stderr, 'DataNode set to ' + str(data)
+                app.logger.info('[%s] : [INFO] DataNode set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(data))
             if 'ESCoreHeap' not in request.json:
-                print >> sys.stderr, 'ESCoreHeap unchanged'
+                # print >> sys.stderr, 'ESCoreHeap unchanged'
+                app.logger.info('[%s] : [INFO] ESCoreHeap unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['ESCoreHeap'] == ESHeap:
                 qESCore.ESCoreHeap = ESHeap
-                print >> sys.stderr, 'ESCoreHeap set to ' + ESHeap
+                # print >> sys.stderr, 'ESCoreHeap set to ' + ESHeap
+                app.logger.info('[%s] : [INFO] ESCoreHeap set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ESHeap)
             if 'NumOfShards' not in request.json:
-                print >> sys.stderr, 'NumOfShards unchanged'
+                # print >> sys.stderr, 'NumOfShards unchanged'
+                app.logger.info('[%s] : [INFO] NumOfShards unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['NumOfShards'] == shards:
                 qESCore.NumOfShards = shards
-                print >> sys.stderr, 'NumOfShards set to ' + str(shards)
+                # print >> sys.stderr, 'NumOfShards set to ' + str(shards)
+                app.logger.info('[%s] : [INFO] NumOfShard set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(shards))
             if 'NumOfReplicas' not in request.json:
-                print >> sys.stderr, 'NumOfReplicas unchanged'
+                # print >> sys.stderr, 'NumOfReplicas unchanged'
+                app.logger.info('[%s] : [INFO] NumOfReplicas unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['NumOfReplicas'] == rep:
                 qESCore.NumOfReplicas = rep
-                print >> sys.stderr, 'NumOfReplicas set to ' + str(rep)
+                # print >> sys.stderr, 'NumOfReplicas set to ' + str(rep)
+                app.logger.info('[%s] : [INFO] NumOfReplicas set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(rep))
             if 'FieldDataCacheSize' not in request.json:
-                print >> sys.stderr, 'FieldDataCacheSize unchanged'
+                # print >> sys.stderr, 'FieldDataCacheSize unchanged'
+                app.logger.info('[%s] : [INFO] FieldDataCacheSize unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['FieldDataCacheSize'] == fdcs:
                 qESCore.FieldDataCacheSize = fdcs
-                print >> sys.stderr, 'FieldDataCacheSize set to ' + fdcs
+                # print >> sys.stderr, 'FieldDataCacheSize set to ' + fdcs
+                app.logger.info('[%s] : [INFO] FieldDataCacheSize set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fdcs)
             if 'FieldDataCacheExpires' not in request.json:
-                print >> sys.stderr, 'FieldDataCacheExpires unchanged'
+                # print >> sys.stderr, 'FieldDataCacheExpires unchanged'
+                app.logger.info('[%s] : [INFO] FieldDataCacheExpires unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['FieldDataCacheExpires'] == fdce:
                 qESCore.FieldDataCacheExpires = fdce
-                print >> sys.stderr, 'FieldDataCacheExpires set to ' + fdce
+                app.logger.info('[%s] : [INFO] FieldDataCacheExpires set to',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fdce)
+                # print >> sys.stderr, 'FieldDataCacheExpires set to ' + fdce
             if 'FieldDataCacheFilterSize' not in request.json:
-                print >> sys.stderr, 'FieldDataCacheFilterSize unchanged'
+                # print >> sys.stderr, 'FieldDataCacheFilterSize unchanged'
+                app.logger.info('[%s] : [INFO] FieldDataCacheFilterSize unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['FieldDataCacheFilterSize'] == fdcfs:
                 qESCore.FieldDataCacheFilterSize = fdcfs
-                print >> sys.stderr, 'FieldDataCacheFilterSize set to ' + fdcfs
+                # print >> sys.stderr, 'FieldDataCacheFilterSize set to ' + fdcfs
+                app.logger.info('[%s] : [INFO] FieldDataCacheFilterSize set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fdcfs)
             if 'FieldDataCacheFilterExpires' not in request.json:
-                print >> sys.stderr, 'FieldDataCacheFilterExpires unchanged'
+                # print >> sys.stderr, 'FieldDataCacheFilterExpires unchanged'
+                app.logger.info('[%s] : [INFO] FieldDataCacheFilterExpires unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['FieldDataCacheFilterExpires'] == fdcfe:
                 qESCore.FieldDataCacheFilterExpires = fdcfe
-                print >> sys.stderr, 'FieldDataCacheFilterExpires set to ' + fdcfe
+                # print >> sys.stderr, 'FieldDataCacheFilterExpires set to ' + fdcfe
+                app.logger.info('[%s] : [INFO] FieldDataCacheFilterExpires set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fdcfe)
             if 'IndexBufferSize' not in request.json:
-                print >> sys.stderr, 'IndexBufferSize unchanged'
+                # print >> sys.stderr, 'IndexBufferSize unchanged'
+                app.logger.info('[%s] : [INFO] IndexBufferSize unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['IndexBufferSize'] == ibs:
                 qESCore.IndexBufferSize = ibs
-                print >> sys.stderr, 'IndexBufferSize set to ' + ibs
+                # print >> sys.stderr, 'IndexBufferSize set to ' + ibs
+                app.logger.info('[%s] : [INFO] IndexBufferSize set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ibs)
             if 'MinShardIndexBufferSize' not in request.json:
-                print >> sys.stderr, 'MinShardIndexBufferSize unchanged'
+                # print >> sys.stderr, 'MinShardIndexBufferSize unchanged'
+                app.logger.info('[%s] : [INFO] MinShardIndexBufferSize unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['MinShardIndexBufferSize'] == msibs:
                 qESCore.MinShardIndexBufferSize = msibs
-                print >> sys.stderr, 'MinShardIndexBufferSize set to ' + msibs
+                # print >> sys.stderr, 'MinShardIndexBufferSize set to ' + msibs
+                app.logger.info('[%s] : [INFO] MinShardIndexBufferSize set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), msibs)
             if 'MinIndexBufferSize' not in request.json:
-                print >> sys.stderr, 'MinIndexBufferSize unchanged'
+                # print >> sys.stderr, 'MinIndexBufferSize unchanged'
+                app.logger.info('[%s] : [INFO] MinIndexBufferSize unchanged',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             elif request.json['MinIndexBufferSize'] == mibs:
                 qESCore.MinIndexBufferSize = mibs
-                print >> sys.stderr, 'MinIndexBufferSize set to ' + mibs
+                # print >> sys.stderr, 'MinIndexBufferSize set to ' + mibs
+                app.logger.info('[%s] : [INFO] MinIndexBufferSize set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), mibs)
             db.session.commit()
             response = jsonify({'Updated': 'ES config for ' + request.json["HostFQDN"]})
             response.status_code = 201
@@ -1884,9 +1930,11 @@ class ESCoreController(Resource):
             esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',
                                      stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location and -d for daemon
         except Exception as inst:
-            print >> sys.stderr, 'Error while starting elasticsearch'
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, 'Error while starting elasticsearch'
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
         qESCore.ESCorePID = esPid
         qESCore.ESCoreStatus = 'Running'
         # ES core pid location
@@ -1932,17 +1980,23 @@ class ESCOntrollerStatus(Resource):
         if intComp == 'cluster':
             try:
                 esCoreUrl = 'http://%s:%s/%s/%s' % (qESCore.hostIP, qESCore.nodePort, '_cluster', intProp)
-                print >> sys.stderr, esCoreUrl
+                app.logger.info('[%s] : [INFO] ES Core Url set to %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), esCoreUrl)
+                # print >> sys.stderr, esCoreUrl
                 r = requests.get(esCoreUrl, timeout=2)  # timeout in seconds
                 data = r.json()
             except:
+                app.logger.error('[%s] : [ERROR] Master ES instance unreachable at %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), esCoreUrl)
                 response = jsonify({"Error": "Master ES instances not reachable!"})
                 response.status_code = 500
                 return response
         elif intComp == 'shards' and intProp == 'list':
             try:
                 shardUrl = 'http://%s:%s/%s/%s' % (qESCore.hostIP, qESCore.nodePort, '_cat', intComp)
-                print >> sys.stderr, shardUrl
+                app.logger.info("[%s] : [INFO] Shard URL set to %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), shardUrl)
+                # print >> sys.stderr, shardUrl
                 r = requests.get(shardUrl, timeout=2)
                 data = r.text
             except:
@@ -1990,7 +2044,9 @@ class ESControllerStart(Resource):
         if checkPID(qESCoreStart.ESCorePID) is True:
             proc = psutil.Process(qESCoreStart.ESCorePID)
             if proc.status() == psutil.STATUS_ZOMBIE:
-                print >> sys.stderr, 'Process ' + str(qESCoreStart.ESCorePID) + ' is zombie!'
+                # print >> sys.stderr, 'Process ' + str(qESCoreStart.ESCorePID) + ' is zombie!'
+                app.logger.warning("[%s] : [WARN] Process %s is zombie!",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(qESCoreStart.ESCorePID))
             else:
                 response = jsonify({'Status': 'ES already Running',
                                     'PID': str(qESCoreStart.ESCorePID)})
@@ -2002,9 +2058,14 @@ class ESControllerStart(Resource):
             esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch',
                                      stdout=subprocess.PIPE).pid  # TODO: Try -p to set pid file location
         except Exception as inst:
-            print >> sys.stderr, 'Error while starting elasticsearch'
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            app.logger.error("[%s] : [ERROR] Cannot start ES core service with %s and %s",
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'error', 'Message': 'Cannot start ES Core instance'})
+            response.status_code = 500
+            return response
+            # print >> sys.stderr, 'Error while starting elasticsearch'
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
         qESCoreStart.ESCorePID = esPid
         qESCoreStart.ESCoreStatus = 'Running'
         # ES core pid location
@@ -2131,7 +2192,7 @@ class KKCoreController(Resource):
         templateEnv = jinja2.Environment(loader=templateLoader)
         kbTemp = os.path.join(tmpDir, 'kibana.tmp')  # tmpDir+"/collectd.tmp"
         kbfConf = os.path.join(cfgDir, 'kibana.yml')
-        qKBCore = dbKBCore.query.first()  # TODO: only one instance is supported
+        qKBCore = dbKBCore.query.first()
         if qKBCore is None:
             response = jsonify({"Status": "No KB instance found!"})
             response.status_code = 500
@@ -2143,8 +2204,12 @@ class KKCoreController(Resource):
         try:
             template = templateEnv.get_template(kbTemp)
         # print >>sys.stderr, template
-        except:
-            return "Tempalte file unavailable!"
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'Error', 'Message': 'Template file unavailable'})
+            response.status_code = 500
+            return response
 
         # Log and PID location for kibana
 
@@ -2169,8 +2234,13 @@ class KKCoreController(Resource):
         try:
             kbPid = subprocess.Popen('/opt/kibana/bin/kibana', stdout=FNULL, stderr=subprocess.STDOUT).pid
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            app.logger.warning('[%s] : [ERROR] Cannot start KB core service with %s and %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            response = jsonify({'Status': 'Error', 'Message': 'Cannot start Kibana Core'})
+            response.status_code = 500
+            return response
         qKBCore.KBCorePID = kbPid
         qKBCore.KBCoreStatus = 'Running'
         response = jsonify({'Status': 'Kibana Core  PID ' + str(kbPid)})
@@ -2550,7 +2620,10 @@ class LSCoreControllerStart(Resource):
         if checkPID(qLSCoreStart.LSCorePID) is True:
             proc = psutil.Process(qLSCoreStart.LSCorePID)
             if proc.status() == psutil.STATUS_ZOMBIE:
-                print >> sys.stderr, 'Process ' + str(qLSCoreStart.LSCorePID) + ' is zombie!'
+                # print >> sys.stderr, 'Process ' + str(qLSCoreStart.LSCorePID) + ' is zombie!'
+                app.logger.warning('[%s] : [WARN] Process %s is a zombie!',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                   str(qLSCoreStart.LSCorePID))
             else:
                 response = jsonify({'Status': 'LS already Running',
                                     'PID': qLSCoreStart.LSCorePID})
@@ -2562,9 +2635,14 @@ class LSCoreControllerStart(Resource):
             lsPid = subprocess.Popen('/opt/logstash/bin/logstash agent  -f ' + lsfCore + ' -l ' + lsLogfile + ' -w 4',
                                      shell=True).pid
         except Exception as inst:
-            print >> sys.stderr, 'Error while starting logstash'
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] Cannot start ls core instance with %s and %s!',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'Error', 'Message': 'Cannot start LS Core service'})
+            response.status_code = 500
+            return response
+            # print >> sys.stderr, 'Error while starting logstash'
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
         qLSCoreStart.LSCorePID = lsPid
         qLSCoreStart.LSCoreStatus = 'Running'
         # LS core pid location
@@ -2621,7 +2699,9 @@ class LSCredControl(Resource):
             return response
         for nl in credAll:
             credDict = {}
-            print >> sys.stderr, nl[0]
+            # print >> sys.stderr, nl[0]
+            app.logger.info('[%s] : [INFO] Credentials host %s!',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nl[0])
             credDict['LS Host'] = nl[0]
             credDict['Certificate'] = nl[2]
             credDict['Key'] = nl[3]
@@ -2801,7 +2881,9 @@ class AuxDeploy(Resource):
         for n in qNodes:
             credentials['User'] = n[4]  # TODO need a more elegant solution, currently it is rewriten every iteration
             credentials['Pass'] = n[5]
-            print >> sys.stderr, credentials
+            # print >> sys.stderr, credentials
+            app.logger.info('[%s] : [INFO] Credentials used %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), credentials)
             rp = {}
             if n[1] == False:  # check if node is monitored
                 rp['Node'] = n[0]
@@ -2817,11 +2899,15 @@ class AuxDeploy(Resource):
         allNodes = []
         for res in result:
             if res['Collectd'] == 'None':
-                print >> sys.stderr, 'No collectd!'
+                # print >> sys.stderr, 'No collectd!'
+                app.logger.info('[%s] : [INFO] No collectd',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 collectdList.append(res['IP'])
             if res['LSF'] == 'None':
                 LSFList.append(res['IP'])
-                print >> sys.stderr, 'No LSF!'
+                app.logger.info('[%s] : [INFO] No LSF',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                # print >> sys.stderr, 'No LSF!'
             allNodes.append(res['IP'])
 
         args = dmonAuxAll.parse_args()
@@ -2842,10 +2928,12 @@ class AuxDeploy(Resource):
             response.status_code = 200
             return response
 
-        print >> sys.stderr, collectdList
-        print >> sys.stderr, LSFList
-        print >> sys.stderr, credentials['User']
-        print >> sys.stderr, confDir
+        app.logger.info('[%s] : [INFO] Collectd list -> %s, LSFList -> %s, credentials -> %s, Conf dir -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), collectdList, LSFList, credentials['User'], confDir)
+        # print >> sys.stderr, collectdList
+        # print >> sys.stderr, LSFList
+        # print >> sys.stderr, credentials['User']
+        # print >> sys.stderr, confDir
 
         qSCore = dbSCore.query.first()  # TODO Change for distributed deployment
         if qSCore is None:
@@ -2857,7 +2945,11 @@ class AuxDeploy(Resource):
             lsfTemplate = templateEnv.get_template(lsfTemp)
         # print >>sys.stderr, template
         except:
-            return "Tempalte file unavailable!"
+            app.logger.error('[%s] : [ERROR] Template file unavailable',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Error', 'Message': 'Template file unavailable'})
+            response.status_code = 500
+            return response
 
         # {{ESCoreIP}}:{{LSLumberPort}}
         infolsfAux = {"ESCoreIP": qSCore.hostIP, "LSLumberPort": qSCore.inLumberPort}
@@ -2871,7 +2963,12 @@ class AuxDeploy(Resource):
         try:
             collectdTemplate = templateEnv.get_template(collectdTemp)
         except:
-            return "Template file unavailable!"
+            app.logger.error('[%s] : [ERROR] Template file unavailable',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Error', 'Message': 'Template file unavailable'})
+            response.status_code = 500
+            return response
+            # return "Template file unavailable!"
 
         infocollectdAux = {"logstash_server_ip": qSCore.hostIP, "logstash_server_port": qSCore.udpPort}
         collectdConf = collectdTemplate.render(infocollectdAux)
@@ -2883,8 +2980,10 @@ class AuxDeploy(Resource):
         try:
             installCollectd(collectdList, credentials['User'], credentials['Pass'], confDir=cfgDir)
         except Exception as inst:  # TODO if exceptions is detected check to see if collectd started if not return fail if yes return warning
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] Cannot install collectd with %s and  %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             response = jsonify({'Status': 'Error Installing collectd!'})
             response.status_code = 500
             return response
@@ -2893,9 +2992,11 @@ class AuxDeploy(Resource):
             installLogstashForwarder(LSFList, userName=credentials['User'], uPassword=credentials['Pass'],
                                      confDir=cfgDir)
         except Exception as inst:
-            print >> sys.stderr, type(inst)
-            print >> sys.stderr, inst.args
-            response = jsonify({'Status': 'Error Installig LSF!'})
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error('[%s] : [ERROR] Cannot install lsf with %s and  %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'Error Installing LSF!'})
             response.status_code = 500
             return response
 
@@ -2991,7 +3092,9 @@ class AuxAgentDeploy(Resource):
 class AuxAgentStart(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nStatus=1).all()
-        print >> sys.stderr, qNodeStatus
+        # print >> sys.stderr, qNodeStatus
+        app.logger.info('[%s] : [INFO] Node Status %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(qNodeStatus))
         if not qNodeStatus:
             response = jsonify({'Status': 'Agent Exception',
                                 'Message': 'No agents are registered'})
@@ -3148,12 +3251,16 @@ class AuxDeployThread(Resource):
                 failedNodes.append({'NodeIP': str(nodeIP.hostname),
                                     'Code': n['StatusCode']})
             # print >> sys.stderr, str(n['Data']['Components'])
-            print >> sys.stderr, str(n)
+            # print >> sys.stderr, str(n)
+            app.logger.debug('[%s] : [DEBUG] Node response -> %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(n))
             try:
                 NodeDict[nodeIP.hostname] = n['Data']['Components']
             except Exception as inst:
-                print >> sys.stderr, type(inst)
-                print >> sys.stderr, inst.args
+                # print >> sys.stderr, type(inst)
+                # print >> sys.stderr, inst.args
+                app.logger.error('[%s] : [ERROR] Keys missing, exception %s with %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                 NodeDict[nodeIP.hostname] = "Failed"
         response = jsonify({'Status': 'Installed Aux ',
                             'Message': NodeDict,
@@ -3252,8 +3359,11 @@ class AuxDeploySelective(Resource):
                 try:
                     serviceCtrl(node, qAux.nUser, qAux.nPass, 'collectd', 'restart')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot start collectd with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error restarting Collectd on ' + nodeFQDN + '!'})
                     response.status_code = 500
                     return response
@@ -3264,9 +3374,12 @@ class AuxDeploySelective(Resource):
                 try:
                     installCollectd(node, qAux.nUser, qAux.nPass, confDir=cfgDir)
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
-                    response = jsonify({'Status': 'Error Installig Collectd on ' + qAux.nodeFQDN + '!'})
+                    app.logger.error('[%s] : [ERROR] Cannot install collectd with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
+                    response = jsonify({'Status': 'Error Installing Collectd on ' + qAux.nodeFQDN + '!'})
                     response.status_code = 500
                     return response
                 # status[auxComp] = 'Running'
@@ -3287,8 +3400,11 @@ class AuxDeploySelective(Resource):
                 try:
                     serviceCtrl(node, qAux.nUser, qAux.nPass, 'logstash-forwarder', 'restart')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot start lsf with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error restarting LSF on ' + nodeFQDN + '!'})
                     response.status_code = 500
                     return response
@@ -3299,9 +3415,12 @@ class AuxDeploySelective(Resource):
                 try:
                     installLogstashForwarder(node, qAux.nUser, qAux.nPass, confDir=cfgDir)
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
-                    response = jsonify({'Status': 'Error Installig LSF on ' + qAux.nodeFQDN + '!'})
+                    app.logger.error('[%s] : [ERROR] Cannot install lsf with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
+                    response = jsonify({'Status': 'Error Installing LSF on ' + qAux.nodeFQDN + '!'})
                     response.status_code = 500
                     return response
                 # status[auxComp] = 'Running'
@@ -3412,10 +3531,13 @@ class AuxStartAll(Resource):
                 try:
                     serviceCtrl(node, i.nUser, i.nPass, 'collectd', 'start')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot start collectd with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                 # response = jsonify({'Status':'Error Starting collectd on '+ i.nodeFQDN +'!'})
-                # response.status_code = 500
+                # response.status_code = 500 # todo check if return is required for collectd
                 # return response
 
                 CollectdNodes = {}
@@ -3441,11 +3563,14 @@ class AuxStartAll(Resource):
                 try:
                     serviceCtrl(node, i.nUser, i.nPass, 'logstash-forwarder', 'start')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
-                    response = jsonify({'Status': 'Error Starting LSF on ' + i.nodeFQDN + '!'})
-                    response.status_code = 500
-                    return response
+                    app.logger.error('[%s] : [ERROR] Cannot start lsf with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
+                    # response = jsonify({'Status': 'Error Starting LSF on ' + i.nodeFQDN + '!'})
+                    # response.status_code = 500 # todo check if return is required for collectd
+                    # return response
 
                 LsfNodes = {}
                 LsfNodes['Node'] = i.nodeFQDN
@@ -3482,11 +3607,15 @@ class AuxStopAll(Resource):
                 try:
                     serviceCtrl(node, i.nUser, i.nPass, 'collectd', 'stop')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot stop collectd with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error Stopping collectd on ' + i.nodeFQDN + '!'})
                     response.status_code = 500
                     return response
+
                 CollectdNodes = {}
                 CollectdNodes['Node'] = i.nodeFQDN
                 CollectdNodes['IP'] = i.nodeIP
@@ -3510,8 +3639,11 @@ class AuxStopAll(Resource):
                 try:
                     serviceCtrl(node, i.nUser, i.nPass, 'logstash-forwarder', 'stop')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot stop lsf with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error Stopping LSF on ' + i.nodeFQDN + '!'})
                     response.status_code = 500
                     return response
@@ -3549,8 +3681,11 @@ class AuxStartSelective(Resource):
                 try:
                     serviceCtrl(node, qAux.nUser, qAux.nPass, 'collectd', 'restart')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot restart collectd with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error restarting collectd on ' + nodeFQDN + '!'})
                     response.status_code = 500
                     return response
@@ -3567,8 +3702,11 @@ class AuxStartSelective(Resource):
                 try:
                     serviceCtrl(node, qAux.nUser, qAux.nPass, 'logstash-forwarder', 'restart')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot restart lsf with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error restarting LSF on ' + nodeFQDN + '!'})
                     response.status_code = 500
                     return response
@@ -3604,8 +3742,11 @@ class AuxStopSelective(Resource):
                 try:
                     serviceCtrl(node, qAux.nUser, qAux.nPass, 'collectd', 'stop')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot stop collectd with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error stopping collectd on ' + nodeFQDN + '!'})
                     response.status_code = 500
                     return response
@@ -3623,8 +3764,11 @@ class AuxStopSelective(Resource):
                 try:
                     serviceCtrl(node, qAux.nUser, qAux.nPass, 'logstash-forwarder', 'stop')
                 except Exception as inst:
-                    print >> sys.stderr, type(inst)
-                    print >> sys.stderr, inst.args
+                    app.logger.error('[%s] : [ERROR] Cannot stop lsf with %s and  %s',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                     inst.args)
+                    # print >> sys.stderr, type(inst)
+                    # print >> sys.stderr, inst.args
                     response = jsonify({'Status': 'Error stopping LSF on ' + nodeFQDN + '!'})
                     response.status_code = 500
                     return response

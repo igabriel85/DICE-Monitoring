@@ -264,10 +264,12 @@ def detectStormTopology(ip, port=8080):
     try:
         r = requests.get(url, timeout=2)
     except requests.exceptions.Timeout:
-        print "Connection timedout"
+        app.logger.error('[%s] : [ERROR] Cannot connect to %s timedout',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
         raise
     except requests.exceptions.ConnectionError:
-        print "Connection error"
+        app.logger.error('[%s] : [ERROR] Cannot connect to %s error',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
         raise
 
     topologySummary = r.json()
@@ -304,10 +306,12 @@ def checkStormSpoutsBolts(ip, port, topology):
     try:
         r = requests.get(url, timeout=2)
     except requests.exceptions.Timeout:
-        print "Connection timedout"
+        app.logger.error('[%s] : [ERROR] Cannot connect to %s timedout',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
         return 0, 0
     except requests.exceptions.ConnectionError:
-        print "Connection error"
+        app.logger.error('[%s] : [ERROR] Cannot connect to %s error',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
         return 0, 0
     if r.status_code != 200:
         return 0, 0
