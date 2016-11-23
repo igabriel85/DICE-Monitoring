@@ -2523,8 +2523,6 @@ class LSCoreController(Resource):
             response.status_code = 404
             return response
 
-
-
         if qSCore.sslCert == 'default':
             certLoc = os.path.join(credDir, 'logstash-forwarder.crt')
         else:
@@ -2584,13 +2582,24 @@ class LSCoreController(Resource):
         app.logger.info('[%s] : [INFO] Yarn History Status -> %s',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), yarnStatus)
 
+        # appname tag is set the same for spark and yarn
+        qActiveApp = dbApp.query.filter_by(jobID='ACTIVE').first()
+        if qActiveApp is None:
+            app.logger.warning('[%s] : [WARN] No active applications registered tag set to default',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            appName = 'default'
+        else:
+            appName = qActiveApp.jobID
+            app.logger.info('[%s] : [INFO] Tag for application %s set',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), appName)
+
         infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort,
                      "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
                      "EShostPort": qESCore.nodePort, "StormRestIP": StormRestIP,
                      "StormRestPort": qSCore.LSCoreStormPort, "StormTopologyID": qSCore.LSCoreStormTopology,
                      'storm_interval': stormInterval, 'roles': uniqueRolesList, 'myIndex': qSCore.diceIndex,
                      'nSpout': spouts, 'nBolt': bolts, 'yarnHEnd': yarnHEnd, 'yarnHPort': yarnHPort,
-                     'yarnHPoll': yarnHPoll}
+                     'yarnHPoll': yarnHPoll, 'appName': appName}
         sConf = template.render(infoSCore)
         qSCore.conf = sConf
         # print >>sys.stderr, esConf

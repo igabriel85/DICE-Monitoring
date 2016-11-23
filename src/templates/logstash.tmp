@@ -5,6 +5,7 @@ input {
     port =>5000
     ssl_certificate => "{{sslcert}}"
     ssl_key=> "{{sslkey}}"
+    tags=>"{{appName}}"
 }
     {% if yarnHEnd == 'None' %}
     #No Yarn History Server Set
@@ -25,6 +26,7 @@ input {
         # A hash of request metadata info (timing, response headers, etc.) will be sent here
         # metadata_target => "http_poller_metadata"
         type =>"yarn-history"
+        tags=>"{{appName}}"
     }
     {% endif %}
 {% else %}
@@ -36,6 +38,7 @@ graphite{
     mode => server
     port => 5002
     type => "graphite"
+    tags=>"{{appName}}"
 }
 {% else %}
 # No spark role found
@@ -46,6 +49,7 @@ udp {
     buffer_size => 1452   # 1452 is the default buffer size for Collectd
     codec => collectd { } # specific Collectd codec to invoke
     type => collectd
+    tags=>"{{appName}}"
 }
 
 {% if 'storm' not in roles %}
@@ -77,6 +81,7 @@ http_poller {
     # A hash of request metadata info (timing, response headers, etc.) will be sent here
     # metadata_target => "http_poller_metadata"
     type =>"storm-topology"
+    tags=>"{{appName}}"
 }
 
 http_poller {
@@ -95,6 +100,7 @@ http_poller {
     # A hash of request metadata info (timing, response headers, etc.) will be sent here
     # metadata_target => "http_poller_metadata"
     type =>"storm-cluster"
+    tags=>"{{appName}}"
 }
 
 http_poller{
@@ -113,6 +119,7 @@ http_poller{
     # A hash of request metadata info (timing, response headers, etc.) will be sent here
     # metadata_target => "http_poller_metadata"
     type =>"storm-topSum"
+    tags=>"{{appName}}"
 }
   {% endif %}
 }

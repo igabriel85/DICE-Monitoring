@@ -246,7 +246,6 @@ def putRequest(queue, payload=None):
         gevent.sleep(0)
 
 
-
 def deleteRequest(queue):
     response = {}
     while not queue.empty():
