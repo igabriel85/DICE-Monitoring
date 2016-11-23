@@ -119,7 +119,7 @@ class dbApp(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     appName = db.Column(db.String(64), index=True, unique=False)
     appVersion = db.Column(db.String(64), index=True, unique=False)
-    jobID = db.Column(db.String(64), index=True, unique=True)
+    jobID = db.Column(db.String(64), index=True, unique=False)
     startTime = db.Column(db.String(64), index=True, unique=False)
     loggingPeriod = db.Column(db.Integer, index=True, unique=False)
     stopTime = db.Column(db.String(64), index=True, unique=False)

@@ -240,16 +240,29 @@ class DmonLog(Resource):
 @dmon.route('/v1/observer/applications')
 class ObsApplications(Resource):
     def get(self):
-        return 'Returns a list of all applications from YARN.'
+        qApps = db.session.query(dbApp.appName, dbApp.appVersion, dbApp.startTime, dbApp.stopTime, dbApp.jobID).all()
+        appDict = {}
+        for a in qApps:
+            appDict[a[0]] = {'ver': a[1], 'start': a[2], 'stop': a[3], 'status': a[4]}
+        response = jsonify(appDict)
+        response.status_code = 200
+        return response
 
 
 @dmon.route('/v1/observer/applications/<appID>')
 @api.doc(params={'appID': 'Application identification'})
 class ObsAppbyID(Resource):
     def get(self, appID):
+        qApp = dbApp.query.filter_by(appName=appID).first()
+        if qApp is None:
+            response = jsonify({'Status': 'Warning', 'Message': appID + ' not registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [INFO] Application %s is not registered',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), )
+            return response
         # todo sync with dev brach to add missing code
-        response = jsonify({'Status': 'Registered application', 'AppID': appID})
-        response.status_code(201)
+        response = jsonify({qApp.appName: {'ver': qApp.appVersion, 'start': qApp.startTime, 'stop': qApp.stopTime, 'status': qApp.jobID}})
+        response.status_code = 200
         return response
 
 
@@ -573,7 +586,49 @@ class OverlordFrameworkProperties(Resource):
 @api.doc(params={'appID': 'Application identification'})
 class OverlordAppSubmit(Resource):
     def put(self, appID):
-        return 'Registers an applicaiton with DMON and creates a unique tag!'
+        startT = datetime.utcnow()
+        qApp = dbApp.query.filter_by(appName=appID).first()
+        if qApp is None:
+            # Sort by id desc
+            lastApp = db.session.query(dbApp.id, dbApp.appName).order_by(dbApp.id.desc()).first()
+            if lastApp is None:
+                app.logger.info('[%s] : [INFO] No previouse application registered', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            else:
+                # Get id of last inserted app, ordering is based in where lastApp is decalred; [0]-> dbApp.id
+                app.logger.info('[%s] : [INFO] Last registered applications id %s name %s, setting to inactive',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), lastApp[0],
+                                lastApp[1])
+                qlastApp = dbApp.query.filter_by(appName=lastApp[1]).first()
+                qlastApp.stopTime = startT
+                qlastApp.jobID = 'STOPPED'
+                db.session.add(qlastApp)
+            appl = dbApp(appName=appID, appVersion=1, jobID='ACTIVE', startTime=startT, stopTime=None)
+            db.session.add(appl)
+            app.logger.info('[%s] : [INFO] Added new application %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), appID)
+            response = jsonify({'Status': 'Registered Application', 'App': appID, 'Start': startT})
+            response.status_code = 201
+        else:
+            newVer = int(qApp.appVersion) + 1
+            qApp.appVersion = newVer
+            qApp.startTime = startT
+            #check if it is marked as active if not set active and mark others as inactive
+            app.logger.info('[%s] : [INFO] Application %s has status %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qApp.appName, qApp.jobID)
+            if qApp.jobID == 'ACTIVE':
+                pass
+            else:
+                qApp.jobID = 'ACTIVE'
+                qActive = dbApp.query.filter_by(jobID='ACTIVE').first()
+                app.logger.info('[%s] : [INFO] Found other active application %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qActive.appName)
+                qActive.jobID = 'STOPPED'
+            db.session.add(qApp)
+            response = jsonify({'Status': 'Modified', 'App': appID, 'Version': qApp.appVersion})
+            app.logger.info('[%s] : [INFO] Modified application %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), appID)
+            response.status_code = 200
+        return response
 
 
 @dmon.route('/v1/overlord/core')
