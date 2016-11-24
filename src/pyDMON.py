@@ -485,7 +485,7 @@ class QueryEsCore(Resource):
                 return Response(resOSLC, mimetype='application/rdf+xml')
 
 
-@dmon.route('/v1/observer/query/<ftype>')
+@dmon.route('/v2/observer/query/<ftype>')
 class QueryEsEnhancedCore(Resource):
     def get(self, ftype):
         return "enhanced"
@@ -494,7 +494,7 @@ class QueryEsEnhancedCore(Resource):
 @dmon.route('/v1/overlord')
 class OverlordInfo(Resource):
     def get(self):
-        response = jsonify({'Status': 'Current version is 0.2.0'})
+        response = jsonify({'Status': 'Current version is 0.2.1'})
         response.status_code = 200
         return response
 
@@ -2015,7 +2015,7 @@ class ESCoreController(Resource):
 
 @dmon.route('/v1/overlord/core/es/status/<intComp>/property/<intProp>')
 @api.doc(params={'intComp': 'ES specific component', 'intProp': 'Component specific property'})
-class ESCOntrollerStatus(Resource):
+class ESControllerStatus(Resource):
     def get(self, intComp, intProp):
 
         compList = ['cluster', 'shards']
@@ -2069,6 +2069,151 @@ class ESCOntrollerStatus(Resource):
             response.status_code = 400
             return response
         return data
+
+@dmon.route('/v1/overlord/core/es/index/<index>')
+class ESControllerIndex(Resource):
+    def get(self, index):
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            app.logger.error('[%s] : [ERROR] Master ES instance not set at %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Missing es core',
+                                'Message': 'ES core instance not set'})
+            response.status_code = 503
+            return response
+
+        ecc = ESCoreConnector(esEndpoint=qES.hostIP)
+        res = ecc.getIndexSettings(index)
+        if res:
+            response = jsonify(res)
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Error',
+                                'Message': 'Cannot get index settings'})
+            response.status_code = 500
+            return response
+
+@dmon.route('/v1/overlord/core/es/cluster/health')
+class ESControllerClusterHealth(Resource):
+    def get(self):
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            app.logger.error('[%s] : [ERROR] Master ES instance not set at %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Missing es core',
+                                'Message': 'ES core instance not set'})
+            response.status_code = 503
+            return response
+        ecc = ESCoreConnector(esEndpoint=qES.hostIP)
+        res = ecc.clusterHealth()
+        if res:
+            response = jsonify(res)
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Error',
+                                'Message': 'Cannot get cluster health'})
+            response.status_code = 500
+            return response
+
+
+@dmon.route('/v1/overlord/core/es/cluster/settings')
+class ESControllerClusterSettings(Resource):
+    def get(self):
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            app.logger.error('[%s] : [ERROR] Master ES instance not set at %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Missing es core',
+                                'Message': 'ES core instance not set'})
+            response.status_code = 503
+            return response
+        ecc = ESCoreConnector(esEndpoint=qES.hostIP)
+        res = ecc.clusterSettings()
+        if res:
+            response = jsonify(res)
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Error',
+                                'Message': 'Cannot get cluster settings'})
+            response.status_code = 500
+            return response
+
+
+@dmon.route('/v1/overlord/core/es/cluster/state')
+class ESCOntrollerClusterState(Resource):
+    def get(self):
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            app.logger.error('[%s] : [ERROR] Master ES instance not set at %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Missing es core',
+                                'Message': 'ES core instance not set'})
+            response.status_code = 503
+            return response
+        ecc = ESCoreConnector(esEndpoint=qES.hostIP)
+        res = ecc.clusterState()
+        if res:
+            response = jsonify(res)
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Error',
+                                'Message': 'Cannot get cluster state'})
+            response.status_code = 500
+            return response
+
+
+@dmon.route('/v1/overlord/core/es/node/master/info')
+class ESControllerNodeInfo(Resource):
+    def get(self):
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            app.logger.error('[%s] : [ERROR] Master ES instance not set at %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Missing es core',
+                                'Message': 'ES core instance not set'})
+            response.status_code = 503
+            return response
+        ecc = ESCoreConnector(esEndpoint=qES.hostIP)
+        res = ecc.nodeInfo()
+        if res:
+            response = jsonify(res)
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Error',
+                                'Message': 'Cannot get node info'})
+            response.status_code = 500
+            return response
+
+
+@dmon.route('/v1/overlord/core/es/node/master/state')
+class ESControllerNodeState(Resource):
+    def get(self):
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            app.logger.error('[%s] : [ERROR] Master ES instance not set at %s',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'Missing es core',
+                                'Message': 'ES core instance not set'})
+            response.status_code = 503
+            return response
+        ecc = ESCoreConnector(esEndpoint=qES.hostIP)
+        res = ecc.nodeState()
+        if res:
+            response = jsonify(res)
+            response.status_code = 200
+            return response
+        else:
+            response = jsonify({'Status': 'Error',
+                                'Message': 'Cannot get node state'})
+            response.status_code = 500
+            return response
+
+# todo add node state and info for each registered node
 
 
 @dmon.route('/v1/overlord/core/es/<hostFQDN>/status')
