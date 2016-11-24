@@ -485,6 +485,12 @@ class QueryEsCore(Resource):
                 return Response(resOSLC, mimetype='application/rdf+xml')
 
 
+@dmon.route('/v1/observer/query/<ftype>')
+class QueryEsEnhancedCore(Resource):
+    def get(self, ftype):
+        return "enhanced"
+
+
 @dmon.route('/v1/overlord')
 class OverlordInfo(Resource):
     def get(self):

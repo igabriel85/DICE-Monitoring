@@ -657,7 +657,26 @@ def checkCoreState(esPidf, lsPidf, kbPidf):  #TODO: works only for local deploym
                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                     qKBCore.KBCorePID = 0
 
-# test = AgentResourceConstructor(['192.12.12.12'], '5000')
+
+def csvheaders2colNames(csvfile, adname):
+    '''
+    :param csvfile: -> input csv or dataframe
+    :param adname: -> string to add to column names
+    :param df: -> if set to false csvfile is used if not df is used
+    :return:
+    '''
+    colNames = {}
+    if isinstance(csvfile, pd.DataFrame):
+        for e in csvfile.columns.values:
+            if e == 'key':
+                pass
+            else:
+                colNames[e] = '%s_%s' % (e, adname)
+    else:
+        return 0
+    return colNames
+
+                        # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #
 # t = test.check()
 # c = test.collectd()
