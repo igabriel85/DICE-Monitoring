@@ -30,6 +30,7 @@ from app import *
 from dbModel import *
 from greenletThreads import *
 from urlparse import urlparse
+import pandas as pd
 
 
 def portScan(addrs, ports):
@@ -656,6 +657,21 @@ def checkCoreState(esPidf, lsPidf, kbPidf):  #TODO: works only for local deploym
                     app.logger.info('[%s] : [INFO] PID file found for KB Core service, not service tunning at pid %s. Setting value to 0',
                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                     qKBCore.KBCorePID = 0
+
+
+def str2Bool(st):
+    '''
+    :param st: -> string to test
+    :return: -> if true then returns 1 else 0
+    '''
+    if type(st) is bool:
+        return st
+    if st in ['True', 'true', '1']:
+        return 1
+    elif st in ['False', 'false', '0']:
+        return 0
+    else:
+        return 0
 
 
 def csvheaders2colNames(csvfile, adname):

@@ -409,18 +409,18 @@ class ESCoreConnector:
             res = 0
         return res
 
-    def aggQuery(self, queryBody):
+    def aggQuery(self, index, queryBody):
         try:
-            res = self.esInstance.search(index=self.myIndex, body=queryBody)
+            res = self.esInstance.search(index=index, body=queryBody)
         except Exception as inst:
             app.logger.error('[%s] : [ERROR] Exception while executing ES query with %s and %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             res = 0
         return res
 
+
 class QueryConstructor():
     def __init__(self):
-        self.author = 'Constructor for dmon-adp ES connector querys'
-        # self.systemLoadString = "collectd_type:\"load\" AND host:\"dice.cdh.master\""
+        self.author = 'Constructor for dmon ES connector querys'
 
     def loadString(self, host):
         qstring = "collectd_type:\"load\" AND host:\"%s\"" % host
@@ -1215,41 +1215,24 @@ class DataFormatter:
         # current.set_index('key', inplace=True)
         return current
 
-    def chainMergeNR(self, interface=None, memory=None, load=None, packets=None):
+    def chainMergeNR(self, interface, memory, load, packets):
         '''
         :return: -> merged dataframe System metrics
         '''
-        if interface is None and memory is None and load is None and packets is None:
-            interface = os.path.join(self.dataDir, "Interface.csv")
-            memory = os.path.join(self.dataDir, "Memory.csv")
-            load = os.path.join(self.dataDir, "Load.csv")
-            packets = os.path.join(self.dataDir, "Packets.csv")
-
         lFiles = [interface, memory, load, packets]
         return self.listMerge(lFiles)
 
-    def chainMergeDFS(self, dfs=None, dfsfs=None, fsop=None):
+    def chainMergeDFS(self, dfs, dfsfs, fsop):
         '''
         :return: -> merged dfs metrics
         '''
-        if dfs is None and dfsfs is None and fsop is None:
-            dfs = os.path.join(self.dataDir, "DFS.csv")
-            dfsfs = os.path.join(self.dataDir, "DFSFS.csv")
-            fsop = os.path.join(self.dataDir, "FSOP.csv")
-
         lFiles = [dfs, dfsfs, fsop]
         return self.listMerge(lFiles)
 
-    def chainMergeCluster(self, clusterMetrics=None, queue=None, jvmRM=None):
+    def chainMergeCluster(self, clusterMetrics, queue, jvmRM):
         '''
         :return: -> merged cluster metrics
         '''
-        if clusterMetrics is None and queue is None and jvmRM is None:
-            clusterMetrics = os.path.join(self.dataDir, "ClusterMetrics.csv")
-            queue = os.path.join(self.dataDir, "ResourceManagerQueue.csv")
-            jvmRM = os.path.join(self.dataDir, "JVM_RM.csv")
-            # jvmmrapp = os.path.join(self.dataDir, "JVM_MRAPP.csv")
-
         lFiles = [clusterMetrics, queue, jvmRM]
 
         return self.listMerge(lFiles)
@@ -1313,7 +1296,6 @@ class DataFormatter:
             app.logger.error('[%s] : [ERROR] Merge dataframes exception df list %s',
                      datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), dfList)
             current = 0
-
         # current.set_index('key', inplace=True)
         return current
 
@@ -1415,7 +1397,7 @@ class DataFormatter:
                             dictMetrics[rKey] = rValue['value']
                     requiredMetrics.append(dictMetrics)
         # print "Required Metrics -> %s" % requiredMetrics
-        csvOut = os.path.join(self.dataDir, filename)
+        csvOut = os.path.join(outDir, filename)
         cheaders = []
         if query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] == "type_instance.raw":
             app.logger.debug('[%s] : [DEBUG] Detected Memory type query', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
@@ -1461,9 +1443,209 @@ class DataFormatter:
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return df
 
-    def df2dict(self, df):
-        kdf = df.set_index('key')
-        return kdf.to_dict()
+
+class QueryEngine:
+    def __init__(self, fqdn):
+        self.esConnector = ESCoreConnector(fqdn)
+        self.qConstructor = QueryConstructor()
+        self.dformater = DataFormatter()
+
+    def getCluster(self, tfrom, to, qsize, qinterval, index):
+        app.logger.info('[%s] : [INFO] Querying Cluster metrics ...',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        queue, queue_file = self.qConstructor.queueResourceString()
+        cluster, cluster_file = self.qConstructor.clusterMetricsSring()
+        jvmResMng, jvmResMng_file = self.qConstructor.jvmResourceManagerString()
+        qqueue = self.qConstructor.resourceQueueQuery(queue, tfrom, to, qsize, qinterval)
+        qcluster = self.qConstructor.clusterMetricsQuery(cluster, tfrom, to, qsize, qinterval)
+        qjvmResMng = self.qConstructor.jvmNNquery(jvmResMng, tfrom, to, qsize, qinterval)
+        gqueue = self.esConnector.aggQuery(index, qqueue)
+        print gqueue
+        if not gqueue:
+            return 0
+        gcluster = self.esConnector.aggQuery(index, qcluster)
+        gjvmResourceManager = self.esConnector.aggQuery(index, qjvmResMng)
+        df_cluster = self.dformater.dict2csv(gcluster, qcluster, cluster_file, df=True)
+        df_queue = self.dformater.dict2csv(gqueue, qqueue, queue_file, df=True)
+        df_jvmResourceManager = self.dformater.dict2csv(gjvmResourceManager, qjvmResMng, jvmResMng_file, df=True)
+        app.logger.info('[%s] : [INFO] Starting cluster merge ...',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        merged_cluster = self.dformater.chainMergeCluster(clusterMetrics=df_cluster, queue=df_queue,
+                                                          jvmRM=df_jvmResourceManager)
+        clusterReturn = merged_cluster
+        app.logger.info('[%s] : [INFO] Finished cluster metrics query and aggregation',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        return clusterReturn
+
+    def getDataNode(self, nodes, tfrom, to, qsize, qinterval, index):
+        app.logger.info('[%s] : [INFO] Querying  Data Node metrics ...',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        lDN = []
+        for node in nodes:
+            datanode, datanode_file = self.qConstructor.datanodeString(node)
+            qdatanode = self.qConstructor.datanodeMetricsQuery(datanode, tfrom, to, qsize,
+                                                               qinterval)
+            gdatanode = self.esConnector.aggQuery(index, qdatanode)
+            if gdatanode['aggregations'].values()[0].values()[0]:
+                lDN.append(self.dformater.dict2csv(gdatanode, qdatanode, datanode_file, df=True))
+            else:
+                app.logger.info('[%s] : [INFO] Empty response from  %s no datanode metrics!',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), node)
+
+        app.logger.info('[%s] : [INFO] Querying  Data Node metrics complete',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
+
+        dn_merged = self.dformater.chainMergeDN(lDN=lDN)
+        app.logger.info('[%s] : [INFO] Data Node metrics merge complete',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        return dn_merged
+
+    def getDFS(self, tfrom, to, qsize, qinterval, index):
+        # Query Strings
+        app.logger.info('[%s] : [INFO] Querying DFS metrics...',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        dfs, dfs_file = self.qConstructor.dfsString()
+        dfsFs, dfsFs_file = self.qConstructor.dfsFString()
+        fsop, fsop_file = self.qConstructor.fsopDurationsString()
+
+        # Query constructor
+        qdfs = self.qConstructor.dfsQuery(dfs, tfrom, to, qsize, qinterval)
+        qdfsFs = self.qConstructor.dfsFSQuery(dfsFs, tfrom, to, qsize, qinterval)
+        qfsop = self.qConstructor.fsopDurationsQuery(fsop, tfrom, to, qsize, qinterval)
+
+        # Execute query
+        gdfs = self.esConnector.aggQuery(index, qdfs)
+        gdfsFs = self.esConnector.aggQuery(index, qdfsFs)
+        gfsop = self.esConnector.aggQuery(index, qfsop)
+
+        df_dfs = self.dformater.dict2csv(gdfs, qdfs, dfs_file, df=True)
+        df_dfsFs = self.dformater.dict2csv(gdfsFs, qdfsFs, dfsFs_file, df=True)
+        df_fsop = self.dformater.dict2csv(gfsop, qfsop, fsop_file, df=True)
+
+        app.logger.info('[%s] : [INFO] Querying DFS metrics complete.',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
+        merged_DFS = self.dformater.chainMergeDFS(dfs=df_dfs, dfsfs=df_dfsFs, fsop=df_fsop)
+        app.logger.info('[%s] : [INFO] DFS merge complete',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
+        return merged_DFS
+
+    def getNodeManager(self, nodes, tfrom, to, qsize, qinterval, index):
+
+        app.logger.info('[%s] : [INFO] Querying  Node Manager and Shuffle metrics...',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        lNM = []
+        ljvmNM = []
+        lShuffle = []
+        for node in nodes:
+            nodeManager, nodeManager_file = self.qConstructor.nodeManagerString(node)
+            jvmNodeManager, jvmNodeManager_file = self.qConstructor.jvmnodeManagerString(node)
+            shuffle, shuffle_file = self.qConstructor.shuffleString(node)
+
+            qnodeManager = self.qConstructor.yarnNodeManager(nodeManager, tfrom, to, qsize,
+                                                             qinterval)
+            qjvmNodeManager = self.qConstructor.jvmNNquery(jvmNodeManager, tfrom, to, qsize,
+                                                           qinterval)
+            qshuffle = self.qConstructor.shuffleQuery(shuffle, tfrom, to, qsize, qinterval)
+
+            gnodeManagerResponse = self.esConnector.aggQuery(index, qnodeManager)
+            if gnodeManagerResponse['aggregations'].values()[0].values()[0]:
+                lNM.append(self.dformater.dict2csv(gnodeManagerResponse, qnodeManager, nodeManager_file, df=True))
+            else:
+                app.logger.info('[%s] : [INFO] Empty response from  %s no Node Manager detected!',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), node)
+
+            gjvmNodeManagerResponse = self.esConnector.aggQuery(index, qjvmNodeManager)
+            if gjvmNodeManagerResponse['aggregations'].values()[0].values()[0]:
+                ljvmNM.append(
+                    self.dformater.dict2csv(gjvmNodeManagerResponse, qjvmNodeManager, jvmNodeManager_file, df=True))
+            else:
+                app.logger.info('[%s] : [INFO] Empty response from  %s no Node Manager detected!',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), node)
+
+            gshuffleResponse = self.esConnector.aggQuery(index, qshuffle)
+            if gshuffleResponse['aggregations'].values()[0].values()[0]:
+                lShuffle.append(self.dformater.dict2csv(gshuffleResponse, qshuffle, shuffle_file, df=True))
+            else:
+                app.logger.info('[%s] : [INFO] Empty response from  %s no shuffle metrics!',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), node)
+
+        app.logger.info('[%s] : [INFO] Querying  Node Manager and Shuffle metrics complete...',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
+        nm_merged, jvmnn_merged, shuffle_merged = self.dformater.chainMergeNM(lNM=lNM, lNMJvm=ljvmNM,
+                                                                              lShuffle=lShuffle)
+        app.logger.info('[%s] : [INFO] Node Manager Merge complete',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        return nm_merged, jvmnn_merged, shuffle_merged
+
+    def getNameNode(self, tfrom, to, qsize, qinterval, index):
+        app.logger.info('[%s] : [INFO] Querying  Name Node metrics ...',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
+        jvmNameNodeString, jvmNameNode_file = self.qConstructor.jvmNameNodeString()
+        qjvmNameNode = self.qConstructor.jvmNNquery(jvmNameNodeString, tfrom, to, qsize, qinterval)
+        gjvmNameNode = self.esConnector.aggQuery(index, qjvmNameNode)
+        df_NN = self.dformater.dict2csv(gjvmNameNode, qjvmNameNode, jvmNameNode_file, df=True)
+        # df_NN.set_index('key', inplace=True)
+        returnNN = df_NN
+
+        app.logger.info('[%s] : [INFO] Querying  Name Node metrics complete',
+                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        return returnNN
+
+    def getSystemMetrics(self, nodes, tfrom, to, qsize, qinterval, index):
+        lload = []
+        lmemory = []
+        linterface = []
+        lpack = []
+        app.logger.info('[%s] : [INFO] Querying System metrics ...',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        for node in nodes:
+            load, load_file = self.qConstructor.loadString(node)
+            memory, memory_file = self.qConstructor.memoryString(node)
+            interface, interface_file = self.qConstructor.interfaceString(node)
+            packet, packet_file = self.qConstructor.packetString(node)
+
+            # Queries
+            qload = self.qConstructor.systemLoadQuery(load, tfrom, to, qsize, qinterval)
+            qmemory = self.qConstructor.systemMemoryQuery(memory, tfrom, to, qsize, qinterval)
+            qinterface = self.qConstructor.systemInterfaceQuery(interface, tfrom, to, qsize, qinterval)
+            qpacket = self.qConstructor.systemInterfaceQuery(packet, tfrom, to, qsize, qinterval)
+
+            # Execute query and convert response to csv
+            qloadResponse = self.esConnector.aggQuery(index, qload)
+            gmemoryResponse = self.esConnector.aggQuery(index, qmemory)
+            ginterfaceResponse = self.esConnector.aggQuery(index, qinterface)
+            gpacketResponse = self.esConnector.aggQuery(index, qpacket)
+
+            linterface.append(self.dformater.dict2csv(ginterfaceResponse, qinterface, interface_file, df=True))
+            lmemory.append(self.dformater.dict2csv(gmemoryResponse, qmemory, memory_file, df=True))
+            lload.append(self.dformater.dict2csv(qloadResponse, qload, load_file, df=True))
+            lpack.append(self.dformater.dict2csv(gpacketResponse, qpacket, packet_file, df=True))
+
+        # Merge and rename by node system Files
+        df_interface, df_load, df_memory, df_packet = self.dformater.chainMergeSystem(linterface=linterface,
+                                                                                      lload=lload, lmemory=lmemory,
+                                                                                      lpack=lpack)
+        merged_df = self.dformater.chainMergeNR(interface=df_interface, memory=df_memory, load=df_load,
+                                                packets=df_packet)
+        app.logger.info('[%s] : [INFO] Querying System metrics complete',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        return merged_df
+
+    def merge(self, listDataframes):
+        merged = self.dformater.listMerge(listDataframes)
+        return merged
+
+    def toDict(self, dataframe):
+        res = dataframe.to_dict()
+        return res
+
+    def toCSV(self, dataframe, location):
+        dataframe.to_csv(location)
 
 
 def main(argv):

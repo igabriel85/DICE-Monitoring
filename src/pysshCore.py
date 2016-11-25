@@ -126,6 +126,7 @@ def installCollectd(hostlist, userName, uPassword, confDir=confDir):
 	del client
 	print "Done Collectd"
 
+
 def installJmxtrans(hostlist,userName,uPassword,confDir,confName):
 	'''
 	Installs and configures jmxtrans for both storm and spark 
@@ -259,11 +260,8 @@ def installLogstashForwarder(hostlist,userName,uPassword,confDir):
 		listOutput(run)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured starting LSF"
-		raise	
-		
+		raise
 
-
-		
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
 		print "An exception has occured!"
 	del client
@@ -363,7 +361,8 @@ def hostsScan(hostlist):
 	#crate goodHosts list
 	goodHosts = [x for x in hostlist if x not in badHosts] 
 	return goodHosts, badHosts
-			
+
+
 def nmapScan(hostlist, port='22-443'):
 	'''
 	Takes a list of hosts and checks port 22 (default) ssh status.
@@ -446,11 +445,13 @@ def detectOS(hostlist, userName, uPassword):
 def checkSetup():
 	print "Check the logging remote setup"
 
+
 def deployOryx2():
 	'''
 	    Deploy Oryx2 on CDH
 	'''
 	print "Oryx2 Deploy"
+
 
 def startOryx2():
 	'''
@@ -458,7 +459,6 @@ def startOryx2():
 	'''
 	oryx2Deployment = {"speedLayer":"","batchLayer":"","servingLayer":""}
 	print "Oryx2 Start"
-
 
 
 def auxCtrl(auxComp,command):

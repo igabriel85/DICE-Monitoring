@@ -82,7 +82,7 @@ lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
 # dmon = api.namespace('dmon', description='D-MON operations')
 
 #Initialize detect service
-servDet=DetectBDService()
+servDet = DetectBDService()
 
 # argument parser
 dmonAux = api.parser()
@@ -107,6 +107,21 @@ queryES = api.model('query details Model', {
     'index': fields.String(required=False, default='logstash-*', description='Name of ES Core index')
 })
 
+queryESEnhanced = api.model('aggregated query details Model', {
+    'fname': fields.String(required=False, default="output", description='Name of output file.'),
+    'interval': fields.String(required=False, default="10s", description='Aggregation interval.'),
+    'size': fields.Integer(required=True, default=0, description='Number of record'),
+    'tstart': fields.Integer(required=True, default="now-1d", description='Start Date'),
+    'tstop': fields.Integer(required=False, default="now", description='Stop Date'),
+    'aggregation': fields.String(required=False, default="system", description='Aggregation'),
+    'index': fields.String(required=False, default='logstash-*', description='Name of ES Core index')
+})
+
+#Nested ENhanced JSON input
+dDMONQueryEnh = api.model('queryESEnh Model', {
+    'DMON':fields.Nested(queryESEnhanced, description="Query details")
+})
+
 # Nested JSON input
 dMONQuery = api.model('queryES Model', {
     'DMON': fields.Nested(queryES, description="Query details")
@@ -121,6 +136,8 @@ nodeSubmitCont = api.model('Submit Node Model Info', {
     'password': fields.String(required=False, description="Node Password"),
     'LogstashInstance': fields.String(required=False, description='Logstash Server Endpoint')
 })
+
+
 
 nodeSubmit = api.model('Submit Node Model', {
     'Nodes': fields.List(fields.Nested(nodeSubmitCont, required=True, description="Submit Node details"))
@@ -486,9 +503,175 @@ class QueryEsCore(Resource):
 
 
 @dmon.route('/v2/observer/query/<ftype>')
+@api.doc(params={'ftype': 'Output type'})
 class QueryEsEnhancedCore(Resource):
-    def get(self, ftype):
-        return "enhanced"
+    @api.expect(dDMONQueryEnh)
+    def post(self, ftype):
+        supportType = ["csv", "json"]
+        if ftype not in supportType:
+            response = jsonify({'Supported types': supportType, "Submitted Type": ftype})
+            response.status_code = 415
+            app.logger.warn('[%s] : [WARN] Unsuported output type %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ftype)
+            return response
+        if request.json is None:
+            response = jsonify({'Status': 'Empty payload',
+                                'Message': 'Request has empty payload'})
+            response.status_code = 417
+            app.logger.error('[%s] : [ERROR] Empty payload received for query, returned error 417',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        if 'aggregation' not in request.json['DMON']:
+            response = jsonify({'Status': 'Missing aggregation', 'Message': 'Aggregation must be defined'})
+            response.status_code = 400
+            app.logger.error('[%s] : [ERROR] Query missing aggregation field',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        supportedAggregation = ['system', 'yarn', 'spark', 'storm']
+        if request.json['DMON']['aggregation'] not in supportedAggregation:
+            response = jsonify({'Supported aggregation': supportedAggregation, "Submitted Type": request.json['DMON']['aggregation']})
+            response.status_code = 415
+            app.logger.warn('[%s] : [WARN] Unsuported aggregation  %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), request.json['DMON']['aggregation'])
+            return response
+        # {
+        #     "DMON": {
+        #         "aggregation": "system",
+        #         "fname": "output",
+        #         "index": "logstash-*",
+        #         "size": 0,
+        #         "tstart": "now-1d",
+        #         "tstop": "now"
+        #     }
+        # }
+
+        if 'index' not in request.json['DMON']:
+            index = 'logstash-*'
+        else:
+            index = request.json['DMON']['index']
+
+        app.logger.info('[%s] : [INFO] Using index  %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), index)
+
+        if 'size' not in request.json['DMON']:
+            size = 0
+        else:
+            size = request.json['DMON']['size']
+        app.logger.info('[%s] : [INFO] Using size  %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), size)
+
+        if 'tstop' and 'tstart' not in request.json['DMON']:
+            response = jsonify({'Status': 'Missing time interval declaration', 'Message': 'Both tstart and tstop must be defined'})
+            response.status_code = 400
+            app.logger.error('[%s] : [ERROR] Time interval not defined properly in request -> %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(request.json))
+            return response
+
+        if 'interval' not in request.json['DMON']:
+            interval = '10s'
+        else:
+            interval = request.json['DMON']['interval']
+
+        app.logger.info('[%s] : [INFO] Interval set to %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), interval)
+
+        qES = dbESCore.query.filter_by(MasterNode=1).first()
+        if qES is None:
+            response = jsonify({'Status': 'Not found', 'Message': 'No es Core instance registered'})
+            response.status_code = 503
+            app.logger.info('[%s] : [INFO] ES core instance not registered',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        dqengine = QueryEngine(qES.hostIP)
+        qNode = dbNodes.query.all()
+        if qNode is None:
+            response = jsonify({'Status': 'No registered nodes'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        nodeList = []
+        for nodes in qNode:
+            nodeList.append(nodes.nodeFQDN)
+        if request.json['DMON']['aggregation'] == 'system':
+            # nodes, tfrom, to, qsize, qinterval, index)
+            df_system = dqengine.getSystemMetrics(nodeList, request.json['DMON']['tstart'], request.json['DMON']['tstop'], int(size), interval, index)
+            # df_system = dqengine.getSystemMetrics(nodeList, request.json['DMON']['tstart'],
+            #                                       request.json['DMON']['tstop'], 0, '10s', 'logstash-*')
+            if isinstance(df_system, int):
+                response = jsonify({'Status': 'error', 'Message': 'response is null'})
+                response.status_code = 500
+                app.logger.error('[%s] : [ERROR] System metrics return 0',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return response
+            if ftype == 'json':
+                response = jsonify(dqengine.toDict(df_system))
+                response.status_code = 200
+                return response
+            if ftype == 'csv':
+                if not 'fname' in request.json['DMON']:
+                    fileName = 'output.csv'
+                else:
+                    fileName = '%s.csv' % request.json['DMON']['fname']
+                csvOut = os.path.join(outDir, fileName)
+                dqengine.toCSV(df_system, csvOut)
+                # with open(csvOut, 'r') as f:
+                #     read_data = f.read()
+                try:
+                    csvfile = open(csvOut, 'r')
+                except EnvironmentError:
+                    response = jsonify({'EnvError': 'file not found'})
+                    response.status_code = 500
+                    app.logger.error('[%s] : [ERROR] CSV file not found',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                return send_file(csvfile, mimetype='text/csv', as_attachment=True)
+        if request.json['DMON']['aggregation'] == 'yarn':
+            df_dfs = dqengine.getDFS(request.json['DMON']['tstart'], request.json['DMON']['tstop'], int(size),
+                                     interval, index)
+            df_cluster = dqengine.getCluster(request.json['DMON']['tstart'], request.json['DMON']['tstop'],
+                                             int(size), interval, index)
+            df_name_node = dqengine.getNameNode(request.json['DMON']['tstart'], request.json['DMON']['tstop'],
+                                                int(size), interval, index)
+
+            nm_merged, jvmnn_merged, shuffle_merged = dqengine.getNodeManager(nodeList, request.json['DMON']['tstart'],
+                                                                              request.json['DMON']['tstop'], int(size),
+                                                                              interval, index)
+            df_dn_merged = dqengine.getDataNode(nodeList, request.json['DMON']['tstart'], request.json['DMON']['tstop'],
+                                                int(size), interval, index)
+            listDF = [df_dfs, df_cluster, df_name_node, nm_merged, jvmnn_merged, shuffle_merged, df_dn_merged]
+            df_merged = dqengine.merge(listDF)
+            if ftype == 'json':
+                response = jsonify(dqengine.toDict(df_merged))
+                response.status_code = 200
+                return response
+            if ftype == 'csv':
+                if not 'fname' in request.json['DMON']:
+                    fileName = 'output.csv'
+                else:
+                    fileName = '%s.csv' % request.json['DMON']['fname']
+                csvOut = os.path.join(outDir, fileName)
+                dqengine.toCSV(df_system, csvOut)
+                # with open(csvOut, 'r') as f:
+                #     read_data = f.read()
+                try:
+                    csvfile = open(csvOut, 'r')
+                except EnvironmentError:
+                    response = jsonify({'EnvError': 'file not found'})
+                    response.status_code = 500
+                    app.logger.error('[%s] : [ERROR] CSV file not found',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                return send_file(csvfile, mimetype='text/csv', as_attachment=True)
+            if request.json['DMON']['aggregation'] == 'spark':
+                return "Not for this version"
+            if request.json['DMON']['aggregation'] == 'storm':
+                return "Not for this version"
+
+
 
 
 @dmon.route('/v1/overlord')
