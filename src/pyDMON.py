@@ -2253,37 +2253,63 @@ class ESCoreControllerInit(Resource):
         os.system('cp ' + esfConf + ' /opt/elasticsearch/config/elasticsearch.yml ')
 
         os.environ['ES_HEAP_SIZE'] = qESCore.ESCoreHeap
-        # if not qESCore.ESCorePID.strip():
-        #     qESCore.ESCorePID = 0
+
+        #check for running detached es core
+        if os.path.isfile(pidESLoc):
+            esPIDf = check_proc(pidESLoc)
+        else:
+            esPIDf = 0
+
+        if esPIDf != qESCore.ESCorePID:
+            app.logger.warning("[%s] : [WARN] Conflicting PID values found, detached pid -> %s, attached -> %s",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(esPIDf),
+                               str(qESCore.ESCorePID))
 
         if checkPID(qESCore.ESCorePID) is True:
-            test = subprocess.call(["service", "dmon-es", "restart"])
-            return str(test)
             try:
-                esPID = check_proc(pidESLoc)
-                qESCore.ESCorePID = esPID
-                return esPID
+                subprocess.check_call(["service", "dmon-es", "restart"])
             except Exception as inst:
                 app.logger.error("[%s] : [ERROR] Cannot restart ES Core service with %s and %s",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
-                response = jsonify({'Status': 'Error', 'Message': 'Cannot start ES Core'})
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot restart ES Core'})
                 response.status_code = 500
                 return response
-        else:
-            test = subprocess.call(["service", "dmon-es", "start", qESCore.ESCoreHeap])
-            return str(type(test))
+            esPID = check_proc(pidESLoc)
+            qESCore.ESCorePID = esPID
+            qESCore.ESCoreStatus = 'Running'
+            response = jsonify({'Status': 'ES Core Restarted', 'PID': esPID})
+            response.status_code = 201
+            return response
+        elif checkPID(int(esPIDf)) is True:
             try:
-                esPID = check_proc(pidESLoc)
-                qESCore.ESCorePID = esPID
-                return esPID
+                subprocess.check_call(["service", "dmon-es", "restart"])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot restart detached ES Core service with %s and %s",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot restart detached ES Core'})
+                response.status_code = 500
+                return response
+            esPID = check_proc(pidESLoc)
+            qESCore.ESCorePID = esPID
+            qESCore.ESCoreStatus = 'Running'
+            response = jsonify({'Status': 'ES Core  Restarted and attached', 'PID': esPID})
+            response.status_code = 201
+            return response
+        else:
+            try:
+                subprocess.check_call(["service", "dmon-es", "start", qESCore.ESCoreHeap])
             except Exception as inst:
                 app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                 response = jsonify({'Status': 'Error', 'Message': 'Cannot start ES Core'})
                 response.status_code = 500
                 return response
-
-
+            esPID = check_proc(pidESLoc)
+            qESCore.ESCorePID = esPID
+            qESCore.ESCoreStatus = 'Running'
+            response = jsonify({'Status': 'ES Core Started', 'PID': esPID})
+            response.status_code = 201
+            return response
         # response = jsonify({'Status': 'ElasticSearch Core  PID ' + str(esPid)})
         # response.status_code = 200
         # return response
