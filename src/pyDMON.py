@@ -2253,11 +2253,14 @@ class ESCoreControllerInit(Resource):
         os.system('cp ' + esfConf + ' /opt/elasticsearch/config/elasticsearch.yml ')
 
         os.environ['ES_HEAP_SIZE'] = qESCore.ESCoreHeap
+        if not qESCore.ESCorePID.strip():
+            qESCore.ESCorePID = 0
 
         if checkPID(qESCore.ESCorePID) is True:
             subprocess.call(["service", "dmon-es", "restart"])
             try:
                 esPID = check_proc(pidESLoc)
+                qESCore.ESCorePID = esPID
                 return esPID
             except Exception as inst:
                 app.logger.error("[%s] : [ERROR] Cannot restart ES Core service with %s and %s",
@@ -2269,6 +2272,7 @@ class ESCoreControllerInit(Resource):
             subprocess.call(["service", "dmon-es", "start", qESCore.ESCoreHeap])
             try:
                 esPID = check_proc(pidESLoc)
+                qESCore.ESCorePID = esPID
                 return esPID
             except Exception as inst:
                 app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
