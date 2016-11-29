@@ -2258,7 +2258,7 @@ class ESCoreControllerInit(Resource):
 
         if checkPID(qESCore.ESCorePID) is True:
             test = subprocess.call(["service", "dmon-es", "restart"])
-            return type(test)
+            return str(type(test))
             try:
                 esPID = check_proc(pidESLoc)
                 qESCore.ESCorePID = esPID
@@ -2271,7 +2271,7 @@ class ESCoreControllerInit(Resource):
                 return response
         else:
             test = subprocess.call(["service", "dmon-es", "start", qESCore.ESCoreHeap])
-            return type(test)
+            return str(type(test))
             try:
                 esPID = check_proc(pidESLoc)
                 qESCore.ESCorePID = esPID
