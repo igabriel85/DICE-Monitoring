@@ -2275,6 +2275,12 @@ class ESCoreControllerInit(Resource):
                 response.status_code = 500
                 return response
             esPID = check_proc(pidESLoc)
+            if not esPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for es core",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read escore pid file'})
+                response.status_code = 500
+                return response
             qESCore.ESCorePID = esPID
             qESCore.ESCoreStatus = 'Running'
             response = jsonify({'Status': 'ES Core Restarted', 'PID': esPID})
@@ -2290,6 +2296,12 @@ class ESCoreControllerInit(Resource):
                 response.status_code = 500
                 return response
             esPID = check_proc(pidESLoc)
+            if not esPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for es core",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read escore pid file'})
+                response.status_code = 500
+                return response
             qESCore.ESCorePID = esPID
             qESCore.ESCoreStatus = 'Running'
             response = jsonify({'Status': 'ES Core  Restarted and attached', 'PID': esPID})
@@ -2305,6 +2317,12 @@ class ESCoreControllerInit(Resource):
                 response.status_code = 500
                 return response
             esPID = check_proc(pidESLoc)
+            if not esPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for es core",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read escore pid file'})
+                response.status_code = 500
+                return response
             qESCore.ESCorePID = esPID
             qESCore.ESCoreStatus = 'Running'
             response = jsonify({'Status': 'ES Core Started', 'PID': esPID})

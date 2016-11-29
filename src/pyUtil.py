@@ -693,11 +693,17 @@ def csvheaders2colNames(csvfile, adname):
     return colNames
 
 
-def check_proc(pidfile):
+def check_proc(pidfile, wait=5):
     '''
     :param pidfile: -> location of pid
     :return: -> return pid
     '''
+    tick = 0
+    while not os.path.exists(pidfile):
+        time.sleep(1)
+        tick += 1
+        if tick > wait:
+            return 0
     stats_pid = open(pidfile)
     pid = int(stats_pid.read())
     return pid
