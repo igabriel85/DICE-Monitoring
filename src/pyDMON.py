@@ -2260,7 +2260,7 @@ class ESCoreControllerInit(Resource):
                 esPID = check_proc(pidESLoc)
                 return esPID
             except Exception as inst:
-                app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
+                app.logger.error("[%s] : [ERROR] Cannot restart ES Core service with %s and %s",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                 response = jsonify({'Status': 'Error', 'Message': 'Cannot start ES Core'})
                 response.status_code = 500
