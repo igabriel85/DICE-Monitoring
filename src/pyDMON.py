@@ -2101,11 +2101,18 @@ class ESCoreController(Resource):
             else:
                 app.logger.warning('[%s] : ES Core service not found at PID %s, setting to failed',
                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hosts[7]))
-                #hosts.ESCorePID = 0
-                #hosts.ESCoreStatus = 'unknown'
-                # todo status detached if pid only in file not in sqlite, read pid from file
-                confDict['Status'] = 'failed'  #TODO: Document failed message if PID is not assigned to an ES Instance
-                confDict['PID'] = 0
+                pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
+                if os.path.isfile(pidESLoc):
+                    esPIDf = check_proc(pidESLoc)
+                    if checkPID(esPIDf):
+                        confDict['Stats'] = 'detached'
+                        confDict['PID'] = esPIDf
+                else:
+                    #hosts.ESCorePID = 0
+                    #hosts.ESCoreStatus = 'unknown'
+                    # todo status detached if pid only in file not in sqlite, read pid from file
+                    confDict['Status'] = 'unknown'  #TODO: Document failed message if PID is not assigned to an ES Instance
+                    confDict['PID'] = 0
             confDict['MasterNode'] = hosts[8]
             confDict['DataNode'] = hosts[9]
             confDict['NumOfShards'] = hosts[10]
@@ -2267,7 +2274,7 @@ class ESCoreControllerInit(Resource):
 
         if checkPID(qESCore.ESCorePID) is True:
             try:
-                subprocess.check_call(["service", "dmon-es", "restart"])
+                subprocess.check_call(["service", "dmon-es", "restart", qESCore.ESCoreHeap])
             except Exception as inst:
                 app.logger.error("[%s] : [ERROR] Cannot restart ES Core service with %s and %s",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
@@ -2288,7 +2295,7 @@ class ESCoreControllerInit(Resource):
             return response
         elif checkPID(int(esPIDf)) is True:
             try:
-                subprocess.check_call(["service", "dmon-es", "restart"])
+                subprocess.check_call(["service", "dmon-es", "restart", qESCore.ESCoreHeap])
             except Exception as inst:
                 app.logger.error("[%s] : [ERROR] Cannot restart detached ES Core service with %s and %s",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
@@ -2333,7 +2340,133 @@ class ESCoreControllerInit(Resource):
         # return response
 
 
-@dmon.route('/v1/overlord/core/es/status/<intComp>/property/<intProp>')
+@dmon.route('/v2/overlord/core/es/<hostFQDN>/start')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
+class ESControllerStartInit(Resource):
+    def post(self, hostFQDN):
+        qESCoreStart = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
+        pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
+        if qESCoreStart is None:
+            response = jsonify({'Status': 'Unknown host ' + hostFQDN})
+            response.status_code = 404
+            return response
+
+        if checkPID(qESCoreStart.ESCorePID) is True:
+            proc = psutil.Process(qESCoreStart.ESCorePID)
+            if proc.status() == psutil.STATUS_ZOMBIE:
+                # print >> sys.stderr, 'Process ' + str(qESCoreStart.ESCorePID) + ' is zombie!'
+                app.logger.warning("[%s] : [WARN] Process %s is zombie!",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(qESCoreStart.ESCorePID))
+            else:
+                app.logger.info("[%s] : [INFO] ES Core alredy running with pid %s",
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                str(qESCoreStart.ESCorePID))
+                response = jsonify({'Status': 'Detected ES Core instance', 'PID': qESCoreStart.ESCorePID})
+                response.status_code = 200
+                return response
+
+        os.environ['ES_HEAP_SIZE'] = qESCoreStart.ESCoreHeap
+
+        # check for running detached es core
+        if os.path.isfile(pidESLoc):
+            esPIDf = check_proc(pidESLoc)
+        else:
+            esPIDf = 0
+
+        if esPIDf != qESCoreStart.ESCorePID:
+            app.logger.warning("[%s] : [WARN] Conflicting PID values found, detached pid -> %s, attached -> %s",
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(esPIDf),
+                               str(qESCoreStart.ESCorePID))
+        elif checkPID(int(esPIDf)) is True:
+            app.logger.info("[%s] : [INFO] ES Core alredy running with detached pid %s",
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(qESCoreStart.ESCorePID))
+            response = jsonify({'Status': 'Detected detached ES Core instance', 'PID': esPIDf})
+            response.status_code = 200
+            return response
+        else:
+            try:
+                subprocess.check_call(["service", "dmon-es", "start", qESCoreStart.ESCoreHeap])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                 inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot start ES Core'})
+                response.status_code = 500
+                return response
+            esPID = check_proc(pidESLoc)
+            if not esPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for es core",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read escore pid file'})
+                response.status_code = 500
+                return response
+            qESCoreStart.ESCorePID = esPID
+            qESCoreStart.ESCoreStatus = 'Running'
+            response = jsonify({'Status': 'ES Core Started', 'PID': esPID})
+            response.status_code = 201
+            return response
+
+
+@dmon.route('/v2/overlord/core/es/<hostFQDN>/stop')
+@api.doc(params={'hostFQDN': 'Host FQDN'})
+class ESControllerStopInit(Resource):
+    def post(self, hostFQDN):
+        qESCoreStop = dbESCore.query.filter_by(hostFQDN=hostFQDN).first()
+        pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
+        if qESCoreStop is None:
+            response = jsonify({'Status': 'Unknown host ' + hostFQDN})
+            response.status_code = 404
+            return response
+            # check for running detached es core
+        if os.path.isfile(pidESLoc):
+            esPIDf = check_proc(pidESLoc)
+        else:
+            esPIDf = 0
+        if checkPID(qESCoreStop.ESCorePID) is True:
+            # os.kill(qESCoreStop.ESCorePID, signal.SIGTERM)
+            try:
+                subprocess.check_call(["service", "dmon-es", "stop"])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot stop ES Core service with %s and %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                 inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot stop ES Core'})
+                response.status_code = 500
+                return response
+            qESCoreStop.ESCoreStatus = 'Stopped'
+            response = jsonify({'Status': 'Stopped',
+                                'Message': 'Stopped ES instance at ' + str(qESCoreStop.ESCorePID)})
+            app.logger.info('[%s] : [INFO] Stopped ES instance with pid %s ',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qESCoreStop.ESCorePID)
+            response.status_code = 200
+            return response
+        elif checkPID(esPIDf) is True:
+            try:
+                subprocess.check_call(["service", "dmon-es", "stop"])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot stop detached ES Core service with %s and %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                 inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot stop ES Core'})
+                response.status_code = 500
+                return response
+            qESCoreStop.ESCoreStatus = 'Stopped'
+            response = jsonify({'Status': 'Stopped',
+                                'Message': 'Stopped detached ES instance at ' + str(qESCoreStop.ESCorePID)})
+            app.logger.info('[%s] : [INFO] Stopped ES instance with pid %s ',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), qESCoreStop.ESCorePID)
+            response.status_code = 200
+            return response
+        else:
+            qESCoreStop.ESCoreStatus = 'unknown'
+            response = jsonify({'Status': 'No ES Instance Found',
+                                'Message': 'No ES instance with PID ' + str(qESCoreStop.ESCorePID)})
+            response.status_code = 404
+            return response
+
+
+@dmon.route('/v/overlord/core/es/status/<intComp>/property/<intProp>')
 @api.doc(params={'intComp': 'ES specific component', 'intProp': 'Component specific property'})
 class ESControllerStatus(Resource):
     def get(self, intComp, intProp):
@@ -2413,6 +2546,7 @@ class ESControllerIndex(Resource):
                                 'Message': 'Cannot get index settings'})
             response.status_code = 500
             return response
+
 
 @dmon.route('/v1/overlord/core/es/cluster/health')
 class ESControllerClusterHealth(Resource):

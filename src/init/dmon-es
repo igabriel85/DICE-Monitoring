@@ -219,7 +219,8 @@ case "$1" in
         $0 stop
         sleep 1
     fi
-    $0 start
+    arg2=${2:-1g}
+    $0 start $arg2
     ;;
   *)
     log_success_msg "Usage: $0 {start|stop|restart|force-reload|status}"
