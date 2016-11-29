@@ -2142,7 +2142,11 @@ class ESCoreController(Resource):
             template = templateEnv.get_template(esTemp)
         # print >>sys.stderr, template
         except:
-            return "Tempalte file unavailable!"
+            response = jsonify({'Status': 'Error', 'Message': 'Tempalte file unavailable!'})
+            response.status_code = 500
+            app.logger.error("[%s] : [ERROR] Cannot load es core template at location %s",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), esTemp)
+            return response
 
         infoESCore = {"clusterName": qESCore.clusterName, "nodeName": qESCore.nodeName, "esLogDir": logDir,
                       "MasterNode": qESCore.MasterNode, "DataNode": qESCore.DataNode,
@@ -2179,6 +2183,94 @@ class ESCoreController(Resource):
             # print >> sys.stderr, inst.args
             app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'Error', 'Message': 'Cannot start ES Core'})
+            response.status_code = 500
+            return response
+        qESCore.ESCorePID = esPid
+        qESCore.ESCoreStatus = 'Running'
+        # ES core pid location
+        pidESLoc = os.path.join(pidDir, 'elasticsearch.pid')
+        try:
+            esPIDFile = open(pidESLoc, 'w+')
+            esPIDFile.write(str(esPid))
+            esPIDFile.close()
+        except IOError:
+            response = jsonify({'Error': 'File I/O!'})
+            response.status_code = 500
+            return response
+        response = jsonify({'Status': 'ElasticSearch Core  PID ' + str(esPid)})
+        response.status_code = 200
+        return response
+
+
+@dmon.route('/v2/overlord/core/es')
+class ESCoreControllerInit(Resource):
+    def post(self):
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        esTemp = os.path.join(tmpDir, 'elasticsearch.tmp')  # tmpDir+"/collectd.tmp"
+        esfConf = os.path.join(cfgDir, 'elasticsearch.yml')
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()  # TODO -> curerntly only generates config file for master node
+        if qESCore is None:
+            response = jsonify({"Status": "No master ES instances found!"})
+            response.status_code = 500
+            return response
+
+        if checkPID(qESCore.ESCorePID) is True:
+            subprocess.call(["kill", "-15", str(qESCore.ESCorePID)])
+
+        try:
+            template = templateEnv.get_template(esTemp)
+        except:
+            response = jsonify({'Status': 'Error', 'Message': 'Tempalte file unavailable!'})
+            response.status_code = 500
+            app.logger.error("[%s] : [ERROR] Cannot load es core template at location %s",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), esTemp)
+            return response
+
+        infoESCore = {"clusterName": qESCore.clusterName, "nodeName": qESCore.nodeName, "esLogDir": logDir,
+                      "MasterNode": qESCore.MasterNode, "DataNode": qESCore.DataNode,
+                      "NumberOfShards": qESCore.NumOfShards, "NumberOfReplicas": qESCore.NumOfReplicas,
+                      "IndexBufferSize": qESCore.IndexBufferSize,
+                      "MinShardIndexBufferSize": qESCore.MinShardIndexBufferSize,
+                      "MinIndexBufferSize": qESCore.MinIndexBufferSize,
+                      "FieldDataCacheSize": qESCore.FieldDataCacheSize,
+                      "FieldDataCacheExpires": qESCore.FieldDataCacheExpires,
+                      "FieldDataCacheFilterSize": qESCore.FieldDataCacheFilterSize,
+                      "FieldDataCacheFilterExpires": qESCore.FieldDataCacheFilterExpires,
+                      "ESCoreDebug": qESCore.ESCoreDebug}
+        esConf = template.render(infoESCore)
+        qESCore.conf = esConf
+        # print >>sys.stderr, esConf
+        db.session.commit()
+        esCoreConf = open(esfConf, "w+")
+        esCoreConf.write(esConf)
+        esCoreConf.close()
+
+        # TODO find better solution
+        os.system('rm -rf /opt/elasticsearch/config/elasticsearch.yml')
+        os.system('cp ' + esfConf + ' /opt/elasticsearch/config/elasticsearch.yml ')
+
+        os.environ['ES_HEAP_SIZE'] = qESCore.ESCoreHeap
+
+        # if checkPID(qESCore.ESCorePID) is True:
+        #     subprocess.call(["service", "dmon-es", "restart"])
+        # else:
+        #     subprocess.call(["service", "dmon-es", "start", qESCore.ESCoreHeap])
+
+        esPid = 0
+        try:
+            esPid = subprocess.Popen('/opt/elasticsearch/bin/elasticsearch -d',
+                                     stdout=subprocess.PIPE, close_fds=True).pid  # TODO: Try -p to set pid file location and -d for daemon
+        except Exception as inst:
+            # print >> sys.stderr, 'Error while starting elasticsearch'
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            app.logger.error("[%s] : [ERROR] Cannot start ES Core service with %s and %s",
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'Error', 'Message': 'Cannot start ES Core'})
+            response.status_code = 500
+            return response
         qESCore.ESCorePID = esPid
         qESCore.ESCoreStatus = 'Running'
         # ES core pid location

@@ -10,3 +10,4 @@ flask-restplus==0.7.2
 Jinja2==2.7.3
 psutil==4.0.0
 rdflib==4.2.0
+pytz==2016.7

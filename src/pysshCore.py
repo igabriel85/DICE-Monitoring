@@ -592,7 +592,8 @@ def deployAgent(hostlist, userName, uPassword):
 	app.logger.info('[%s] : [INFO] Moved certificates to proper location %s',
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
-	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT', 'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz'))
+	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT',
+                                     'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz'))
 	app.logger.info('[%s] : [INFO] dmon-agent url %s',
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), agentUrl)
 	try:
