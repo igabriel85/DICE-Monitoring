@@ -2258,7 +2258,7 @@ class ESCoreControllerInit(Resource):
 
         if checkPID(qESCore.ESCorePID) is True:
             test = subprocess.call(["service", "dmon-es", "restart"])
-            return str(type(test))
+            return str(test)
             try:
                 esPID = check_proc(pidESLoc)
                 qESCore.ESCorePID = esPID
@@ -4685,6 +4685,13 @@ class DMONReset(Resource):
                 print str(n.nMonitored)
         return "Done"
 
+
+@dmon.route('/vx/test')
+class WTF(Resource):
+    def get(self):
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()
+
+        return qESCore.nodePort
 
 
 """
