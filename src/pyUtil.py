@@ -699,6 +699,7 @@ def check_proc(pidfile, wait=5):
     :return: -> return pid
     '''
     tick = 0
+    time.sleep(wait)
     while not os.path.exists(pidfile):
         time.sleep(1)
         tick += 1
