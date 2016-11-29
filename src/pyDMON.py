@@ -2253,8 +2253,8 @@ class ESCoreControllerInit(Resource):
         os.system('cp ' + esfConf + ' /opt/elasticsearch/config/elasticsearch.yml ')
 
         os.environ['ES_HEAP_SIZE'] = qESCore.ESCoreHeap
-        if not qESCore.ESCorePID.strip():
-            qESCore.ESCorePID = 0
+        # if not qESCore.ESCorePID.strip():
+        #     qESCore.ESCorePID = 0
 
         if checkPID(qESCore.ESCorePID) is True:
             subprocess.call(["service", "dmon-es", "restart"])
