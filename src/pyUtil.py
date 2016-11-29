@@ -692,7 +692,16 @@ def csvheaders2colNames(csvfile, adname):
         return 0
     return colNames
 
-                        # test = AgentResourceConstructor(['192.12.12.12'], '5000')
+
+def check_proc(pidfile):
+    '''
+    :param pidfile: -> location of pid
+    :return: -> return pid
+    '''
+    stats_pid = open(pidfile)
+    pid = int(stats_pid.read())
+    return pid
+                    # test = AgentResourceConstructor(['192.12.12.12'], '5000')
 #
 # t = test.check()
 # c = test.collectd()
