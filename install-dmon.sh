@@ -23,7 +23,7 @@ apt-get install python-lxml -y
 apt-get install python-pip -y
 apt-get install git -y
 apt-get isntall htop -y
-
+apt-get install cython -y
 
 if [[ $EUID != 0 ]]; then
     echo "D-Mon  requires root privilages! Exiting"
