@@ -63,14 +63,14 @@ sysctl -w vm.max_map_count=262144
 swapoff -a
 
 # TODO fix this so that it must be set before running bootstrap script
-DMONHOME=/opt/IeAT-DICE-Repository
-
-if grep -q "DMONHOME" ~/.bashrc; then
-    echo "DMON home dir is already set"
-else
-    echo "DMONHOME=/opt/IeAT-DICE-Repository" >> ~/.bashrc
-    echo "DMON home dir set"
-fi
+#DMONHOME=/opt/IeAT-DICE-Repository
+#
+#if grep -q "DMONHOME" ~/.bashrc; then
+#    echo "DMON home dir is already set"
+#else
+#    echo "DMONHOME=/opt/IeAT-DICE-Repository" >> ~/.bashrc
+#    echo "DMON home dir set"
+#fi
 
 
 # Install Elasticsearch 2.2.0
