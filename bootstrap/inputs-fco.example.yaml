@@ -1,0 +1,63 @@
+# FCO settings
+
+username: REPLACE_ME-UUID
+password: REPLACE_ME
+# UUID of the key that should be used by plugin.
+agent_key: 21e90e22-31c6-3d64-8590-af03dea25392
+# FCO customer (UUID).
+customer: e50bfd1b-253a-3290-85ff-95e218398b7e
+# FCO network (UUID).
+network: 050cb5ee-a8fd-3f33-8d83-b601460018c8
+# FCO VDC UUID
+vdc: 9799fe42-02ef-3929-88d4-c993a02cbe1d
+
+# DMON uses this to name the cluster
+cluster_name: diceMonitoringCluster
+# Change the C, ST, L, O in the following template.
+openssl_conf: |
+  [req]
+  distinguished_name = req_distinguished_name
+  x509_extensions = v3_req
+  prompt = no
+  [req_distinguished_name]
+  C = SL
+  ST = Slovenia
+  L =  Ljubljana
+  O = YourOrgLtd
+  CN = *
+  [v3_req]
+  subjectKeyIdentifier = hash
+  authorityKeyIdentifier = keyid,issuer
+  basicConstraints = CA:TRUE
+  subjectAltName = IP:0.0.0.0
+  [v3_ca]
+  keyUsage = digitalSignature, keyEncipherment
+  subjectAltName = IP:0.0.0.0
+# Alternatively, set lsf_cert and lsf_key to pre-existing certicate 
+# and key
+lsf_cert: {}
+lsf_key: {}
+
+# this blueprint requires only large image
+large_disk: "50 GB Storage Disk"
+large_image_id: 322f6b64-e341-3939-8b80-93d110db503f
+large_server_type: "4 GB / 2 CPU"
+
+# linux image's user name, probably ubuntu
+agent_user: ubuntu
+
+# fixed parameters - change only when you know what you are doing
+repository_url: git://github.com/igabriel85/IeAT-DICE-Repository.git
+java_flavor: openjdk
+java_version: '7'
+service_url: https://cp.diceproject.flexiant.net
+
+# the following inputs are not used, so dummy names are ok
+dns_server: DONT_CARE
+medium_disk: DONT_CARE
+medium_image_id: DONT_CARE
+medium_server_type: DONT_CARE
+small_disk: DONT_CARE
+small_image_id: DONT_CARE
+small_server_type: DONT_CARE
+

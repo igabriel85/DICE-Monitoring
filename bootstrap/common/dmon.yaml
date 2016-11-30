@@ -1,0 +1,106 @@
+inputs:
+
+  cluster_name:
+    description: >
+      The name of the monitoring cluster, used in elacticsearch and
+      logstash.
+    default: diceMonitoringCluster
+
+  # optional: provide either openssl_conf, or both lsf_cert and lsf_key
+  openssl_conf:
+    description: >
+      OpenSSL configuration contents for an auto-generated self-signed
+      certificate to be used in logstash.
+    default: {}
+
+  # optional: provide either openssl_conf, or both lsf_cert and lsf_key
+  lsf_cert:
+    description: Contents of the certificate to be used in logstash.
+    default: {}
+
+  # optional: provide either openssl_conf, or both lsf_cert and lsf_key
+  lsf_key:
+    description: Contents of the private key to be used in logstash.
+    default: {}
+
+  repository_url:
+    description: URL to the repository containing the source of Dmon.
+    default: git://github.com/igabriel85/IeAT-DICE-Repository.git
+
+
+node_types:
+
+  dice.components.dmon.Core:
+    derived_from: dice.chef.SoftwareComponent
+    properties:
+      create_runlist:
+        default:
+          - recipe[dice_common::host]
+          - recipe[apt::default]
+          - recipe[git::default]
+          - recipe[java::default]
+          - recipe[dmon::default]
+          - recipe[dmon::elasticsearch]
+          - recipe[dmon::kibana]
+          - recipe[dmon::logstash]
+      chef_attributes:
+        default:
+          java:
+            jdk_version: "7"
+            install_flavor: openjdk
+          dmon:
+            git_url:            { get_input: repository_url }
+            lsf_cert:           { get_input: lsf_cert       }
+            lsf_key:            { get_input: lsf_key        }
+            openssl_conf:       { get_input: openssl_conf   }
+            es: { cluster_name: { get_input: cluster_name   } }
+            kb: { cluster_name: { get_input: cluster_name   } }
+            ls: { cluster_name: { get_input: cluster_name   } }
+
+  dice.firewall_rules.dmon.Core:
+    derived_from: dice.firewall_rules.Base
+    properties:
+      rules:
+        default:
+          - remote_ip_prefix: 0.0.0.0/0
+            port_range_min: 5000
+            port_range_max: 5002
+          - remote_ip_prefix: 0.0.0.0/0
+            port: 5601
+          - remote_ip_prefix: 0.0.0.0/0
+            port: 25826
+            protocol: udp
+
+
+node_templates:
+
+  dmon_ip:
+    type: dice.VirtualIP
+
+  dmon_firewall:
+    type: dice.firewall_rules.dmon.Core
+
+  dmon_vm:
+    type: dice.hosts.Large
+    relationships:
+      - type: dice.relationships.ProtectedBy
+        target: dmon_firewall
+      - type: dice.relationships.IPAvailableFrom
+        target: dmon_ip
+
+  dmon_service:
+    type: dice.components.dmon.Core
+    relationships:
+      - type: dice.relationships.ContainedIn
+        target: dmon_vm
+
+
+outputs:
+
+  kibana_url:
+    description: Address of the Kibana web interface
+    value:
+      concat:
+       - "http://"
+       - { get_attribute: [ dmon_ip, floating_ip_address ] }
+       - ":5601"
