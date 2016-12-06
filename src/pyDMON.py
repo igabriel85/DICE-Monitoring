@@ -2107,12 +2107,18 @@ class ESCoreController(Resource):
                     if checkPID(esPIDf):
                         confDict['Stats'] = 'detached'
                         confDict['PID'] = esPIDf
+                        app.logger.warning('[%s] : Detached ES Core service found at PID %s, setting to detached',
+                                           datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                           str(esPIDf))
                 else:
                     #hosts.ESCorePID = 0
                     #hosts.ESCoreStatus = 'unknown'
                     # todo status detached if pid only in file not in sqlite, read pid from file
                     confDict['Status'] = 'unknown'  #TODO: Document failed message if PID is not assigned to an ES Instance
                     confDict['PID'] = 0
+                    app.logger.warning('[%s] : ES Core service not found, setting to unknown',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                       str(esPIDf))
             confDict['MasterNode'] = hosts[8]
             confDict['DataNode'] = hosts[9]
             confDict['NumOfShards'] = hosts[10]
@@ -3077,11 +3083,25 @@ class LSCoreController(Resource):
             if checkPID(hosts[15]):
                 confDict['Status'] = hosts[8]
                 confDict['PID'] = hosts[15]
+                app.logger.info('[%s] : LS Core service  found at PID %s',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                   str(hosts[15]))
             else:
-                app.logger.warning('[%s] : LS Core service not found at PID %s, setting to failed',
-                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hosts[7]))
-                confDict['Status'] = 'failed'  #TODO: Document failed message if PID is not assigned to an LS Instance
-                confDict['PID'] = 0
+                pidLSLoc = os.path.join(pidDir, 'logstash.pid')
+                if os.path.isfile(pidLSLoc):
+                    esPIDf = check_proc(pidLSLoc)
+                    if checkPID(esPIDf):
+                        confDict['Status'] = 'detached'  #TODO: Document failed message if PID is not assigned to an LS Instance
+                        confDict['PID'] = esPIDf
+                        app.logger.warning('[%s] : Detached LS Core service  found at PID %s, setting to detached',
+                                           datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                           esPIDf)
+                    else:
+                        confDict['Status'] = 'unknown'  # TODO: Document failed message if PID is not assigned to an LS Instance
+                        confDict['PID'] = 0
+                        app.logger.warning('[%s] : LS Core service , setting to unknonw',
+                                           datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
             confDict['LSCoreHeap'] = hosts[14]
             resList.append(confDict)
         response = jsonify({'LS Instances': resList})
@@ -3251,6 +3271,221 @@ class LSCoreController(Resource):
                             'YarnHistory': yarnStatus})
         response.status_code = 200
         return response
+
+
+@dmon.route('/v2/overlord/core/ls')
+class LSCoreControllerInit(Resource):
+    def post(self):
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        lsTemp = os.path.join(tmpDir, 'logstash.tmp')  # tmpDir+"/collectd.tmp"
+        lsfCore = os.path.join(cfgDir, 'logstash.conf')
+        # qSCore = db.session.query(dbSCore.hostFQDN).first()
+        qSCore = dbSCore.query.first()  # TODO: currently only one LS instance supported
+        # return qSCore
+        if qSCore is None:
+            response = jsonify({"Status": "No LS instances registered"})
+            response.status_code = 500
+            app.logger.warning('[%s] : [WARN] No LS instance registred',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()  # TODO: only works with the master node
+        if qESCore is None:
+            response = jsonify({"Status": "No ES instances registered"})
+            response.status_code = 500
+            app.logger.warning('[%s] : [WARN] No ES instance registred',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        if checkPID(qSCore.LSCorePID) is True:
+            subprocess.call(['kill', '-9', str(qSCore.LSCorePID)])
+            app.logger.info('[%s] : [INFO] Killed LS Instance at %s',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(qSCore.LSCorePID))
+
+        try:
+            template = templateEnv.get_template(lsTemp)
+        # print >>sys.stderr, template
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] LS tempalte file unavailable with %s and %s',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            # print >> sys.stderr, type(inst)
+            # print >> sys.stderr, inst.args
+            response = jsonify({"Status": "LS Tempalte file unavailable!"})
+            response.status_code = 404
+            return response
+
+        if qSCore.sslCert == 'default':
+            certLoc = os.path.join(credDir, 'logstash-forwarder.crt')
+        else:
+            certLoc = os.path.join(credDir, qSCore.sslCert + '.crt')
+
+        if qSCore.sslKey == 'default':
+            keyLoc = os.path.join(credDir, 'logstash-forwarder.key')
+        else:
+            keyLoc = os.path.join(credDir, qSCore.sslKey + '.key')
+
+        if qSCore.LSCoreStormEndpoint == 'None':
+            StormRestIP = 'None'
+        else:
+            StormRestIP = qSCore.LSCoreStormEndpoint
+        qNodeRoles = db.session.query(dbNodes.nRoles).all()
+        if qNodeRoles is None:
+            uniqueRolesList = ['unknown']
+        else:
+            uList = []
+            for r in qNodeRoles:
+                uList.append(r[0].split(', '))
+            uniqueRoles = set(x for l in uList for x in l) #TODO find better solution for finding unique roles
+            uniqueRolesList = list(uniqueRoles)
+
+        qMetInt =dbMetPer.query.first()
+        if qMetInt is None:
+            stormInterval = '60'
+        else:
+            stormInterval = qMetInt.stormMet
+        if 'storm' in uniqueRolesList:
+            stormStatus = 'Storm registered'
+            bolts, spouts = checkStormSpoutsBolts(StormRestIP, qSCore.LSCoreStormPort, qSCore.LSCoreStormTopology)
+            if spouts == 0 or bolts == 0:
+                uniqueRolesList.remove('storm')
+                app.logger.warning('[%s] : [WARN] Storm topology spouts and botls not found, ignoring Storm',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                stormStatus = 'Storm ignored'
+        else:
+            stormStatus = 'Not registered'
+            spouts = 0
+            bolts = 0
+        app.logger.info('[%s] : [INFO] Storm Status -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), stormStatus)
+
+        qBDService = dbBDService.query.first()
+        if qBDService is None:
+            yarnHEnd = 'None'
+            yarnHPort = '19888'
+            yarnHPoll = '30'
+            yarnStatus = 'Not Registered'
+        else:
+            yarnHEnd = qBDService.yarnHEnd
+            yarnHPort = qBDService.yarnHPort
+            yarnHPoll = qBDService.yarnHPoll
+            yarnStatus = 'Registered'
+
+        app.logger.info('[%s] : [INFO] Yarn History Status -> %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), yarnStatus)
+
+        # appname tag is set the same for spark and yarn
+        qActiveApp = dbApp.query.filter_by(jobID='ACTIVE').first()
+        if qActiveApp is None:
+            app.logger.warning('[%s] : [WARN] No active applications registered tag set to default',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            appName = 'default'
+        else:
+            appName = qActiveApp.jobID
+            app.logger.info('[%s] : [INFO] Tag for application %s set',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), appName)
+
+        infoSCore = {"sslcert": certLoc, "sslkey": keyLoc, "udpPort": qSCore.udpPort,
+                     "ESCluster": qSCore.outESclusterName, "EShostIP": qESCore.hostIP,
+                     "EShostPort": qESCore.nodePort, "StormRestIP": StormRestIP,
+                     "StormRestPort": qSCore.LSCoreStormPort, "StormTopologyID": qSCore.LSCoreStormTopology,
+                     'storm_interval': stormInterval, 'roles': uniqueRolesList, 'myIndex': qSCore.diceIndex,
+                     'nSpout': spouts, 'nBolt': bolts, 'yarnHEnd': yarnHEnd, 'yarnHPort': yarnHPort,
+                     'yarnHPoll': yarnHPoll, 'appName': appName}
+        sConf = template.render(infoSCore)
+        qSCore.conf = sConf
+        # print >>sys.stderr, esConf
+        db.session.commit()
+
+        lsCoreConf = open(lsfCore, "w+")
+        lsCoreConf.write(sConf)
+        lsCoreConf.close()
+
+        os.environ['LS_HEAP_SIZE'] = os.getenv('LS_HEAP_SIZE',
+                                               qSCore.LSCoreHeap)  # TODO: if heap size set in env then use it if not use db one
+        app.logger.info('[%s] : [INFO] LS Heap size set to %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                        str(os.environ['LS_HEAP_SIZE']))
+
+        lsLogfile = os.path.join(logDir, 'logstash.log')
+        lsPIDFileLoc = os.path.join(pidDir, 'logstash.pid')
+
+        if os.path.isfile(lsPIDFileLoc):
+            lsPidf = check_proc(lsPIDFileLoc)
+        else:
+            lsPidf = 0
+
+        if lsPidf != qSCore.LSCorePID:
+            app.logger.warning("[%s] : [WARN] Conflicting PID values found, detached pid -> %s, attached -> %s",
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(lsPidf),
+                               str(qSCore.LSCorePID))
+
+        if checkPID(qSCore.LSCorePID) is True:
+            try:
+                subprocess.check_call(["service", "dmon-ls", "restart", qSCore.LSCoreHeap, qSCore.LSCoreWorkers])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot restart LS Core service with %s and %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                 inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot restart LS Core'})
+                response.status_code = 500
+                return response
+            lsPID = check_proc(lsPIDFileLoc)
+            if not lsPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for ls core",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read lscore pid file'})
+                response.status_code = 500
+                return response
+            qSCore.ESCorePID = lsPID
+            qSCore.ESCoreStatus = 'Running'
+            response = jsonify({'Status': 'LS Core Restarted', 'PID': lsPID})
+            response.status_code = 201
+            return response
+        elif checkPID(int(lsPidf)) is True:
+            try:
+                subprocess.check_call(["service", "dmon-ls", "restart", qSCore.LSCoreHeap, qSCore.LSCoreWorkers])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot restart detached LS Core service with %s and %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                 inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot restart detached LS Core'})
+                response.status_code = 500
+                return response
+            lsPID = check_proc(lsPIDFileLoc)
+            if not lsPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for ls core",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read ls core pid file'})
+                response.status_code = 500
+                return response
+            qSCore.LSCorePID = lsPID
+            qSCore.LSCoreStatus = 'Running'
+            response = jsonify({'Status': 'LS Core  Restarted and attached', 'PID': lsPID})
+            response.status_code = 201
+            return response
+        else:
+            try:
+                subprocess.check_call(["service", "dmon-ls", "start", qSCore.LSCoreHeap, qSCore.LSCoreWorkers])
+            except Exception as inst:
+                app.logger.error("[%s] : [ERROR] Cannot start LS Core service with %s and %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                 inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot start LS Core'})
+                response.status_code = 500
+                return response
+            lsPID = check_proc(lsPIDFileLoc)
+            if not lsPID:
+                app.logger.error("[%s] : [ERROR] Can't read pidfile for ls core",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read escore pid file'})
+                response.status_code = 500
+                return response
+            qSCore.LSCorePID = lsPID
+            qSCore.LSCoreStatus = 'Running'
+            response = jsonify({'Status': 'LS Core Started', 'PID': lsPID})
+            response.status_code = 201
+            return response
 
 
 @dmon.route('/v1/overlord/core/ls/<hostFQDN>/status')
