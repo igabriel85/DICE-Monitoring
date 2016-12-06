@@ -56,7 +56,10 @@ start() {
 
   LS_JAVA_OPTS="${LS_JAVA_OPTS} -Djava.io.tmpdir=${LS_HOME}"
   HOME=${LS_HOME}
+  arg2=${2:-1g}
+  LS_HEAP_SIZE=$arg2
   export PATH HOME LS_HEAP_SIZE LS_JAVA_OPTS LS_USE_GC_LOGGING
+  echo "Heap size is set to -> $arg2"
 
   # chown doesn't grab the suplimental groups when setting the user:group - so we have to do it for it.
   # Boy, I hope we're root here.
