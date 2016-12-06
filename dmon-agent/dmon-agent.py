@@ -20,6 +20,7 @@ limitations under the License.
 from flask import send_file
 from flask import request
 from flask.ext.restplus import Resource, fields
+from flask import stream_with_context, Response, send_from_directory
 import os
 import jinja2
 import sys
@@ -45,6 +46,8 @@ lsfConf = '/etc/logstash-forwarder.conf'
 lsfList = os.path.join(tmpDir, 'logstashforwarder.list')
 lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
 certLoc = '/opt/certs/logstash-forwarder.crt'
+
+stormLogDir = '/home/ubuntu/apache-storm-0.9.5/logs'
 
 # supported aux components
 # auxList = ['collectd', 'lsf', 'jmx']
@@ -489,6 +492,42 @@ class AgentMetricsSystem(Resource):
                                     datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             response.status_code = 404
             return response
+
+
+@agent.route('/v1/bdp/storm/logs')
+class FetchStormLogs(Resource):
+    def get(self):
+        logFile = os.path.join(logDir, 'dmon-agent.log')
+        if not os.path.isfile(logFile):
+            app.logger.warning('[%s] : [WARN] Storm logfile not found at %s: ',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(logFile))
+
+            response = jsonify({'Status': 'Not Found', 'Message': 'No storm logfile found'})
+            response.status_code = 404
+            return response
+        def readFile(lgFile):
+            with open(lgFile) as f:
+                yield f.readline()
+        return Response(stream_with_context(readFile(logFile)))
+
+
+@agent.route('/v2/bdp/storm/logs')
+class FetchStormLogsSD(Resource):
+    def get(self):
+        logFile = os.path.join(stormLogDir, 'worker-6700.log')
+        if not os.path.isfile(logFile):
+            app.logger.warning('[%s] : [WARN] Storm logfile not found at %s: ',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(logFile))
+
+            response = jsonify({'Status': 'Not Found', 'Message': 'No storm logfile found'})
+            response.status_code = 404
+            return response
+
+        return send_from_directory(stormLogDir, 'worker-6700.log', as_attachment=True)
+
+
+
+
 
 @agent.route('/v1test')
 class Test(Resource):

@@ -2,7 +2,7 @@ from flask import Flask
 from flask.ext.restplus import Api
 
 app = Flask("dmon-agent")
-api = Api(app, version='0.0.4', title='DICE Monitoring Agent API',
+api = Api(app, version='0.0.5', title='DICE Monitoring Agent API',
           description="RESTful API for the DICE Monitoring Platform  Agent (dmon-agent)",
           )
 
