@@ -32,6 +32,8 @@ import glob
 import tarfile
 from pyUtil import *
 from app import *
+import tempfile
+
 
 
 # directory location
@@ -532,10 +534,11 @@ class FetchStormLogsSDAll(Resource):
             response.status_code = 404
             return response
 
-        tarlog = os.path.join(stDir, 'workerlogs.tar')
+        tmpDir = tempfile.gettempdir()
+        tarlog = os.path.join(tmpDir, 'workerlogs.tar')
         if os.path.isfile(tarlog):
             os.remove(tarlog)
-            app.logger.warning('[%s] : [WARN] Old Storm workerlog removed',
+            app.logger.warning('[%s] : [WARN] Old Storm workerlog detected and removed',
                                datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         out = tarfile.open(tarlog, mode='w')
         try:
@@ -554,7 +557,7 @@ class FetchStormLogsSDAll(Resource):
             response.status_code = 404
             return response
         path, filename = os.path.split(tarlog)
-        return send_from_directory(stDir, filename, as_attachment=True, mimetype='application/tar')
+        return send_from_directory(tmpDir, filename, as_attachment=True, mimetype='application/tar')
 
 
 @agent.route('/v3/bdp/storm/logs')
