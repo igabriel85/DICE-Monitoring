@@ -28,7 +28,8 @@ import subprocess
 import platform
 import logging
 from logging.handlers import RotatingFileHandler
-
+import glob
+import tarfile
 from pyUtil import *
 from app import *
 
@@ -48,6 +49,7 @@ lsfGPG = os.path.join(tmpDir, 'GPG-KEY-elasticsearch')
 certLoc = '/opt/certs/logstash-forwarder.crt'
 
 stormLogDir = '/home/ubuntu/apache-storm-0.9.5/logs'
+
 
 # supported aux components
 # auxList = ['collectd', 'lsf', 'jmx']
@@ -497,7 +499,9 @@ class AgentMetricsSystem(Resource):
 @agent.route('/v1/bdp/storm/logs')
 class FetchStormLogs(Resource):
     def get(self):
-        logFile = os.path.join(logDir, 'dmon-agent.log')
+        stDir = os.getenv('STORM_LOG', stormLogDir)
+
+        logFile = os.path.join(stDir, 'worker-6700.log')
         if not os.path.isfile(logFile):
             app.logger.warning('[%s] : [WARN] Storm logfile not found at %s: ',
                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(logFile))
@@ -505,6 +509,7 @@ class FetchStormLogs(Resource):
             response = jsonify({'Status': 'Not Found', 'Message': 'No storm logfile found'})
             response.status_code = 404
             return response
+
         def readFile(lgFile):
             with open(lgFile) as f:
                 yield f.readline()
@@ -512,9 +517,68 @@ class FetchStormLogs(Resource):
 
 
 @agent.route('/v2/bdp/storm/logs')
+class FetchStormLogsSDAll(Resource):
+    def get(self):
+        stDir = os.getenv('STORM_LOG', stormLogDir)
+        lFile = []
+        workerFile = 'worker-*.log'
+        # logFile = os.path.join(stDir, workerFile)
+        for name in glob.glob(os.path.join(stDir, workerFile)):
+            lFile.append(name)
+        if not lFile:
+            app.logger.warning('[%s] : [WARN] No Storm worker logs found',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'No Storm worker logs found'})
+            response.status_code = 404
+            return response
+
+        tarlog = os.path.join(stDir, 'workerlogs.tar')
+        if os.path.isfile(tarlog):
+            os.remove(tarlog)
+            app.logger.warning('[%s] : [WARN] Old Storm workerlog removed',
+                               datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        out = tarfile.open(tarlog, mode='w')
+        try:
+            for file in lFile:
+                path, filename = os.path.split(file)
+                out.add(file, arcname=filename)
+        finally:
+            out.close()
+            app.logger.info('[%s] : [INFO] Storm log tar file created at %s containing %s',
+                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(tarlog), str(lFile))
+        if not os.path.isfile(tarlog):
+            app.logger.warning('[%s] : [WARN] Storm logfile tar not found at %s: ',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(tarlog))
+
+            response = jsonify({'Status': 'Not Found', 'Message': 'No storm tar logfile found'})
+            response.status_code = 404
+            return response
+        path, filename = os.path.split(tarlog)
+        return send_from_directory(stDir, filename, as_attachment=True, mimetype='application/tar')
+
+
+@agent.route('/v3/bdp/storm/logs')
 class FetchStormLogsSD(Resource):
     def get(self):
-        logFile = os.path.join(stormLogDir, 'worker-6700.log')
+        stDir = os.getenv('STORM_LOG', stormLogDir)
+        lFile = []
+        workerFile = 'worker-' + ('[0-9]' * 4) + '.log'
+        # logFile = os.path.join(stDir, workerFile)
+        for name in glob.glob(os.path.join(stDir, workerFile)):
+            lFile.append(name)
+        if len(lFile) > 1:
+            app.logger.error('[%s] : [ERROR] More then one Storm worker logfile, -> %s: ',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(lFile))
+            response = jsonify({'Status': 'To many worker logs', 'Logs': lFile})
+            response.status_code = 500
+            return response
+        if not lFile:
+            app.logger.warning('[%s] : [WARN] No Storm worker logs found',
+                            datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'No Storm worker logs found'})
+            response.status_code = 404
+            return response
+        logFile = lFile[0]
         if not os.path.isfile(logFile):
             app.logger.warning('[%s] : [WARN] Storm logfile not found at %s: ',
                             datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(logFile))
@@ -522,8 +586,11 @@ class FetchStormLogsSD(Resource):
             response = jsonify({'Status': 'Not Found', 'Message': 'No storm logfile found'})
             response.status_code = 404
             return response
+        path, filename = os.path.split(logFile)
+        return send_from_directory(stDir, filename, as_attachment=True, mimetype='text/plain')
 
-        return send_from_directory(stormLogDir, 'worker-6700.log', as_attachment=True)
+
+
 
 
 
@@ -550,7 +617,7 @@ class Test(Resource):
 
 
 if __name__ == '__main__':
-    handler = RotatingFileHandler(os.path.join(logDir, 'dmon-agent.log'), maxBytes=10000000, backupCount=5)
+    handler = RotatingFileHandler(os.path.join(logDir, 'dmon-agent.log'), maxBytes=100000000, backupCount=5)
     handler.setLevel(logging.INFO)
     app.logger.addHandler(handler)
     log = logging.getLogger('werkzeug')
