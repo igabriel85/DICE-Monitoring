@@ -56,6 +56,9 @@ import psutil
 from logging.handlers import RotatingFileHandler
 import time
 from datetime import datetime
+import glob
+import multiprocessing
+from threadRequest import getStormLogs
 
 # directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
@@ -1352,6 +1355,88 @@ class DetectStormRA(Resource):
         response.status_code = 201
         dmon.reset()
         return response
+
+
+@dmon.route('/v1/overlord/storm/logs')
+class StormLogs(Resource):
+    def get(self):
+        workerFile = 'workerlogs_*.tar'
+        lFile = []
+        for name in glob.glob(os.path.join(outDir, workerFile)):
+            path, filename = os.path.split(name)
+            lFile.append(filename)
+
+        response = jsonify({'StormLogs': lFile})
+        response.status_code = 200
+        app.logger.info('[%s] : [INFO] Available Storm logs %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(lFile))
+        return response
+
+    def post(self):
+        nodeList = []
+        nodesAll = db.session.query(dbNodes.nodeFQDN, dbNodes.nRoles, dbNodes.nodeIP).all()
+        if nodesAll is None:
+            response = jsonify({'Status': 'No monitored nodes found'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No registered nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        for nl in nodesAll:
+            app.logger.info('[%s] : [INFO] Node name -> %s ',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nl[0]))
+            if 'yarn' in nl[1].split(', '): #TODO modify to STORM
+                nodeList.append(nl[2])
+
+        if not nodeList:
+            response = jsonify({'Status': 'No nodes with role storm found'})
+            response.status_code = 404
+            return response
+
+        stormLogAgent = AgentResourceConstructor(['85.120.206.45', '85.120.206.47', '85.120.206.48', '85.120.206.49'], '5222')
+        listLogs = stormLogAgent.stormLogs()
+        resourceList = ['http://85.120.206.45:5222/agent/v2/bdp/storm/logs',
+                        'http://85.120.206.47:5222/agent/v2/bdp/storm/logs',
+                        'http://85.120.206.48:5222/agent/v2/bdp/storm/logs',
+                        'http://85.120.206.49:5222/agent/v2/bdp/storm/logs']
+        global backProc
+        backProc = multiprocessing.Process(target=getStormLogs, args=(resourceList, ))
+        backProc.daemon = True
+        backProc.start()
+        return 'started: ' + str(backProc.pid)
+        # return str(type(backProc))
+
+
+@dmon.route('/v1/overlord/storm/logs/active')
+class StormLogFetchActive(Resource):
+    def get(self):
+        try:
+            pid = str(backProc.pid)
+            alive = str(backProc.is_alive())
+        except Exception as inst:
+            app.logger.warning('[%s] : [WARN] No Background proc detected with %s and %s ',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            response = jsonify({'Status': 'No background process detected'})
+            response.status_code = 404
+            return response
+        response = jsonify({'PID': pid,
+                            'Alive': alive})
+        response.status_code = 200
+        return response
+
+
+@dmon.route('/v1/overlord/storm/logs/<log>')
+class StormLogsLog(Resource):
+    def get(self, log):
+        if not os.path.isfile(os.path.join(outDir, log)):
+            response = jsonify({'Status': 'Not found',
+                                'StormLog': log})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] Strom log %s not found',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), log)
+            return response
+        app.logger.info('[%s] : [INFO] Served Storm log %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), log)
+        return send_from_directory(outDir, log, as_attachment=True, mimetype='application/tar')
 
 
 @dmon.route('/v1/overlord/detect/yarn')

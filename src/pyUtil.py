@@ -128,6 +128,7 @@ def checkUnique(nodeList):
 
 class AgentResourceConstructor():
     uriRoot = '/agent/v1'
+    uriRoot2 = '/agent/v2'
     chck = '/check'
     clctd = '/collectd'
     logsf = '/lsf'
@@ -138,6 +139,7 @@ class AgentResourceConstructor():
     noder = '/node'
     startr = '/start'
     stopr = '/stop'
+    slogs = '/bdp/storm/logs'
 
     def __init__(self, IPList, Port):
         self.IPList = IPList
@@ -238,6 +240,13 @@ class AgentResourceConstructor():
                                                AgentResourceConstructor.stopr, comp)
             confList.append(resource)
         return confList
+
+    def stormLogs(self):
+        logList = []
+        for ip in self.IPList:
+            resource = 'http://%s:%s%s%s' %(ip, self.Port, AgentResourceConstructor.uriRoot2, AgentResourceConstructor.slogs)
+            logList.append(resource)
+        return logList
 
 
 def dbBackup(db, source, destination, version=1):
@@ -708,29 +717,40 @@ def check_proc(pidfile, wait=5):
     stats_pid = open(pidfile)
     pid = int(stats_pid.read())
     return pid
-                    # test = AgentResourceConstructor(['192.12.12.12'], '5000')
-#
-# t = test.check()
-# c = test.collectd()
-# l = test.lsf()
-# j = test.jmx()
-# d = test.deploy()
-# n = test.node()
-# s = test.start()
-# st = test.stop()
-# ss = test.startSelective('lsf')
-# sts = test.stopSelective('collectd')
-# log = test.logs('lsf')
-# conf = test.conf('collectd')
-# print t
-# print c
-# print l
-# print j
-# print d
-# print n
-# print s
-# print st
-# print ss
-# print sts
-# print log
-# print conf
+
+
+
+
+
+if __name__ == '__main__':
+#     db.create_all()
+#     test = DetectBDService()
+#     what = test.detectYarnHS()
+#     print what
+    test = AgentResourceConstructor(['85.120.206.45', '85.120.206.47', '85.120.206.48', '85.120.206.49'], '5222')
+    listLogs = test.stormLogs()
+    print listLogs
+    # t = test.check()
+    # c = test.collectd()
+    # l = test.lsf()
+    # j = test.jmx()
+    # d = test.deploy()
+    # n = test.node()
+    # s = test.start()
+    # st = test.stop()
+    # ss = test.startSelective('lsf')
+    # sts = test.stopSelective('collectd')
+    # log = test.logs('lsf')
+    # conf = test.conf('collectd')
+    # print t
+    # print c
+    # print l
+    # print j
+    # print d
+    # print n
+    # print s
+    # print st
+    # print ss
+    # print sts
+    # print log
+    # print conf
