@@ -58,7 +58,7 @@ import time
 from datetime import datetime
 import glob
 import multiprocessing
-from threadRequest import getStormLogs
+#from threadRequest import getStormLogs
 
 # directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
@@ -1375,6 +1375,18 @@ class StormLogs(Resource):
     def post(self):
         nodeList = []
         nodesAll = db.session.query(dbNodes.nodeFQDN, dbNodes.nRoles, dbNodes.nodeIP).all()
+        try:
+            global backProc
+            alive = backProc.is_alive()
+            if alive:
+                response = jsonify({'Status': 'Only one background process is permited', 'PID': str(backProc.pid),
+                                    'BProcess': 'Active'})
+                response.status_code = 409
+                return response
+        except Exception as inst:
+            app.logger.warning('[%s] : [WARN] First startup detected, skipping backgroundproces alive check',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+
         if nodesAll is None:
             response = jsonify({'Status': 'No monitored nodes found'})
             response.status_code = 404
@@ -1384,7 +1396,8 @@ class StormLogs(Resource):
         for nl in nodesAll:
             app.logger.info('[%s] : [INFO] Node name -> %s ',
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nl[0]))
-            if 'yarn' in nl[1].split(', '): #TODO modify to STORM
+            
+            if 'storm' in nl[1].split(', '): #TODO modify to STORM
                 nodeList.append(nl[2])
 
         if not nodeList:
@@ -1392,18 +1405,15 @@ class StormLogs(Resource):
             response.status_code = 404
             return response
 
-        stormLogAgent = AgentResourceConstructor(['85.120.206.45', '85.120.206.47', '85.120.206.48', '85.120.206.49'], '5222')
-        listLogs = stormLogAgent.stormLogs()
-        resourceList = ['http://85.120.206.45:5222/agent/v2/bdp/storm/logs',
-                        'http://85.120.206.47:5222/agent/v2/bdp/storm/logs',
-                        'http://85.120.206.48:5222/agent/v2/bdp/storm/logs',
-                        'http://85.120.206.49:5222/agent/v2/bdp/storm/logs']
-        global backProc
-        backProc = multiprocessing.Process(target=getStormLogs, args=(resourceList, ))
+        stormLogAgent = AgentResourceConstructor(nodeList, '5222')
+        resourceList = stormLogAgent.stormLogs()
+
+        backProc = multiprocessing.Process(target=getStormLogsGreen, args=(resourceList, ))
         backProc.daemon = True
         backProc.start()
-        return 'started: ' + str(backProc.pid)
-        # return str(type(backProc))
+        response = jsonify({'Status': 'Started background process', 'PID': str(backProc.pid)})
+        response.status_code = 201
+        return response
 
 
 @dmon.route('/v1/overlord/storm/logs/active')

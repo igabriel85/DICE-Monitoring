@@ -24,6 +24,11 @@ import json
 from app import *
 from datetime import *
 import time
+from urlparse import urlparse
+import os
+import shutil
+import glob
+import tarfile
 
 
 headers = {'content-type': 'application/json'}
@@ -41,6 +46,7 @@ class GreenletRequests():
 
     def __init__(self, resourceList):
         self.resourceList = resourceList
+        self.outputDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
 
     def parallelGet(self):
         queue = gevent.queue.Queue()
@@ -54,6 +60,23 @@ class GreenletRequests():
 
         # print str(gList)
         app.logger.info('[%s] : [INFO] gList %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                        str(gList))
+        gevent.joinall(gList)
+
+        return GreenletRequests.NodeResponsesGet
+
+    def parallelFileGet(self):
+        queue = gevent.queue.Queue()
+        for i in self.resourceList:
+            queue.put(i)
+
+        gList = []
+        for t in range(len(self.resourceList)):
+            gl = gevent.spawn(getrequestFile, queue, self.outputDir)
+            gList.append(gl)
+
+        # print str(gList)
+        app.logger.info('[%s] : [INFO] gFileList %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                         str(gList))
         gevent.joinall(gList)
 
@@ -112,7 +135,6 @@ class GreenletRequests():
 
         return GreenletRequests.NodeResponsesPut
 
-
     def parallelDelete(self):
         queue = gevent.queue.Queue()
         for i in self.resourceList:
@@ -170,6 +192,46 @@ def getRequest(queue):
         GreenletRequests.NodeResponsesGet.append(response)
         # print 'Threaded GET with ID ' + str(GreenletRequests.ng) + ' executed for ' + resURI
         app.logger.info('[%s] : [INFO] Thread GET with ID %s executed for %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                        str(GreenletRequests.ng), resURI)
+        GreenletRequests.ng += 1
+        gevent.sleep(0)
+
+
+def getrequestFile(queue, output):
+    response = {}
+    while not queue.empty():
+        resURI = queue.get(timeout=1)
+        app.logger.info('[%s] : [INFO] Thread File GET with ID %s starts execution for %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                        str(GreenletRequests.ng), resURI)
+        hostURL = urlparse(resURI)
+        hostID = hostURL.hostname
+        logName = 'worker-%s.tar' % hostID
+        logDump = os.path.join(output, logName)
+        try:
+            r = requests.get(resURI, timeout=2, stream=True)
+            if r.status_code == 200:
+                with open(logDump, 'wb') as out_file:  # TODO investaigate chunck writter
+                    shutil.copyfileobj(r.raw, out_file)
+
+            response['Node'] = resURI
+            response['StatusCode'] = r.status_code
+            response['LogName'] = logDump
+            response['Headers'] = r.headers
+            del r
+        except requests.exceptions.Timeout:
+            response['Node'] = resURI
+            response['StatusCode'] = 408
+            response['LogName'] = logDump
+        except requests.exceptions.ConnectionError:
+            response['Node'] = resURI
+            response['StatusCode'] = 404
+            response['LogName'] = logDump
+
+        GreenletRequests.NodeResponsesGet.append(response)
+        # print 'Threaded GET with ID ' + str(GreenletRequests.ng) + ' executed for ' + resURI
+        app.logger.info('[%s] : [INFO] Thread File GET with ID %s executed for %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                         str(GreenletRequests.ng), resURI)
         GreenletRequests.ng += 1
         gevent.sleep(0)
@@ -272,16 +334,42 @@ def deleteRequest(queue):
         GreenletRequests.nd += 1
         gevent.sleep(0)
 
-#resourceList = ['http://109.231.121.135:5000/agent/v1/check', 'http://109.231.121.194:5000/agent/v1/check']
-#resourceList = ['http://109.231.121.135:5000/agent/v1/deploy','http://109.231.121.134:5000/agent/v1/deploy','http://109.231.121.156:5000/agent/v1/deploy','http://109.231.121.194:5000/agent/v1/deploy']
-#test = GreenletRequests(resourceList)
-#
-#testG = test.parallelGet()
-#ff = {"roles": ["hdfs"]}
-#testP = test.parallelPost(ff)
 
-#print testG
-#print testP
+def getStormLogsGreen(resourceList):
+    bworker = GreenletRequests(resourceList)
+    rsp = bworker.parallelFileGet()
+    print rsp
+    lFile = []
+    workerFile = 'worker-*.tar'
+    outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
+    # logFile = os.path.join(stDir, workerFile)
+    for name in glob.glob(os.path.join(outDir, workerFile)):
+        lFile.append(name)
+    ts = time.time()
+    st = datetime.fromtimestamp(ts).strftime('%Y-%m-%d-%H:%M:%S')
+    concatLogname = 'workerlogs_%s.tar' % st
+    tarlog = os.path.join(outDir, concatLogname)
+    out = tarfile.open(tarlog, mode='w')
+    try:
+        for file in lFile:
+            path, filename = os.path.split(file)
+            out.add(file, arcname=filename)
+    finally:
+        out.close()
+
+    # clean up
+    for el in lFile:
+        os.remove(el)
+
+
+if __name__ == '__main__':
+    resourceList = ['http://85.120.206.45:5222/agent/v2/bdp/storm/logs', 'http://85.120.206.47:5222/agent/v2/bdp/storm/logs', 'http://85.120.206.48:5222/agent/v2/bdp/storm/logs', 'http://85.120.206.49:5222/agent/v2/bdp/storm/logs']
+    getStormLogsGreen(resourceList)
+    #ff = {"roles": ["hdfs"]}
+    #testP = test.parallelPost(ff)
+
+    #print testG
+    #print testP
 
 
 
