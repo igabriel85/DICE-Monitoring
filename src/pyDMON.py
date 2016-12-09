@@ -1396,7 +1396,7 @@ class StormLogs(Resource):
         for nl in nodesAll:
             app.logger.info('[%s] : [INFO] Node name -> %s ',
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(nl[0]))
-            
+
             if 'storm' in nl[1].split(', '): #TODO modify to STORM
                 nodeList.append(nl[2])
 

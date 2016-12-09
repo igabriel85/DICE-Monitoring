@@ -222,7 +222,10 @@ if [type] == "storm-topology"{
     }
 
     mutate{
-        convert => {"bolts_0_capacity" => "float"}
+    {% for i in range(nBolt) %}
+        convert => {"bolts_{{i}}_capacity" => "float"}
+    {% endfor %}
+
     }
 }
 if [type] == "storm-topSum"{
