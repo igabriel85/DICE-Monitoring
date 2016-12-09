@@ -224,8 +224,19 @@ if [type] == "storm-topology"{
     mutate{
     {% for i in range(nBolt) %}
         convert => {"bolts_{{i}}_capacity" => "float"}
+        convert => {"bolts_{{i}}_executeLatency" => "float"}
+        convert => {"bolts_{{i}}_processLatency" => "float"}
     {% endfor %}
-
+    {% for n in range(nSpout) %}
+        convert => {"spouts_{{n}}_completeLatency" => "float"}
+    {% endfor %}
+        convert => {"topologyStats_10m_window" => "float"}
+        convert => {"topologyStats_10m_completeLatency" => "float"}
+        convert => {"topologyStats_3h_window" => "float"}
+        convert => {"topologyStats_3h_completeLatency" => "float"}
+        convert => {"topologyStats_1d_window" => "float"}
+        convert => {"topologyStats_1d_completeLatency" => "float"}
+        convert => {"topologyStats_all_completeLatency" => "float"}
     }
 }
 if [type] == "storm-topSum"{
