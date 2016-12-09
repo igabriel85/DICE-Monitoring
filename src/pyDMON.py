@@ -3578,8 +3578,10 @@ class LSCoreControllerInit(Resource):
                 return response
             qSCore.LSCorePID = lsPID
             qSCore.LSCoreStatus = 'Running'
-            response = jsonify({'Status': 'LS Core Started', 'PID': lsPID})
+            response = jsonify({'Status': 'LS Core Started', 'PID': lsPID, 'Storm': stormStatus, 'YarnHistory': yarnStatus})
             response.status_code = 201
+            app.logger.info("[%s] : [INFO] LS Core started with PID %s, Storm %s and YanrHistory %s",
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), lsPID, stormStatus, yarnStatus)
             return response
 
 
