@@ -593,12 +593,6 @@ class FetchStormLogsSD(Resource):
         return send_from_directory(stDir, filename, as_attachment=True, mimetype='text/plain')
 
 
-
-
-
-
-
-
 @agent.route('/v1test')
 class Test(Resource):
     def get(self):
