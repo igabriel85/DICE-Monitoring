@@ -417,6 +417,18 @@ class ESCoreConnector:
             res = 0
         return res
 
+    def pushToIndex(self, index, typeD, body, id=None):
+        try:
+            if id is None:
+                res = self.esInstance.index(index=index, doc_type=typeD, body=body)
+            else:
+                res = self.esInstance.index(index=index, doc_type=typeD, body=body, id=id)
+        except Exception as inst:
+            app.logger.error('[%s] : [ERROR] Exception has occured while pushing anomaly with type %s at arguments %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            return 0
+        return res
+
 
 class QueryConstructor():
     def __init__(self):

@@ -3009,6 +3009,191 @@ class KKCoreController(Resource):
         return response
 
 
+@dmon.route('/v1/overlord/core/kb/visualizations')
+class KBVisualizations(Resource):
+    def get(self):
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()
+        if qESCore is None:
+            response = jsonify({'Status': 'ES Core not registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] ES Core not registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        ecc = ESCoreConnector(esEndpoint=qESCore.hostIP, index='.kibana')
+        query = {"query": {"match_all": {}}, "size": 500}
+        rsp = ecc.aggQuery('.kibana', queryBody=query)
+        if not rsp:
+            app.logger.error('[%s] : [ERROR] ES Core unreachable',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            response = jsonify({'Status': 'ES Core unreachable'})
+            response.status_code = 503
+            return response
+        foundv = []
+        for hits in rsp['hits']['hits']:
+            if hits['_type'] == 'visualization':
+                foundv.append(hits['_source']['title'])
+        response = jsonify({'Visualizations': foundv})
+        response.status_code = 200
+        return response
+
+    def post(self):
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        kbVisTemp = os.path.join(tmpDir, 'visualizations')
+        qNode = dbNodes.query.all()
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()
+        if qESCore is None:
+            response = jsonify({'Status': 'ES Core not registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] ES Core not registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        if qNode is None:
+            response = jsonify({'Status': 'No registered nodes'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        nodeDict = {}
+        for nodes in qNode:
+            listRoles = nodes.nRoles.split(', ')
+            nodeDict[nodes.nodeFQDN] = {'IP': nodes.nodeIP, 'Roles': listRoles}
+
+        ecc = ESCoreConnector(esEndpoint=qESCore.hostIP, index='.kibana')
+        rsp = {}
+        listLoad = []
+        listMemory = []
+        listPackets = []
+        listOctets = []
+        listIfError = []
+        for node in nodeDict.keys():
+            try:
+                template = templateEnv.get_template(os.path.join(kbVisTemp, 'load.tmp'))
+            # print >>sys.stderr, template
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Load template file unavailable'})
+                response.status_code = 500
+                return response
+            nodeIDName = node.split('.')[-1]
+            lsindex = 'logstash-*'  # TODO create separate viz for more than one index
+            infoKBCore = {"nodeID": node, "nodeIDName": nodeIDName, "index": lsindex}
+            kbConf = template.render(infoKBCore)
+            idStr = "%s-CPU-Load" % nodeIDName
+            res = ecc.pushToIndex('.kibana', 'visualization', kbConf, id=idStr)
+            try:
+                listLoad.append(res["_id"])
+            except Exception as inst:
+                app.logger.warning('[%s] : [ERROR] Failed to create visualization with  %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                listLoad.append({'Failed': node})
+
+            try:
+                template = templateEnv.get_template(os.path.join(kbVisTemp, 'memory.tmp'))
+            # print >>sys.stderr, template
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Load template file unavailable'})
+                response.status_code = 500
+                return response
+            nodeIDName = node.split('.')[-1]
+            lsindex = 'logstash-*'  # TODO create separate viz for more than one index
+            infoKBCore = {"nodeID": node, "nodeIDName": nodeIDName, "index": lsindex}
+            kbConf = template.render(infoKBCore)
+            idStr = "%s-Memory" % nodeIDName
+            res = ecc.pushToIndex('.kibana', 'visualization', kbConf, id=idStr)
+            try:
+                listMemory.append(res["_id"])
+            except Exception as inst:
+                app.logger.warning('[%s] : [ERROR] Failed to create visualization with  %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                listMemory.append({'Failed': node})
+
+            try:
+                template = templateEnv.get_template(os.path.join(kbVisTemp, 'packets.tmp'))
+            # print >>sys.stderr, template
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Load template file unavailable'})
+                response.status_code = 500
+                return response
+            nodeIDName = node.split('.')[-1]
+            lsindex = 'logstash-*'  # TODO create separate viz for more than one index
+            infoKBCore = {"nodeID": node, "nodeIDName": nodeIDName, "index": lsindex}
+            kbConf = template.render(infoKBCore)
+            idStr = "%s-Packets" % nodeIDName
+            res = ecc.pushToIndex('.kibana', 'visualization', kbConf, id=idStr)
+            try:
+                listPackets.append(res["_id"])
+            except Exception as inst:
+                app.logger.warning('[%s] : [ERROR] Failed to create visualization with  %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                listPackets.append({'Failed': node})
+
+            try:
+                template = templateEnv.get_template(os.path.join(kbVisTemp, 'octets.tmp'))
+            # print >>sys.stderr, template
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Load template file unavailable'})
+                response.status_code = 500
+                return response
+            if len(node.split('.')) == 1:
+                nodeIDName = node
+            else:
+                nodeIDName = node.split('.')[-1]
+            lsindex = 'logstash-*'  # TODO create separate viz for more than one index
+            infoKBCore = {"nodeID": node, "nodeIDName": nodeIDName, "index": lsindex}
+            kbConf = template.render(infoKBCore)
+            idStr = "%s-Octets" % nodeIDName
+            res = ecc.pushToIndex('.kibana', 'visualization', kbConf, id=idStr)
+            try:
+                listOctets.append(res["_id"])
+            except Exception as inst:
+                app.logger.warning('[%s] : [ERROR] Failed to create visualization with  %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                listOctets.append({'Failed': node})
+
+            try:
+                template = templateEnv.get_template(os.path.join(kbVisTemp, 'iferror.tmp'))
+            # print >>sys.stderr, template
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Load template file unavailable'})
+                response.status_code = 500
+                return response
+            nodeIDName = node.split('.')[-1]
+            lsindex = 'logstash-*'  # TODO create separate viz for more than one index
+            infoKBCore = {"nodeID": node, "nodeIDName": nodeIDName, "index": lsindex}
+            kbConf = template.render(infoKBCore)
+            idStr = "%s-IfError" % nodeIDName
+            res = ecc.pushToIndex('.kibana', 'visualization', kbConf, id=idStr)
+            try:
+                listIfError.append(res["_id"])
+            except Exception as inst:
+                app.logger.warning('[%s] : [ERROR] Failed to create visualization with  %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                listIfError.append({'Failed': node})
+
+        rsp['Load'] = listLoad
+        rsp['Memory'] = listMemory
+        rsp['Packets'] = listPackets
+        rsp['Octets'] = listOctets
+        rsp['IfError'] = listIfError
+        app.logger.info('[%s] : [INFO] Created visualizations %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(rsp))
+        response = jsonify(rsp)
+        response.status_code = 201
+        return response
+        
+
+
 @dmon.route('/v1/overlord/core/ls/config')
 class LSCoreConfiguration(Resource):
     def get(self):

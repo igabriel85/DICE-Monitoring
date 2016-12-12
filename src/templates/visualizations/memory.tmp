@@ -1,0 +1,10 @@
+{
+    "title": "{{nodeIDName}} Memory",
+    "visState": "{\"title\":\"{{nodeIDName}} Memory\",\"type\":\"area\",\"params\":{\"shareYAxis\":true,\"addTooltip\":true,\"addLegend\":true,\"smoothLines\":false,\"scale\":\"linear\",\"interpolate\":\"linear\",\"mode\":\"stacked\",\"times\":[],\"addTimeMarker\":false,\"defaultYExtents\":false,\"setYExtents\":false,\"yAxis\":{}},\"aggs\":[{\"id\":\"3\",\"type\":\"avg\",\"schema\":\"metric\",\"params\":{\"field\":\"value\"}},{\"id\":\"4\",\"type\":\"date_histogram\",\"schema\":\"segment\",\"params\":{\"field\":\"@timestamp\",\"interval\":\"auto\",\"customInterval\":\"2h\",\"min_doc_count\":1,\"extended_bounds\":{}}},{\"id\":\"5\",\"type\":\"significant_terms\",\"schema\":\"group\",\"params\":{\"field\":\"type_instance.raw\",\"size\":0}}],\"listeners\":{}}",
+    "uiStateJSON": "{}",
+    "description": "",
+    "version": 1,
+    "kibanaSavedObjectMeta": {
+      "searchSourceJSON": "{\"index\":\"{{index}}\",\"query\":{\"query_string\":{\"query\":\"collectd_type:memory AND host:{{nodeID}}\",\"analyze_wildcard\":true}},\"filter\":[]}"
+    }
+  }
