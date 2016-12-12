@@ -34,3 +34,4 @@ pandas==0.19.1
 sklearn-pandas==1.2.0
 aniso8601==1.2.0
 isodate==0.5.4
+pymongo==3.0.3

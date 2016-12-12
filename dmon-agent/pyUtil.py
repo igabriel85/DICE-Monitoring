@@ -10,6 +10,7 @@ from app import *
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
 pidDir = '/var/run'
 
+
 def installCollectd():
     '''
         Installs collectd on local node.
@@ -31,6 +32,7 @@ def installCollectd():
             app.logger.warning('[%s] : [WARN] Cannot install collectd: %s with %s',
                                 datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
             raise
+        #todo install new dice.db containing new defined types
         lock = open(collectdLock, "w+")
         lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         lock.close()
@@ -104,9 +106,6 @@ def installLsf(listLocation, lsfGPG):
         lock.write(datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         lock.close()
 
-
-def installJmxTrans():  # TODO: create jmxtrans installation
-    return "Install jmxtrans"
 
 def checkPID(pid):
     """

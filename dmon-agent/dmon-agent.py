@@ -67,8 +67,14 @@ collectdConfModel = api.model('configuration details Model for collectd', {
     'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
     'UDPPort': fields.String(required=True, default='25680', description='Port of UDP plugin from Logstash Server'),
     'Interval': fields.String(required=False, default='15', description='Polling interval for all resources'),
-    'Cassandra': fields.Integer(required=False, defaul=0, description='Configure GenericJMX for cassandra monitoring')
+    'Cassandra': fields.Integer(required=False, defaul=0, description='Configure GenericJMX for cassandra monitoring'),
+    'MongoDB': fields.Integer(required=False, defaul=0, description='Configure collectd for MongoDB monitoring'),
+    'MongoDBPort': fields.String(required=False, defaul='27017', description='Configure MongoDBPort'),
+    'MongoDBUser': fields.String(required=False, defaul='', description='Configure MongoDB Username'),
+    'MongoDBPasswd': fields.String(required=False, defaul='password', description='Configure MongoDB Password'),
+    'MongoDBs': fields.String(required=False, defaul='admin', description='Configure MongoDBs')
 })
+
 
 lsfConfModel = api.model('configuration details Model for LSF', {
     'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
@@ -139,7 +145,7 @@ class NodeDeployCollectd(Resource):
             app.logger.warning('[%s] : [WARN] Malformed request, json expected', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
-        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval', 'Cassandra']
+        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval', 'Cassandra', 'MongoDB']
         for k in request.json:
             app.logger.info('[%s] : [INFO] Key found %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
             if k not in reqKeyList:
@@ -162,11 +168,34 @@ class NodeDeployCollectd(Resource):
         else:
             cassandra = request.json['Cassandra']
 
+        if 'MongoDB' not in request.json:
+            mongodb = 0
+        else:
+            mongodb = request.json['MongoDB']
+            if 'MongoDBPort' not in request.json:
+                mongodbport = '27017'
+            else:
+                mongodbport = request.json['MongoDBPort']
+            if 'MongoDBUser' not in request.json:
+                mongodbuser = ''
+            else:
+                mongodbuser = request.json['MongoDBUser']
+            if 'MongoDBPasswd' not in request.json:
+                mongodbpasswd = 'password'
+            else:
+                mongodbpasswd = request.json['MongoDBPasswd']
+            if 'MongoDBs' not in request.json:
+                mongodbs = 'admin'
+            else:
+                mongodbs = request.json['MongoDBs']
+
         settingsDict = {'logstash_server_ip': request.json['LogstashIP'],
                         'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid',
                         'poll_interval': pollInterval,
-                        'Cassandra': cassandra}
+                        'Cassandra': cassandra, 'mongoPort': mongodbport, 'mongouser': mongodbuser,
+                        'mongopassword': mongodbpasswd, 'mongoDBs': mongodbs}
+
         aux.configureComponent(settingsDict, collectdTemp, collectdConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
@@ -387,6 +416,7 @@ class NodeMonitLogs(Resource):
             response = jsonify({'Status': 'Unsupported comp' + auxComp})
             response.status_code = 400
             return response
+
 
 @agent.route('/v1/conf/<auxComp>')
 @api.doc(params={'auxComp': 'Can be collectd or lsf'})
