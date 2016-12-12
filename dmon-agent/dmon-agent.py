@@ -66,7 +66,8 @@ nodeRoles = api.model('query details Model', {
 collectdConfModel = api.model('configuration details Model for collectd', {
     'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
     'UDPPort': fields.String(required=True, default='25680', description='Port of UDP plugin from Logstash Server'),
-    'Interval': fields.String(required=False, default='15', description='Polling interval for all resources')
+    'Interval': fields.String(required=False, default='15', description='Polling interval for all resources'),
+    'Cassandra': fields.Integer(required=False, defaul=0, description='Configure GenericJMX for cassandra monitoring')
 })
 
 lsfConfModel = api.model('configuration details Model for LSF', {
@@ -138,7 +139,7 @@ class NodeDeployCollectd(Resource):
             app.logger.warning('[%s] : [WARN] Malformed request, json expected', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
-        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval']
+        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval', 'Cassandra']
         for k in request.json:
             app.logger.info('[%s] : [INFO] Key found %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
             if k not in reqKeyList:
@@ -156,10 +157,16 @@ class NodeDeployCollectd(Resource):
         else:
             pollInterval = request.json['Interval']
 
+        if 'Cassandra' not in request.json:
+            cassandra = 0
+        else:
+            cassandra = request.json['Cassandra']
+
         settingsDict = {'logstash_server_ip': request.json['LogstashIP'],
                         'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid',
-                        'poll_interval': pollInterval}
+                        'poll_interval': pollInterval,
+                        'Cassandra': cassandra}
         aux.configureComponent(settingsDict, collectdTemp, collectdConf)
         aux.controll('collectd', 'restart')
         response = jsonify({'Status': 'Done',
@@ -205,12 +212,6 @@ class NodeDeployLSF(Resource):
                             'Message': 'LSF Stated'})
         response.status_code = 200
         return response
-
-
-@agent.route('/v1/jmx')
-class NodeDeployJMX(Resource):
-    def post(self):  # TODO:  implement or remove.
-        return "JMX redeploy"
 
 
 @agent.route('/v1/start')
@@ -370,6 +371,7 @@ class NodeMonitLogs(Resource):
                                     'Message': 'Cannot open log file'})
                 response.status_code = 500
                 return response
+            return send_file(clog, mimetype='text/plain', as_attachment=True)
         if auxComp == 'lsf':
             try:
                 clog = open(lsflog, 'w+')
@@ -380,9 +382,11 @@ class NodeMonitLogs(Resource):
                                     'Message': 'Cannot open log file'})
                 response.status_code = 500
                 return response
-
-        return send_file(clog, mimetype='text/plain', as_attachment=True)
-
+            return send_file(clog, mimetype='text/plain', as_attachment=True)
+        else:
+            response = jsonify({'Status': 'Unsupported comp' + auxComp})
+            response.status_code = 400
+            return response
 
 @agent.route('/v1/conf/<auxComp>')
 @api.doc(params={'auxComp': 'Can be collectd or lsf'})
@@ -413,8 +417,10 @@ class NodeMonitConf(Resource):
                 app.logger.error('[%s] : [ERROR] Opening logstash-forwarder conf file',
                                  datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return send_file(lConf, mimetype='application/json', as_attachment=True)
-        if auxComp == 'jmx':  # TODO: jmxtrans handeling
-            return 'jmx'
+        else:
+            response = jsonify({'Status': 'Unsupported comp' + auxComp})
+            response.status_code = 400
+            return response
 
 
 @agent.route('/v1/check')

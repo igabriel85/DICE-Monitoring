@@ -74,7 +74,7 @@ esDir = '/opt/elasticsearch'
 lsCDir = '/etc/logstash/conf.d/'
 
 # D-Mon Supported frameworks
-lFrameworks = ['hdfs', 'yarn', 'spark', 'storm']
+lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra']
 
 # app = Flask("D-MON")
 # api = Api(app, version='0.2.0', title='DICE MONitoring API',
@@ -772,6 +772,8 @@ class OverlordFrameworkProperties(Resource):
             rSparkProp = open(propSparkFile, 'r')
             return send_file(rSparkProp, mimetype='text/x-java-properties',
                              as_attachment=True)  # TODO: Swagger returns same content each time, however sent file is correct
+        if fwork == 'cassandra':
+            return "Cassandra conf" #todo
 
 
 @dmon.route('/v1/overlord/application/<appID>')
@@ -1698,7 +1700,7 @@ class MonitoredNodeInfo(Resource):
                 'IP': qNode.nodeIP,
                 'Monitored': qNode.nMonitored,
                 'OS': qNode.nodeOS,
-                'Key': qNode.nkey,  # TODO Chef client status, and CDH status
+                'Key': qNode.nkey,
                 'Roles': qNode.nRoles,
                 'LSInstance': qNode.nLogstashInstance
             })
@@ -1751,7 +1753,7 @@ class MonitoredNodeInfo(Resource):
             return response
 
     def post(self, nodeFQDN):
-        return "Bootstrap specified node!"
+        return "Bootstrap specified node!" #todo
 
     def delete(self, nodeFQDN):
         dNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
@@ -3191,7 +3193,6 @@ class KBVisualizations(Resource):
         response = jsonify(rsp)
         response.status_code = 201
         return response
-        
 
 
 @dmon.route('/v1/overlord/core/ls/config')
@@ -4228,7 +4229,7 @@ class AuxAgentDeploy(Resource):
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(an))
         return response
 
-    def post(self):  # TODO: only works if all nodes have the same authentication
+    def post(self):  # todo verify
         qN = db.session.query(dbNodes.nodeIP, dbNodes.nStatus, dbNodes.nUser, dbNodes.nPass).all()
         if not qN:
             response = jsonify({'Status': 'No nodes registered'})
@@ -4274,7 +4275,7 @@ class AuxAgentDeploy(Resource):
         return response
 
 
-@dmon.route('/v2/overlord/agent/start')
+@dmon.route('/v2/overlord/agent/start') #todo verify
 class AuxAgentStart(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nStatus=1).all()
@@ -4323,7 +4324,7 @@ class AuxAgentStart(Resource):
         return response
 
 
-@dmon.route('/v2/overlord/agent/stop')
+@dmon.route('/v2/overlord/agent/stop') #todo verify
 class AuxAgentStop(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nMonitored=1).all()
@@ -4688,7 +4689,7 @@ class AuxConfigSelective(Resource):
                 return response
         return send_file(Cfgfile, mimetype='text/plain', as_attachment=True)
 
-    def put(self, auxComp):
+    def put(self, auxComp): #todo remove or leave
         return "Sets configuration of aux components use parameters (args) -unsafe"
 
 
@@ -5193,7 +5194,7 @@ class AuxStopAllThreaded(Resource):
         return response
 
 
-@dmon.route('/v2/overlord/aux/<auxComp>/configure')
+@dmon.route('/v2/overlord/aux/<auxComp>/configure') #this is the correct one for configuring components
 class AuxConfigureCompTreaded(Resource):
     def post(self, auxComp):
         auxList = ['collectd', 'lsf', 'jmx'] #TODO: add all, will need some concurency on dmon-agent part
@@ -5229,6 +5230,10 @@ class AuxConfigureCompTreaded(Resource):
                 payload['Interval'] = qMetPer.sysMet
                 payload['LogstashIP'] = qNodeSpec.nLogstashInstance
                 payload['UDPPort'] = str(qLSSpec.udpPort)
+                if 'cassandra' in qNodes.nRoles:
+                    payload['cassandra'] = 1
+                else:
+                    payload['cassandra'] = 0
                 resFin[n] = payload
 
         if auxComp == 'lsf':
@@ -5244,7 +5249,9 @@ class AuxConfigureCompTreaded(Resource):
                 resFin[n] = payload
 
         if auxComp == 'jmx':
-            return "Not available in this version!"
+            response = jsonify({'Status': 'Deprecated', 'Message': 'Use GenericJMX'})
+            response.status_code = 200
+            return response
 
 
         # if auxComp == 'all':

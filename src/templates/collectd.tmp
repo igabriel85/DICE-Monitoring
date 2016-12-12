@@ -48,6 +48,291 @@ LoadPlugin network
 
 LoadPlugin swap
 
+{% if cassandra == 1%}
+TypesDB "/usr/share/collectd/dice.db"
+LoadPlugin java
+<Plugin java>
+    JVMArg "-verbose:jni"
+    JVMArg "-Djava.class.path=/usr/share/collectd/java/collectd-api.jar:/usr/share/collectd/java/generic-jmx.jar"
+
+    LoadPlugin "org.collectd.java.GenericJMX"
+    <Plugin "GenericJMX">
+        <MBean "classes">
+            ObjectName "java.lang:type=ClassLoading"
+            <Value>
+                Type "gauge"
+                InstancePrefix "loaded_classes"
+                Table false
+                Attribute "LoadedClassCount"
+            </Value>
+        </MBean>
+
+        <MBean "garbage_collector">
+            ObjectName "java.lang:type=GarbageCollector,*"
+            InstancePrefix "gc-"
+            InstanceFrom "name"
+            <Value>
+                Type "invocations"
+                Table false
+                Attribute "CollectionCount"
+            </Value>
+            <Value>
+                Type "total_time_in_ms"
+                InstancePrefix "collection_time"
+                Table false
+                Attribute "CollectionTime"
+            </Value>
+        </MBean>
+
+        <MBean "memory-heap">
+            ObjectName "java.lang:type=Memory"
+            InstancePrefix "memory-heap"
+            <Value>
+                Type "jmx_memory"
+                Table true
+                Attribute "HeapMemoryUsage"
+            </Value>
+        </MBean>
+
+        <MBean "memory-nonheap">
+            ObjectName "java.lang:type=Memory"
+            InstancePrefix "memory-nonheap"
+            <Value>
+                Type "jmx_memory"
+                Table true
+                Attribute "NonHeapMemoryUsage"
+            </Value>
+        </MBean>
+
+        <MBean "memory_pool">
+            ObjectName "java.lang:type=MemoryPool,*"
+            InstancePrefix "memory_pool-"
+            InstanceFrom "name"
+            <Value>
+                Type "jmx_memory"
+                Table true
+                Attribute "Usage"
+            </Value>
+        </MBean>
+        <MBean "threading">
+            ObjectName "java.lang:type=Threading"
+            <Value>
+                Type "gauge"
+                Table false
+                InstancePrefix "jvm.threads.count"
+                Attribute "ThreadCount"
+            </Value>
+       </MBean>
+    </Plugin>
+</Plugin>
+
+<Plugin java>
+  <Plugin "GenericJMX">
+    <MBean "cassandra-client-read-latency">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=Read,name=Latency"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.Read.Latency.50thPercentile"
+        Attribute "50thPercentile"
+      </Value>
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.Read.Latency.Max"
+        Attribute "Max"
+      </Value>
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.Read.Latency.99thPercentile"
+        Attribute "99thPercentile"
+      </Value>
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.Read.Latency.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-read-timeouts">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=Read,name=Timeouts"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.Read.Timeouts.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-read-unavailables">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=Read,name=Unavailables"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.Read.Unavailables.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-rangeslice-latency">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=RangeSlice,name=Latency"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.RangeSlice.Latency.50thPercentile"
+        Attribute "50thPercentile"
+      </Value>
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.RangeSlice.Latency.Max"
+        Attribute "Max"
+      </Value>
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.RangeSlice.Latency.99thPercentile"
+        Attribute "99thPercentile"
+      </Value>
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.RangeSlice.Latency.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-rangeslice-timeouts">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=RangeSlice,name=Timeouts"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.RangeSlice.Timeouts.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-rangeslice-unavailables">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=RangeSlice,name=Unavailables"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.RangeSlice.Unavailables.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-write-latency">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=Write,name=Latency"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.Write.Latency.50thPercentile"
+        Attribute "50thPercentile"
+      </Value>
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.Write.Latency.Max"
+        Attribute "Max"
+      </Value>
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.ClientRequest.Write.Latency.99thPercentile"
+        Attribute "99thPercentile"
+      </Value>
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.Write.Latency.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-write-timeouts">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=Write,name=Timeouts"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.Write.Timeouts.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-client-write-unavailables">
+      ObjectName "org.apache.cassandra.metrics:type=ClientRequest,scope=Write,name=Unavailables"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.ClientRequest.Write.Unavailables.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-storage-load">
+      ObjectName "org.apache.cassandra.metrics:type=Storage,name=Load"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.Storage.Load.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-storage-hints">
+      ObjectName "org.apache.cassandra.metrics:type=Storage,name=TotalHints"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.Storage.TotalHints.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-storage-hints-in-progress">
+      ObjectName "org.apache.cassandra.metrics:type=Storage,name=TotalHintsInProgress"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.Storage.TotalHintsInProgress.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-compaction-pending-tasks">
+      ObjectName "org.apache.cassandra.metrics:type=Compaction,name=PendingTasks"
+      <Value>
+        Type "gauge"
+        InstancePrefix "cassandra.Compaction.PendingTasks.Value"
+        Attribute "Value"
+      </Value>
+    </MBean>
+
+    <MBean "cassandra-compaction-total-completed">
+      ObjectName "org.apache.cassandra.metrics:type=Compaction,name=TotalCompactionsCompleted"
+      <Value>
+        Type "counter"
+        InstancePrefix "cassandra.Compaction.TotalCompactionsCompleted.Count"
+        Attribute "Count"
+      </Value>
+    </MBean>
+
+    <Connection>
+      ServiceURL "service:jmx:rmi:///jndi/rmi://localhost:7199/jmxrmi"
+      Collect "classes"
+      Collect "garbage_collector"
+      Collect "memory-heap"
+      Collect "memory-nonheap"
+      Collect "memory_pool"
+
+      Collect "cassandra-client-read-latency"
+      Collect "cassandra-client-read-timeouts"
+      Collect "cassandra-client-read-unavailables"
+
+      Collect "cassandra-client-rangeslice-latency"
+      Collect "cassandra-client-rangeslice-timeouts"
+      Collect "cassandra-client-rangeslice-unavailables"
+
+      Collect "cassandra-client-write-latency"
+      Collect "cassandra-client-write-timeouts"
+      Collect "cassandra-client-write-unavailables"
+
+      Collect "cassandra-storage-load"
+      Collect "cassandra-storage-hints"
+      Collect "cassandra-storage-hints-in-progress"
+
+      Collect "cassandra-compaction-pending-tasks"
+      Collect "cassandra-compaction-total-completed"
+    </Connection>
+  </Plugin>
+</Plugin>
+
+{% else %}
+# No cassandra role found
+{% endif%}
+
 <Include "/etc/collectd/collectd.conf.d">
         Filter ".conf"
 </Include>
