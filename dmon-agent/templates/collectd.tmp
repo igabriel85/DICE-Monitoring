@@ -336,7 +336,11 @@ LoadPlugin java
     <Module mongodb>
         Host "{{mongohost}}"
         Port "{{mongoPort}}"
+        {% if mongouser == "string" %}
+        User ""
+        {% else %}
         User "{{mongouser}}"
+        {% endif %}
         Password "{{mongopassword}}"
         Database "admin" "db-prod" "db-dev"
         #Database "{{mongoDBs}}"
@@ -349,7 +353,7 @@ LoadPlugin network
 </Plugin>
 {% else %}
 # No mongodb role found
-{% endif%}
+{% endif %}
 
 LoadPlugin network
 <Plugin "interface">

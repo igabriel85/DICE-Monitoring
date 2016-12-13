@@ -243,7 +243,7 @@ yarnHistorySettings = api.model('Settings for Yarn history server', {
 mongoDBConf = api.model('Settings for MongoDB', {
     'MongoHost': fields.String(required=True, default='127.0.0.1', description='MongoDB Host'),
     'MongoPort': fields.String(required=True, default='27017', description='MongoDB Port'),
-    'MongoUser': fields.String(required=False, default=' ', description='MongoDB User'),
+    'MongoUser': fields.String(required=False, default='', description='MongoDB User'),
     'MongoPassword': fields.String(required=False, default='27017', description='MongoDB Password'),
     'MongoDBs': fields.String(required=False, default='admin', description='MongoDBs')
 })

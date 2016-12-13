@@ -67,13 +67,13 @@ collectdConfModel = api.model('configuration details Model for collectd', {
     'LogstashIP': fields.String(required=True, default='127.0.0.1', description='IP of the Logstash Server'),
     'UDPPort': fields.String(required=True, default='25680', description='Port of UDP plugin from Logstash Server'),
     'Interval': fields.String(required=False, default='15', description='Polling interval for all resources'),
-    'Cassandra': fields.Integer(required=False, defaul=0, description='Configure GenericJMX for cassandra monitoring'),
-    'MongoDB': fields.Integer(required=False, defaul=0, description='Configure collectd for MongoDB monitoring'),
-    'MongoHost': fields.String(required=False, defaul='127.0.0.1', description='Configure MongoDBHost'),
-    'MongoDBPort': fields.String(required=False, defaul='27017', description='Configure MongoDBPort'),
-    'MongoDBUser': fields.String(required=False, defaul='', description='Configure MongoDB Username'),
-    'MongoDBPasswd': fields.String(required=False, defaul='password', description='Configure MongoDB Password'),
-    'MongoDBs': fields.String(required=False, defaul='admin', description='Configure MongoDBs')
+    'Cassandra': fields.Integer(required=False, default=0, description='Configure GenericJMX for cassandra monitoring'),
+    'MongoDB': fields.Integer(required=False, default=0, description='Configure collectd for MongoDB monitoring'),
+    'MongoHost': fields.String(required=False, default='127.0.0.1', description='Configure MongoDBHost'),
+    'MongoDBPort': fields.String(required=False, default='27017', description='Configure MongoDBPort'),
+    'MongoDBUser': fields.String(required=False, default='', description='Configure MongoDB Username'),
+    'MongoDBPasswd': fields.String(required=False, default='password', description='Configure MongoDB Password'),
+    'MongoDBs': fields.String(required=False, default='admin', description='Configure MongoDBs')
 })
 
 
@@ -146,13 +146,14 @@ class NodeDeployCollectd(Resource):
             app.logger.warning('[%s] : [WARN] Malformed request, json expected', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
-        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval', 'Cassandra', 'MongoDB']
+        reqKeyList = ['LogstashIP', 'UDPPort', 'Interval', 'Cassandra', 'MongoDB', 'MongoHost', 'MongoDBPort',
+                      'MongoDBUser', 'MongoDBPasswd', 'MongoDBs']
         for k in request.json:
             app.logger.info('[%s] : [INFO] Key found %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
             if k not in reqKeyList:
                 response = jsonify({'Status': 'Unrecognized key %s' %(k)})
                 response.status_code = 400
-                app.logger.warning('[%s] : [WARN] UNsuported key  %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
+                app.logger.warning('[%s] : [WARN] Unsuported key  %s', datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), k)
                 return response
         if 'LogstashIP' not in request.json or 'UDPPort' not in request.json:
             response = jsonify({'Status': 'Missing key(s)'})
@@ -182,7 +183,7 @@ class NodeDeployCollectd(Resource):
             else:
                 mongodbport = request.json['MongoDBPort']
             if 'MongoDBUser' not in request.json:
-                mongodbuser = ''
+                mongodbuser = ' '
             else:
                 mongodbuser = request.json['MongoDBUser']
             if 'MongoDBPasswd' not in request.json:
@@ -198,7 +199,7 @@ class NodeDeployCollectd(Resource):
                         'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid',
                         'poll_interval': pollInterval,
-                        'Cassandra': cassandra, 'mongodb': mongodb, 'mongohost': mongohost,
+                        'cassandra': cassandra, 'mongodb': mongodb, 'mongohost': mongohost,
                         'mongoPort': mongodbport, 'mongouser': mongodbuser,
                         'mongopassword': mongodbpasswd, 'mongoDBs': mongodbs}
 
