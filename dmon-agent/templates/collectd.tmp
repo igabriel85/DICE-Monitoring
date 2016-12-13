@@ -323,7 +323,7 @@ LoadPlugin java
 # No cassandra role found
 {% endif%}
 
-{% if cassandra == 1%}
+{% if mongodb == 1%}
 <LoadPlugin python>
     Globals true
 </LoadPlugin>

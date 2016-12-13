@@ -74,7 +74,7 @@ esDir = '/opt/elasticsearch'
 lsCDir = '/etc/logstash/conf.d/'
 
 # D-Mon Supported frameworks
-lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra']
+lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra', 'mongodb']
 
 # app = Flask("D-MON")
 # api = Api(app, version='0.2.0', title='DICE MONitoring API',
@@ -238,6 +238,14 @@ yarnHistorySettings = api.model('Settings for Yarn history server', {
     'NodeIP': fields.String(required=False, default='127.0.0.1', description='History Server IP'),
     'NodePort': fields.Integer(required=False, default=19888, description='History Server Port'),
     'Polling': fields.String(required=False, default=30, description='History Server Polling Period')
+})
+
+mongoDBConf = api.model('Settings for MongoDB', {
+    'MongoHost': fields.String(required=True, default='127.0.0.1', description='MongoDB Host'),
+    'MongoPort': fields.String(required=True, default='27017', description='MongoDB Port'),
+    'MongoUser': fields.String(required=False, default=' ', description='MongoDB User'),
+    'MongoPassword': fields.String(required=False, default='27017', description='MongoDB Password'),
+    'MongoDBs': fields.String(required=False, default='admin', description='MongoDBs')
 })
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(baseDir, 'dmon.db')
@@ -774,6 +782,8 @@ class OverlordFrameworkProperties(Resource):
                              as_attachment=True)  # TODO: Swagger returns same content each time, however sent file is correct
         if fwork == 'cassandra':
             return "Cassandra conf" #todo
+        if fwork == 'mongodb':
+            return "mongodb conf"
 
 
 @dmon.route('/v1/overlord/application/<appID>')
@@ -1357,6 +1367,87 @@ class DetectStormRA(Resource):
         response.status_code = 201
         dmon.reset()
         return response
+
+
+@dmon.route('/v1/overlord/mongo')
+class MongoSettings(Resource):
+    def get(self):
+        qBDS = dbBDService.query.first()
+        if qBDS is None:
+            response = jsonify({'Status': 'No registered mongo settings'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No mongo settings found found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        if qBDS.mongoUser is None:
+            mUser = False
+        elif qBDS.mongoUser.strip():
+            mUser = True
+        else:
+            mUser = False
+        if qBDS.mongoPswd is None:
+            mPass = False
+        elif qBDS.mongoPswd.strip():
+            mPass = True
+        else:
+            mPass = False
+
+        response = jsonify({'MongoHost': qBDS.mongoHost, 'MongoPort': qBDS.mongoPort,
+                            'User': mUser, 'Password': mPass, 'MongoDBs': qBDS.mongoDBs})
+        response.status_code = 200
+        return response
+
+    @api.expect(mongoDBConf)
+    def put(self):
+        if not request.json:
+            abort(400)
+        requiredKeys = ['MongoHost', 'MongoPort']
+        for key in requiredKeys:
+            if key not in request.json:
+                response = jsonify({'Error': 'malformed request, missing key(s)'})
+                response.status_code = 400
+                app.logger.warning('[%s] : [WARN] Malformed Request, missing key(s)',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return response
+        if 'MongoUser' not in request.json:
+            mUser = ''
+        else:
+            mUser = request.json['MongoUser']
+        if 'MongoPassword' not in request.json:
+            mPass = 'password'
+        else:
+            mPass = request.json['MongoPassword']
+        if 'MongoDBs' not in request.json:
+            dbs = 'admin'
+        else:
+            dbs = request.json['MongoDBs']
+        qBDS = dbBDService.query.first()
+        if qBDS is None:
+            # {'MongoHost': qBDS.mongoHost, 'MongoPort': qBDS.mongoPort,
+            #  'User': mUser, 'Password': mPass, 'MongoDBs': qBDS.mongoDBs})
+            e = dbBDService(mongoHost=request.json['MongoHost'], mongoPort=request.json['MongoPort'], mongoUser=mUser,
+                            mongoPswd=mPass, mongoDBs=dbs)
+            db.session.add(e)
+            db.session.commit()
+            response = jsonify({'Status': 'Added MongoDB Settings'})
+            response.status_code = 201
+            app.logger.info('[%s] : [INFO] Added MongoDB settings: Host-> %s, Port ->%s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(request.json['MongoUser']), str(request.json['MongoPassword']))
+            return response
+        else:
+            qBDS.mongoHost = request.json['MongoHost']
+            qBDS.mongoPort = request.json['MongoPort']
+            qBDS.mongoUser = mUser
+            qBDS.mongoPswd = mPass
+            qBDS.mongoDBs = dbs
+            response = jsonify({'Status': 'Modified MongoDB Settings'})
+            response.status_code = 201
+            app.logger.info('[%s] : [INFO] Modified MongoDB settings: Host-> %s, Port ->%s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(request.json['MongoUser']), str(request.json['MongoPassword']))
+            return response
 
 
 @dmon.route('/v1/overlord/storm/logs')
@@ -5231,9 +5322,24 @@ class AuxConfigureCompTreaded(Resource):
                 payload['LogstashIP'] = qNodeSpec.nLogstashInstance
                 payload['UDPPort'] = str(qLSSpec.udpPort)
                 if 'cassandra' in qNodes.nRoles:
-                    payload['cassandra'] = 1
+                    payload['Cassandra'] = 1
                 else:
-                    payload['cassandra'] = 0
+                    payload['Cassandra'] = 0
+                if 'mongodb' in qNodes.nRoles:
+                    qBDS = dbBDService.query.first()
+                    if qBDS is None:
+                        app.logger.warning('[%s] : [WARNING] MongoDB role found but no settings detected',
+                                           datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                        pass
+                    else:
+                        payload['MongoDB'] = 1
+                        payload['MongoHost'] = qBDS.mongoHost
+                        payload['MongoDBPort'] = qBDS.mongoPort
+                        payload['MongoDBUser'] = qBDS.mongoUser
+                        payload['MongoDBPasswd'] = qBDS.mongoPswd
+                        payload['MongoDBs'] = qBDS.mongoDBs
+                        app.logger.info('[%s] : [INFO] MongoDB role found added settings to queue',
+                                           datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 resFin[n] = payload
 
         if auxComp == 'lsf':

@@ -69,6 +69,7 @@ collectdConfModel = api.model('configuration details Model for collectd', {
     'Interval': fields.String(required=False, default='15', description='Polling interval for all resources'),
     'Cassandra': fields.Integer(required=False, defaul=0, description='Configure GenericJMX for cassandra monitoring'),
     'MongoDB': fields.Integer(required=False, defaul=0, description='Configure collectd for MongoDB monitoring'),
+    'MongoHost': fields.String(required=False, defaul='127.0.0.1', description='Configure MongoDBHost'),
     'MongoDBPort': fields.String(required=False, defaul='27017', description='Configure MongoDBPort'),
     'MongoDBUser': fields.String(required=False, defaul='', description='Configure MongoDB Username'),
     'MongoDBPasswd': fields.String(required=False, defaul='password', description='Configure MongoDB Password'),
@@ -172,6 +173,10 @@ class NodeDeployCollectd(Resource):
             mongodb = 0
         else:
             mongodb = request.json['MongoDB']
+            if 'MongoHost' not in request.json:
+                mongohost = '127.0.0.1'
+            else:
+                mongohost = request.json['MongoHost']
             if 'MongoDBPort' not in request.json:
                 mongodbport = '27017'
             else:
@@ -193,7 +198,8 @@ class NodeDeployCollectd(Resource):
                         'logstash_server_port': request.json['UDPPort'],
                         'collectd_pid_file': '/var/run/collectd.pid',
                         'poll_interval': pollInterval,
-                        'Cassandra': cassandra, 'mongoPort': mongodbport, 'mongouser': mongodbuser,
+                        'Cassandra': cassandra, 'mongodb': mongodb, 'mongohost': mongohost,
+                        'mongoPort': mongodbport, 'mongouser': mongodbuser,
                         'mongopassword': mongodbpasswd, 'mongoDBs': mongodbs}
 
         aux.configureComponent(settingsDict, collectdTemp, collectdConf)

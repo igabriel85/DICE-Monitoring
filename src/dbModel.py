@@ -147,9 +147,15 @@ class dbBDService(db.Model):
     sparkHPort = db.Column(db.Integer, index=True, unique=False, default=18088) #TODO: Change to corect default
     sparkHEnd = db.Column(db.String(64), index=True, unique=False, default='None')
     sparkHPoll = db.Column(db.Integer, index=True, unique=False, default=30)
+    mongoHost = db.Column(db.String(64), index=True, unique=False, default='127.0.0.1')
+    mongoPort = db.Column(db.String(64), index=True, unique=False, default='27017')
+    mongoUser = db.Column(db.String(64), index=True, unique=False, default='')
+    mongoPswd = db.Column(db.String(64), index=True, unique=False, default='password')
+    mongoDBs = db.Column(db.String(64), index=True, unique=False, default='admin')
 
     def __repr__(self):
         return '<dbBDService %r>' % (self.dbDBService)
+
 
 class dbMetPer(db.Model):
     id = db.Column(db.Integer, primary_key=True)
