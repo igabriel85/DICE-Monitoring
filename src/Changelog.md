@@ -57,6 +57,7 @@
      * implemented enhanced aggregation /v2 query resource
         * data now stored in memory as dataframes
         * all conversions happen in memory using dataframes
+     * removed DMON-WUI to separate repository
 * v0.2.2 - Minor alpha release
      * added distributed storm log fetching and serving
      * added enhanced automatic visualization generation
