@@ -1529,7 +1529,7 @@ class DataFormatter:
             return 0
         else:
             df = pd.DataFrame(requiredMetrics)
-            # df.set_index('key', inplace=True)
+            df.set_index('key', inplace=True)
             app.logger.info('[%s] : [INFO] Created dataframe',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return df
