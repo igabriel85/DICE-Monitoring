@@ -5315,6 +5315,7 @@ class AuxConfigureCompTreaded(Resource):
             uList.append(r.split(', '))
         uniqueRoles = set(x for l in uList for x in l)
         uniqueRolesList = list(uniqueRoles)
+        # todo ad support on a per node bases for roles not global unique list
         app.logger.info('[%s] : [INFO] Unique roles %s',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(uniqueRolesList))
         agentr = AgentResourceConstructor(nList, '5222')
