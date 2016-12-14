@@ -172,6 +172,11 @@ class NodeDeployCollectd(Resource):
 
         if 'MongoDB' not in request.json:
             mongodb = 0
+            mongohost = 0
+            mongodbport = 0
+            mongodbuser = 0
+            mongodbpasswd = 0
+            mongodbs = 0
         else:
             mongodb = request.json['MongoDB']
             if 'MongoHost' not in request.json:

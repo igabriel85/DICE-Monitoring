@@ -5295,19 +5295,28 @@ class AuxConfigureCompTreaded(Resource):
             app.logger.warning('[%s] : [WARNING] Aux Components %s not supported',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), auxComp)
             return response
-        qNodes = db.session.query(dbNodes.nodeIP, dbNodes.nMonitored).all()
+        qNodes = db.session.query(dbNodes.nodeIP, dbNodes.nMonitored, dbNodes.nRoles).all()
         nList = []
+        nRoles = []
         for n in qNodes:
             if not n[1]:
                 break
             nList.append(n[0])
+            nRoles.append(n[2])
         if not nList:
             response = jsonify({'Status': 'No monitored nodes found'})
             response.status_code = 404
-            app.logger.warning('[%s] : [WARNING] No monitored nodes found',
+            app.logger.warning('[%s] : [WARN] No monitored nodes found',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), auxComp)
             return response
 
+        uList = []
+        for r in nRoles:
+            uList.append(r.split(', '))
+        uniqueRoles = set(x for l in uList for x in l)
+        uniqueRolesList = list(uniqueRoles)
+        app.logger.info('[%s] : [INFO] Unique roles %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(uniqueRolesList))
         agentr = AgentResourceConstructor(nList, '5222')
         qMetPer = dbMetPer.query.first()
         if auxComp == 'collectd':
@@ -5318,14 +5327,20 @@ class AuxConfigureCompTreaded(Resource):
                 nIP = urlparse(n).hostname
                 qNodeSpec = dbNodes.query.filter_by(nodeIP=nIP).first() #TODO: unify db foreign keys in tables
                 qLSSpec = dbSCore.query.filter_by(hostIP=qNodeSpec.nLogstashInstance).first()
+                if qLSSpec is None:
+                    response = jsonify({'Status': 'No logstash instance found'})
+                    response.status_code = 404
+                    app.logger.warning('[%s] : [WARNING] No Logstash instance found with IP %s',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(qNodeSpec.nLogstashInstance))
+                    return response
                 payload['Interval'] = qMetPer.sysMet
                 payload['LogstashIP'] = qNodeSpec.nLogstashInstance
                 payload['UDPPort'] = str(qLSSpec.udpPort)
-                if 'cassandra' in qNodes.nRoles:
+                if 'cassandra' in uniqueRolesList:
                     payload['Cassandra'] = 1
                 else:
                     payload['Cassandra'] = 0
-                if 'mongodb' in qNodes.nRoles:
+                if 'mongodb' in uniqueRolesList:
                     qBDS = dbBDService.query.first()
                     if qBDS is None:
                         app.logger.warning('[%s] : [WARNING] MongoDB role found but no settings detected',
