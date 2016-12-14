@@ -41,4 +41,27 @@
 		* updated stop scripts with pid file removal
 		* added root user check in start scripts
 		* added support for Storm monitoring
-		* major overhaul of logstash template   	 	
+		* major overhaul of logstash template
+* v0.2.1 - Major alpha release
+     * implemented dmon-agent start/stop resources
+     * added parallel conf enact to dmon-controller
+     * added polling period support
+     * added support for automatic storm discovery
+     * added additional logging
+     * added dynamic role based templates
+     * added additional settings for core services (heapsize, replication etc)
+     * added automatic detection for Yarn history server
+     * added support for gevent and tornado deployment (WSGI)
+     * implemented /v2 enhanced startup for core services
+        * both es and ls are registered as os services using init scripts
+     * implemented enhanced aggregation /v2 query resource
+        * data now stored in memory as dataframes
+        * all conversions happen in memory using dataframes
+* v0.2.2 - Minor alpha release
+     * added distributed storm log fetching and serving
+     * added enhanced automatic visualization generation
+     * various bug and performance issues fixed
+* v0.2.3 - Minor alpha release
+     * added support for Cassandra
+     * added support for MongoDB
+     * various bug and performance issues fixed
