@@ -218,8 +218,8 @@ if [type] == "storm-topology"{
        "topologyStats_all_failed" => "%{[topologyStats][3][failed]}"
        }
        remove_field => ["bolts", "spouts", "visualizationTable", "topologyStats"]
-       convert => {"bolts_0_capacity" => "float"}
-       {% for i in range(nBolt) %}
+    mutate{
+        {% for i in range(nBolt) %}
         convert => {"bolts_{{i}}_capacity" => "float"}
         convert => {"bolts_{{i}}_executeLatency" => "float"}
         convert => {"bolts_{{i}}_processLatency" => "float"}
