@@ -1733,7 +1733,7 @@ class QueryEngine:
         storm, storm_file = self.qConstructor.stormString()
         qstorm = self.qConstructor.stormQuery(storm, tfrom, to, qsize, qinterval, bolts=bolts, spouts=spouts)
         gstorm = self.esConnector.aggQuery(index, qstorm)
-        df_storm = self.dformat.dict2csv(gstorm, qstorm, storm_file, df=True)
+        df_storm = self.dformater.dict2csv(gstorm, qstorm, storm_file, df=True)
         app.logger.info('[%s] : [INFO] Querying Storm metrics complete',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return df_storm

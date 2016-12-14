@@ -666,7 +666,7 @@ class QueryEsEnhancedCore(Resource):
                                      datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                     return response
                 return send_file(csvfile, mimetype='text/csv', as_attachment=True)
-            
+
         if request.json['DMON']['aggregation'] == 'spark':
             return "Not for this version"
         if request.json['DMON']['aggregation'] == 'storm':
