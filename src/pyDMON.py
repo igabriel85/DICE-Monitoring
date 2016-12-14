@@ -547,17 +547,6 @@ class QueryEsEnhancedCore(Resource):
             app.logger.warn('[%s] : [WARN] Unsuported aggregation  %s',
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), request.json['DMON']['aggregation'])
             return response
-        # {
-        #     "DMON": {
-        #         "aggregation": "system",
-        #         "fname": "output",
-        #         "index": "logstash-*",
-        #         "size": 0,
-        #         "tstart": "now-1d",
-        #         "tstop": "now"
-        #     }
-        # }
-
         if 'index' not in request.json['DMON']:
             index = 'logstash-*'
         else:
@@ -665,7 +654,7 @@ class QueryEsEnhancedCore(Resource):
                 else:
                     fileName = '%s.csv' % request.json['DMON']['fname']
                 csvOut = os.path.join(outDir, fileName)
-                dqengine.toCSV(df_system, csvOut)
+                dqengine.toCSV(df_merged, csvOut)
                 # with open(csvOut, 'r') as f:
                 #     read_data = f.read()
                 try:
@@ -680,7 +669,48 @@ class QueryEsEnhancedCore(Resource):
             if request.json['DMON']['aggregation'] == 'spark':
                 return "Not for this version"
             if request.json['DMON']['aggregation'] == 'storm':
-                return "Not for this version"
+                qSCore = dbSCore.query.first()
+                if qSCore is None:
+                    response = jsonify({"Status": "No LS instances registered", "spouts": 0, "bolts": 0})
+                    response.status_code = 500
+                    app.logger.warning('[%s] : [WARN] No LS instance registred',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                if qSCore.LSCoreStormTopology == 'None':
+                    response = jsonify({"Status": "No Storm topology registered"})
+                    response.status_code = 404
+                    app.logger.info(
+                        '[%s] : [INFO] No Storm topology registered, cannot fetch number of spouts and bolts',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                else:
+                    bolts, spouts = checkStormSpoutsBolts(qSCore.LSCoreStormEndpoint, qSCore.LSCoreStormPort,
+                                                          qSCore.LSCoreStormTopology)
+                    app.logger.info('[%s] : [INFO] Storm topology %s with %s spounts and %s bolts found',
+                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                                    str(qSCore.LSCoreStormTopology), str(spouts), str(bolts))
+                    df_storm = dqengine.getStormMetrics(request.json['DMON']['tstart'], request.json['DMON']['tstop'],
+                                                        int(size), interval, index, bolts=bolts, spouts=spouts)
+                    if ftype == 'json':
+                        response = jsonify(dqengine.toDict(df_storm))
+                        response.status_code = 200
+                        return response
+                    if ftype == 'csv':
+                        if not 'fname' in request.json['DMON']:
+                            fileName = 'output.csv'
+                        else:
+                            fileName = '%s.csv' % request.json['DMON']['fname']
+                        csvOut = os.path.join(outDir, fileName)
+                        dqengine.toCSV(df_storm, csvOut)
+                        try:
+                            csvfile = open(csvOut, 'r')
+                        except EnvironmentError:
+                            response = jsonify({'EnvError': 'file not found'})
+                            response.status_code = 500
+                            app.logger.error('[%s] : [ERROR] CSV file not found',
+                                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                            return response
+                        return send_file(csvfile, mimetype='text/csv', as_attachment=True)
 
 
 
@@ -3732,7 +3762,7 @@ class LSCoreControllerInit(Resource):
             uList = []
             for r in qNodeRoles:
                 uList.append(r[0].split(', '))
-            uniqueRoles = set(x for l in uList for x in l) #TODO find better solution for finding unique roles
+            uniqueRoles = set(x for l in uList for x in l)
             uniqueRolesList = list(uniqueRoles)
 
         qMetInt =dbMetPer.query.first()
