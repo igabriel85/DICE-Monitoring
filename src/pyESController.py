@@ -548,6 +548,26 @@ class QueryConstructor():
         file = 'Storm.csv'
         return qstring, file
 
+    def cassandraCounterString(self, host):
+        qstring = "plugin:\"GenericJMX\" AND collectd_type:\"counter\" host:\"%s\"" % host
+        file = "Cassandra_counter_%s.csv" % host
+        return qstring, file
+
+    def cassandraGaugeString(self, host):
+        qstring = "plugin:\"GenericJMX\" AND collectd_type:\"gauge\" host:\"%s\"" % host
+        file = "Cassandra_gauge_%s.csv" % host
+        return qstring, file
+
+    def mongodbCounterString(self, host):
+        qstring = "plugin:mongo AND collectd_type:counter AND host:\"%s\"" % host
+        file = "MongoDB_Counter_%s.csv" % host
+        return qstring, file
+
+    def mongodbGaugeString(self, host):
+        qstring = "plugin:mongo AND collectd_type:gauge AND host:\"%s\"" % host
+        file = "MongoDB_Gauge_%s.csv" % host
+        return qstring, file
+
     def loadAverage(self):  # TODO
         return "Average load across all nodes!"
 
@@ -1205,6 +1225,83 @@ class QueryConstructor():
         cqueryd = cquery.to_dict()
         return cqueryd
 
+    def cassandraQuery(self, qstring, qgte, qlte, qsize, qinterval, wildCard=True, qtformat="epoch_millis",
+                       qmin_doc_count=1):
+        cquery = Dict()
+        cquery.query.filtered.query.query_string.query = qstring
+        cquery.query.filtered.query.query_string.analyze_wildcard = wildCard
+        cquery.query.filtered.filter.bool.must = [
+            {"range": {"@timestamp": {"gte": qgte, "lte": qlte, "format": qtformat}}}]
+        cquery.query.filtered.filter.bool.must_not = []
+        cquery.size = qsize
+
+        cquery.aggs["1"].date_histogram.field = "@timestamp"
+        cquery.aggs["1"].date_histogram.interval = qinterval
+        cquery.aggs["1"].date_histogram.time_zone = "Europe/Helsinki"
+        cquery.aggs["1"].date_histogram.min_doc_count = qmin_doc_count
+        cquery.aggs["1"].date_histogram.extended_bounds.min = qgte
+        cquery.aggs["1"].date_histogram.extended_bounds.max = qlte
+
+        # Cassandra Metrics
+        cquery.aggs["1"].aggs["3"].terms.field = "type_instance"
+        cquery.aggs["1"].aggs["3"].terms.size = 0
+        cquery.aggs["1"].aggs["3"].terms.order["1"] = "desc"
+        cquery.aggs["1"].aggs["3"].aggs["1"].avg.field = "value"
+
+        cqueryd = cquery.to_dict()
+        return cqueryd
+
+    def mongoDBCounterQuery(self, qstring, qgte, qlte, qsize, qinterval, wildCard=True, qtformat="epoch_millis",
+                            qmin_doc_count=1):
+        cquery = Dict()
+        cquery.query.filtered.query.query_string.query = qstring
+        cquery.query.filtered.query.query_string.analyze_wildcard = wildCard
+        cquery.query.filtered.filter.bool.must = [
+            {"range": {"@timestamp": {"gte": qgte, "lte": qlte, "format": qtformat}}}]
+        cquery.query.filtered.filter.bool.must_not = []
+        cquery.size = qsize
+
+        cquery.aggs["1"].date_histogram.field = "@timestamp"
+        cquery.aggs["1"].date_histogram.interval = qinterval
+        cquery.aggs["1"].date_histogram.time_zone = "Europe/Helsinki"
+        cquery.aggs["1"].date_histogram.min_doc_count = qmin_doc_count
+        cquery.aggs["1"].date_histogram.extended_bounds.min = qgte
+        cquery.aggs["1"].date_histogram.extended_bounds.max = qlte
+
+        # Cassandra Metrics
+        cquery.aggs["1"].aggs["3"].terms.field = "type_instance"
+        cquery.aggs["1"].aggs["3"].terms.size = 0
+        cquery.aggs["1"].aggs["3"].terms.order["1"] = "desc"
+        cquery.aggs["1"].aggs["3"].aggs["1"].avg.field = "value"
+
+        cqueryd = cquery.to_dict()
+        return cqueryd
+
+    def mongoDBGaugeQuery(self, qstring, qgte, qlte, qsize, qinterval, wildCard=True, qtformat="epoch_millis",
+                          qmin_doc_count=1):
+        cquery = Dict()
+        cquery.query.filtered.query.query_string.query = qstring
+        cquery.query.filtered.query.query_string.analyze_wildcard = wildCard
+        cquery.query.filtered.filter.bool.must = [
+            {"range": {"@timestamp": {"gte": qgte, "lte": qlte, "format": qtformat}}}]
+        cquery.query.filtered.filter.bool.must_not = []
+        cquery.size = qsize
+
+        cquery.aggs["1"].date_histogram.field = "@timestamp"
+        cquery.aggs["1"].date_histogram.interval = qinterval
+        cquery.aggs["1"].date_histogram.time_zone = "Europe/Helsinki"
+        cquery.aggs["1"].date_histogram.min_doc_count = qmin_doc_count
+        cquery.aggs["1"].date_histogram.extended_bounds.min = qgte
+        cquery.aggs["1"].date_histogram.extended_bounds.max = qlte
+
+        # Cassandra Metrics
+        cquery.aggs["1"].aggs["3"].terms.field = "type_instance"
+        cquery.aggs["1"].aggs["3"].terms.size = 0
+        cquery.aggs["1"].aggs["3"].terms.order["1"] = "desc"
+        cquery.aggs["1"].aggs["3"].aggs["1"].avg.field = "value"
+
+        cqueryd = cquery.to_dict()
+        return cqueryd
 
 class DataFormatter:
 
@@ -1356,6 +1453,28 @@ class DataFormatter:
         df_DN = self.chainMerge(lDN, colNamesDN, iterStart=2)
         return df_DN
 
+    def chainMergeCassandra(self, lcassandra):
+        '''
+        :return: -> merged Cassandra metrics
+        '''
+
+        # Read files
+        # Get column headers and gen dict with new col headers
+        colNamesCa = csvheaders2colNames(lcassandra[0], 'node1')
+        df_CA = self.chainMerge(lcassandra, colNamesCa, iterStart=2)
+        return df_CA
+
+    def chainMergeMongoDB(self, lmongoDB):
+        '''
+        :return: -> merged Cassandra metrics
+        '''
+
+        # Read files
+        # Get column headers and gen dict with new col headers
+        colNamesMG = csvheaders2colNames(lmongoDB[0], 'node1')
+        df_MG = self.chainMerge(lmongoDB, colNamesMG, iterStart=2)
+        return df_MG
+
     def listMerge(self, lFiles):
         '''
         :param lFiles: -> list of files
@@ -1473,7 +1592,8 @@ class DataFormatter:
                                          datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), rKey, rValue)
                             # print "%s -> %s"% (rKey, rValue)
                             dictMetrics['key'] = rValue
-                        elif query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] =='type_instance.raw':
+                        elif query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] =='type_instance.raw' or \
+                                        query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] == 'type_instance':
                             app.logger.debug('[%s] : [DEBUG] Detected Memory type aggregation', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                             # print "This is  rValue ________________> %s" % str(rValue)
                             # print "Keys of rValue ________________> %s" % str(rValue.keys())
@@ -1490,7 +1610,8 @@ class DataFormatter:
         # print "Required Metrics -> %s" % requiredMetrics
         csvOut = os.path.join(outDir, filename)
         cheaders = []
-        if query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] == "type_instance.raw":
+        if query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] == "type_instance.raw" or \
+                        query['aggs'].values()[0].values()[1].values()[0].values()[0].values()[0] == 'type_instance':
             app.logger.debug('[%s] : [DEBUG] Detected Memory type query', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             cheaders = requiredMetrics[0].keys()
         else:
@@ -1519,6 +1640,11 @@ class DataFormatter:
                     w = csv.DictWriter(csvfile, cheaders)
                     w.writeheader()
                     for metrics in requiredMetrics:
+                        if cheaders != metrics.keys():
+                            app.logger.error(
+                                '[%s] : [ERROR] Headers different from required metrics: headers -> %s, metrics ->%s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(cheaders),
+                                str(metrics.keys()))
                         w.writerow(metrics)
                 csvfile.close()
             except EnvironmentError:
@@ -1529,7 +1655,7 @@ class DataFormatter:
             return 0
         else:
             df = pd.DataFrame(requiredMetrics)
-            df.set_index('key', inplace=True)
+            # df.set_index('key', inplace=True)
             app.logger.info('[%s] : [INFO] Created dataframe',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return df
@@ -1726,6 +1852,40 @@ class QueryEngine:
         app.logger.info('[%s] : [INFO] Querying System metrics complete',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return merged_df
+
+    def getCassandraMetrics(self, nodes, tfrom, to, qsize, qinterval, index):
+        lcassandraCounter = []
+        lcassandraGauge = []
+        app.logger.info('[%s] : [INFO] Querying Cassandra metrics ...',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+        for node in nodes:
+            cassandra, cassandra_file = self.qConstructor.cassandraCounterString(host=node)
+            cassandragauge, cassandragauge_file = self.qConstructor.cassandraGaugeString(host=node)
+
+            #Queries
+            qcassandra = self.qConstructor.cassandraQuery(cassandra, tfrom, to, qsize, qinterval)
+            qcassandragauge = self.qConstructor.cassandraQuery(cassandragauge, tfrom, to, qsize, qinterval)
+
+            # Execute query and convert response to csv
+            gcassandra = self.esConnector.aggQuery(index, qcassandra)
+            gcassandragauge = self.esConnector.aggQuery(index, qcassandragauge)
+
+            if not gcassandra or not gcassandragauge:
+                app.logger.warning('[%s] : [WARN] Empty response for cassandra queries',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return 0, 0
+
+            lcassandraCounter.append(self.dformater.dict2csv(gcassandra, qcassandra, cassandra_file, df=True))
+            lcassandraGauge.append(self.dformater.dict2csv(gcassandragauge, qcassandragauge, cassandragauge_file, df=True))
+
+            # Merge and rename by node system Files
+
+        df_CA_Count = self.dformater.chainMergeCassandra(lcassandraCounter)
+        df_CA_Gauge = self.dformater.chainMergeCassandra(lcassandraGauge)
+
+        # df_CA = self.dformater.listMerge([df_CA_Count, df_CA_Gauge])
+        return df_CA_Count, df_CA_Gauge
+
 
     def getStormMetrics(self, tfrom, to, qsize, qinterval, index, bolts, spouts):
         app.logger.info('[%s] : [INFO] Querying Storm metrics ...',

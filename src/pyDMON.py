@@ -540,7 +540,7 @@ class QueryEsEnhancedCore(Resource):
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
 
-        supportedAggregation = ['system', 'yarn', 'spark', 'storm']
+        supportedAggregation = ['system', 'yarn', 'spark', 'storm', 'cassandra']
         if request.json['DMON']['aggregation'] not in supportedAggregation:
             response = jsonify({'Supported aggregation': supportedAggregation, "Submitted Type": request.json['DMON']['aggregation']})
             response.status_code = 415
@@ -601,6 +601,7 @@ class QueryEsEnhancedCore(Resource):
             df_system = dqengine.getSystemMetrics(nodeList, request.json['DMON']['tstart'], request.json['DMON']['tstop'], int(size), interval, index)
             # df_system = dqengine.getSystemMetrics(nodeList, request.json['DMON']['tstart'],
             #                                       request.json['DMON']['tstop'], 0, '10s', 'logstash-*')
+            df_system.set_index('key', inplace=True)
             if isinstance(df_system, int):
                 response = jsonify({'Status': 'error', 'Message': 'response is null'})
                 response.status_code = 500
@@ -644,6 +645,7 @@ class QueryEsEnhancedCore(Resource):
                                                 int(size), interval, index)
             listDF = [df_dfs, df_cluster, df_name_node, nm_merged, jvmnn_merged, shuffle_merged, df_dn_merged]
             df_merged = dqengine.merge(listDF)
+            df_merged.set_index('key', inplace=True)
             if ftype == 'json':
                 response = jsonify(dqengine.toDict(df_merged))
                 response.status_code = 200
@@ -667,8 +669,6 @@ class QueryEsEnhancedCore(Resource):
                     return response
                 return send_file(csvfile, mimetype='text/csv', as_attachment=True)
 
-        if request.json['DMON']['aggregation'] == 'spark':
-            return "Not for this version"
         if request.json['DMON']['aggregation'] == 'storm':
             qSCore = dbSCore.query.first()
             if qSCore is None:
@@ -712,6 +712,47 @@ class QueryEsEnhancedCore(Resource):
                                          datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                         return response
                     return send_file(csvfile, mimetype='text/csv', as_attachment=True)
+
+        if request.json['DMON']['aggregation'] == 'spark':
+            return "Not for this version"
+
+        if request.json['DMON']['aggregation'] == 'cassandra':
+            df_CA_Count, df_CA_Gauge = dqengine.getCassandraMetrics(nodeList, request.json['DMON']['tstart'],
+                                                  request.json['DMON']['tstop'], int(size), interval, index)
+            if isinstance(df_CA_Gauge, int) or isinstance(df_CA_Gauge, int):
+                response = jsonify({'Status': 'Empty response for cassandra metrics'})
+                response.status_code = 400
+                return response
+            listDF = [df_CA_Count, df_CA_Gauge]
+            df_merged = dqengine.merge(listDF)
+            df_merged.set_index('key', inplace=True)
+            if ftype == 'json':
+                response = jsonify(dqengine.toDict(df_merged))
+                response.status_code = 200
+                return response
+            if ftype == 'csv':
+                if not 'fname' in request.json['DMON']:
+                    fileName = 'output.csv'
+                else:
+                    fileName = '%s.csv' % request.json['DMON']['fname']
+                csvOut = os.path.join(outDir, fileName)
+                dqengine.toCSV(df_merged, csvOut)
+                # with open(csvOut, 'r') as f:
+                #     read_data = f.read()
+                try:
+                    csvfile = open(csvOut, 'r')
+                except EnvironmentError:
+                    response = jsonify({'EnvError': 'file not found'})
+                    response.status_code = 500
+                    app.logger.error('[%s] : [ERROR] CSV file not found',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                return send_file(csvfile, mimetype='text/csv', as_attachment=True)
+
+            return "Not for this version"
+
+        if request.json['DMON']['aggregation'] == 'mongodb':
+            return "Not for this version"
 
 
 @dmon.route('/v1/overlord')
@@ -2358,8 +2399,7 @@ class ESCoreController(Resource):
                     confDict['Status'] = 'unknown'  #TODO: Document failed message if PID is not assigned to an ES Instance
                     confDict['PID'] = 0
                     app.logger.warning('[%s] : ES Core service not found, setting to unknown',
-                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
-                                       str(esPIDf))
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             confDict['MasterNode'] = hosts[8]
             confDict['DataNode'] = hosts[9]
             confDict['NumOfShards'] = hosts[10]
