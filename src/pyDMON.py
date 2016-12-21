@@ -722,6 +722,8 @@ class QueryEsEnhancedCore(Resource):
             if isinstance(df_CA_Gauge, int) or isinstance(df_CA_Gauge, int):
                 response = jsonify({'Status': 'Empty response for cassandra metrics'})
                 response.status_code = 400
+                app.logger.warning('[%s] : [WARN] Empty response detected for Cassandra',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                 return response
             listDF = [df_CA_Count, df_CA_Gauge]
             df_merged = dqengine.merge(listDF)
@@ -749,10 +751,38 @@ class QueryEsEnhancedCore(Resource):
                     return response
                 return send_file(csvfile, mimetype='text/csv', as_attachment=True)
 
-            return "Not for this version"
-
         if request.json['DMON']['aggregation'] == 'mongodb':
-            return "Not for this version"
+            df_MD_Count, df_MD_Gauge = dqengine.getMongoMetrics(nodeList, request.json['DMON']['tstart'],
+                                                                request.json['DMON']['stop'], int(size), interval, index)
+            if isinstance(df_MD_Count, int) or isinstance(df_MD_Gauge, int):
+                response = jsonify({'Status': 'Empty response for MongoDB metrics'})
+                response.status_code = 400
+                app.logger.warning('[%s] : [WARN] Empty response detected for MongoDB',
+                                   datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return response
+            listDF = [df_MD_Count, df_MD_Gauge]
+            df_merged = dqengine.merge(listDF)
+            df_merged.set_index('key', inplace=True)
+            if ftype == 'json':
+                response = jsonify(dqengine.toDict(df_merged))
+                response.status_code = 200
+                return response
+            if ftype == 'csv':
+                if not 'fname' in request.json['DMON']:
+                    fileName = 'output.csv'
+                else:
+                    fileName = '%s.csv' % request.json['DMON']['fname']
+                csvOut = os.path.join(outDir, fileName)
+                dqengine.toCSV(df_merged, csvOut)
+                try:
+                    csvfile = open(csvOut, 'r')
+                except EnvironmentError:
+                    response = jsonify({'EnvError': 'file not found'})
+                    response.status_code = 500
+                    app.logger.error('[%s] : [ERROR] CSV file not found',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                    return response
+                return send_file(csvfile, mimetype='text/csv', as_attachment=True)
 
 
 @dmon.route('/v1/overlord')
