@@ -1886,6 +1886,36 @@ class QueryEngine:
         # df_CA = self.dformater.listMerge([df_CA_Count, df_CA_Gauge])
         return df_CA_Count, df_CA_Gauge
 
+    def getMongoMetrics(self, nodes, tfrom, to, qsize, qinterval, index):
+        lmongoCounter = []
+        lmongoGauge = []
+        for node in nodes:
+            mongodbCounter, mongodbCounter_file = self.qConstructor.mongodbCounterString(host=node)
+            mongodbGauge, mongodbGauge_file = self.qConstructor.mongodbGaugeString(host=node)
+
+            # Queries
+            qmongodbCounter = self.qConstructor.mongoDBCounterQuery(mongodbCounter, tfrom, to, qsize, qinterval)
+            qmongodbGauge = self.qConstructor.mongoDBGaugeQuery(mongodbGauge, tfrom, to, qsize, qinterval)
+
+            # Execute query and convert response to csv
+            gmongodbGauge = self.esConnector.aggQuery(index, qmongodbGauge)
+            gmongodbCounter = self.esConnector.aggQuery(index, qmongodbCounter)
+
+            if not gmongodbCounter or not gmongodbGauge:
+                app.logger.warning('[%s] : [WARN] Empty response for mongodb queries',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                return 0, 0
+
+            lmongoCounter.append(self.dformater.dict2csv(gmongodbCounter, qmongodbCounter, mongodbCounter_file, df=True))
+            lmongoGauge.append(self.dformater.dict2csv(gmongodbGauge, qmongodbGauge, mongodbGauge_file, df=True))
+
+
+        # Merge and rename by node system File
+        df_MD_Count = self.dformater.chainMergeMongoDB(lmongoCounter)
+        df_MD_Gauge = self.dformater.chainMergeMongoDB(lmongoGauge)
+
+        return df_MD_Count, df_MD_Gauge
+
 
     def getStormMetrics(self, tfrom, to, qsize, qinterval, index, bolts, spouts):
         app.logger.info('[%s] : [INFO] Querying Storm metrics ...',
