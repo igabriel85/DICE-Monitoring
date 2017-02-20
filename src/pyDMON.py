@@ -1104,13 +1104,25 @@ class MonitoredNodes(Resource):
                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                                     nLSI, nodes['NodeName'])
 
-                e = dbNodes(nodeFQDN=nodes['NodeName'], nodeIP=nodes['NodeIP'], nodeOS=nodes['NodeOS'],
-                            nkey=nodes['key'], nUser=nodes['username'], nPass=nodes['password'], nLogstashInstance=nLSI)
+                if 'NodeOS' not in nodes:
+                    nodeOS = 'unknown'
+                else:
+                    nodeOS = nodes['NodeOS']
+
+                if 'key' not in nodes:
+                    nodeKey = 'unknown'
+                else:
+                    nodeKey = nodes['key']
+
+                e = dbNodes(nodeFQDN=nodes['NodeName'], nodeIP=nodes['NodeIP'], nodeOS=nodeOS,
+                            nkey=nodeKey, nUser=nodes['username'], nPass=nodes['password'], nLogstashInstance=nLSI)
                 db.session.add(e)
             else:
                 qNodes.nodeIP = nodes['NodeIP']
-                qNodes.nodeOS = nodes['NodeOS']
-                qNodes.nkey = nodes['key']
+                if 'NodeOS' in nodes:
+                    qNodes.nodeOS = nodes['NodeOS']
+                if 'key' in nodes:
+                    qNodes.nkey = nodes['key']
                 qNodes.nUser = nodes['username']
                 qNodes.nPass = nodes['password']
                 if 'LogstashInstance' not in nodes:
@@ -1129,7 +1141,7 @@ class MonitoredNodes(Resource):
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
         return response
 
-    def post(self):
+    def post(self): #todo
         return "Bootstrap monitoring"
 
 
