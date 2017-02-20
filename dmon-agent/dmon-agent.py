@@ -550,6 +550,8 @@ class AgentMetricsSystem(Resource):
 class FetchStormLogs(Resource):
     def get(self):
         stDir = os.getenv('STORM_LOG', stormLogDir)
+        app.logger.warning('[%s] : [WARN] Storm log directory set to %s',
+                         datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), stDir)
 
         logFile = os.path.join(stDir, 'worker-6700.log')
         if not os.path.isfile(logFile):
@@ -570,6 +572,8 @@ class FetchStormLogs(Resource):
 class FetchStormLogsSDAll(Resource):
     def get(self):
         stDir = os.getenv('STORM_LOG', stormLogDir)
+        app.logger.warning('[%s] : [WARN] Storm log directory set to %s',
+                           datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), stDir)
         lFile = []
         workerFile = 'worker-*.log'
         # logFile = os.path.join(stDir, workerFile)
@@ -612,6 +616,8 @@ class FetchStormLogsSDAll(Resource):
 class FetchStormLogsSD(Resource):
     def get(self):
         stDir = os.getenv('STORM_LOG', stormLogDir)
+        app.logger.warning('[%s] : [WARN] Storm log directory set to %s',
+                           datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), stDir)
         lFile = []
         workerFile = 'worker-' + ('[0-9]' * 4) + '.log'
         # logFile = os.path.join(stDir, workerFile)
