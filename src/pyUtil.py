@@ -715,7 +715,10 @@ def check_proc(pidfile, wait=5):
         if tick > wait:
             return 0
     stats_pid = open(pidfile)
-    pid = int(stats_pid.read())
+    try:
+        pid = int(stats_pid.read())
+    except ValueError:
+        return 0
     return pid
 
 
