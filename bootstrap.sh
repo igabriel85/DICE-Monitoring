@@ -97,6 +97,7 @@ echo "Installing Elasticsearch plugin marvel ....."
             
 echo "Setting up init script for dmon-es ..."
 cp $DMONHOME/src/init/dmon-es /etc/init.d/dmon-es
+cd /etc/init.d
 chmod +x /etc/init.d/dmon-es
 update-rc.d dmon-es defaults 96 9
 
@@ -109,9 +110,11 @@ ln -sf logstash-2.2.1 logstash
 
 echo "Setting up init script for dmon-ls ..."
 cp $DMONHOME/src/init/dmon-ls /etc/init.d/dmon-ls
+cd /etc/init.d
 chmod +x /etc/init.d/dmon-ls
 update-rc.d dmon-ls defaults 96 9
 
+cd /opt
 #Setup Logrotate
 echo "Setting up logrotate ..."
 
