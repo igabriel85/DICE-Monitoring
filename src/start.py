@@ -106,6 +106,11 @@ def main(argv):
         if opt in ("-l", "--local"):
             if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
                 if opt in ("-l", "--local"):
+                    if socket.getfqdn().isspace():
+                        app.logger.error('[%s] : [ERROR] FQDN not set',
+                                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+                        print >> sys.stderr, "FQDN not set!"
+                        sys.exit(2)
                     if isinstance(arg, str) is not True:
                         print >> sys.stderr, "Argument must be string!"
                     chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
