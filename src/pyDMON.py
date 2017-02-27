@@ -2165,6 +2165,12 @@ class ESCoreConfiguration(Resource):
             ESHeap = '4g'
         else:
             ESHeap = request.json['ESCoreHeap']
+
+        check, value = sysMemoryCheck(ESHeap)
+        if not check:
+            app.logger.warning('[%s] : [WARN] ES Core service heapsize modified to %s instead of %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(value), str(ESHeap))
+            ESHeap = value
         if 'DataNode' not in request.json:
             data = 1
         else:

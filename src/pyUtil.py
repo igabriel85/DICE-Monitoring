@@ -31,6 +31,7 @@ from dbModel import *
 from greenletThreads import *
 from urlparse import urlparse
 import pandas as pd
+import psutil
 
 
 def portScan(addrs, ports):
@@ -722,8 +723,27 @@ def check_proc(pidfile, wait=5):
     return pid
 
 
-
-
+def sysMemoryCheck(needStr):
+    '''
+    :param needStr: heap size string setting of the format "512m"
+    :return: returns True or False depending if check is successful or not and returns the final heap size
+    '''
+    mem = psutil.virtual_memory().total
+    need = int(needStr[:-1])
+    unit = needStr[-1]
+    if unit == 'm':
+        hmem = mem / 1024 / 1024
+    elif unit == 'g':
+        hmem = mem / 1024 / 1024 / 1024
+    else:
+        app.logger.error('[%s] : [ERROR] Unknown heap size format %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), needStr)
+        hmem = mem / 1024 / 1024
+        return False, "%s%s" % (str(hmem / 2), 'm')
+    if need > hmem:
+        return False, "%s%s" % (str(hmem / 2), unit)
+    else:
+        return True, needStr
 
 if __name__ == '__main__':
 #     db.create_all()
