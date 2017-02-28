@@ -5,6 +5,7 @@ import datetime
 import time
 import jinja2
 from flask import jsonify
+from flask import request
 from app import *
 
 lockDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lock')
@@ -334,3 +335,13 @@ def generateConf(tmpPath, settingsDict, filePath):
     confFile = open(filePath, "w+")
     confFile.write(confInfo)
     confFile.close()
+
+
+def shutdown_agent():
+    '''
+    Gracefully shutsdown dmon-agent
+    '''
+    shutFunc = request.environ.get('werkzeug.server.shutdown')
+    if shutFunc is None:
+        raise RuntimeError('Not running with Werkzwug Server')
+    shutFunc()
