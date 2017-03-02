@@ -61,7 +61,17 @@ export ES_HEAP_SIZE=2g
 sysctl -w vm.max_map_count=262144
 swapoff -a
 
-# Install Elasticsearch 2.1.0
+# TODO fix this so that it must be set before running bootstrap script
+DMONHOME=/opt/IeAT-DICE-Repository
+
+if grep -q "DMONHOME" ~/.bashrc; then
+    echo "DMON home dir is already set"
+else
+    echo "DMONHOME=/opt/IeAT-DICE-Repository" >> ~/.bashrc
+    echo "DMON home dir set"
+fi
+
+# Install Elasticsearch 2.2.0
 echo "Installing Elasticsearch ...."
 cd /opt
 wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.2.0/elasticsearch-2.2.0.tar.gz
@@ -79,6 +89,14 @@ echo "Installing Elasticsearch plugin marvel ....."
 /opt/elasticsearch/bin/plugin install license
 /opt/elasticsearch/bin/plugin install marvel-agent
 /opt/kibana/bin/kibana plugin --install elasticsearch/marvel/2.2.0
+/opt/kibana/bin/kibana plugin --install elastic/sense
+
+
+echo "Setting up init script for dmon-es ..."
+cp /vagrant/init/dmon-es /etc/init.d/dmon-es
+cd /etc/init.d
+chmod +x /etc/init.d/dmon-es
+update-rc.d dmon-es defaults 96 9
 
 
 # Install Logstash
@@ -88,6 +106,11 @@ wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
 tar zxf logstash-2.2.1.tar.gz
 ln -sf logstash-2.2.1 logstash
 
+echo "Setting up init script for dmon-ls ..."
+cp /vagrant/init/dmon-ls /etc/init.d/dmon-ls
+cd /etc/init.d
+chmod +x /etc/init.d/dmon-ls
+update-rc.d dmon-ls defaults 96 9
 
 #setup logrotate
 echo "Setting up logrotate ..."
@@ -130,6 +153,9 @@ mkdir -p /etc/logstash/conf.d
 rm -rf /opt/logstash-2.2.1.tar.gz
 rm -rf /opt/elasticsearch-2.2.0.tar.gz
 rm -rf /home/ubuntu/kibana-4.4.1-linux-x64*
+wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/logov01/kibana.svg
+mv kibana.svg /opt/kibana/optimize/bundles/src/ui/public/images
+
 
 SCRIPT
 
