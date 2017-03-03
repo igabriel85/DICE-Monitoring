@@ -140,7 +140,9 @@ nodeSubmitCont = api.model('Submit Node Model Info', {
     'LogstashInstance': fields.String(required=False, description='Logstash Server Endpoint')
 })
 
-
+nodeDelList = api.model('Delete node list', {
+    'Nodes': fields.List(fields.String(required=True, default='node_name', description='Node FQDN'))
+})
 
 nodeSubmit = api.model('Submit Node Model', {
     'Nodes': fields.List(fields.Nested(nodeSubmitCont, required=True, description="Submit Node details"))
@@ -1979,47 +1981,71 @@ class MonitoredNodeInfo(Resource):
             response.status_code = 201
             return response
 
-    def post(self, nodeFQDN):
-        return "Bootstrap specified node!" #todo
 
     def delete(self, nodeFQDN):
-        dNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
-        if dNode is None:
+        qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
+        if qNode is None:
             response = jsonify({'Status': 'Node ' + nodeFQDN + ' not found'})
             response.status_code = 404
             app.logger.warning('[%s] : [WARN] No node %s found',
                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
             return response
-        dlist = []
-        dlist.append(dNode.nodeIP)
-        try:
-            serviceCtrl(dlist, dNode.nUser, dNode.nPass, 'collectd', 'stop')
-        except Exception as inst:
-            # print >> sys.stderr, type(inst)
-            # print >> sys.stderr, inst.args
-            response = jsonify({'Error': 'Collectd stopping error!'})
-            response.status_code = 500
-            app.logger.error('[%s] : [ERROR] Error while stopping collectd with %s and %s',
-                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+        else:
+            nodeID = qNode.nodeFQDN
+            status = 0
+            node = []
+            node.append(qNode.nodeIP)
+            agentr = AgentResourceConstructor(node, '5222')
+            if qNode.nStatus:
+                resourceCheck = agentr.check()
+                try:
+                    r = requests.get(resourceCheck[0])
+                except requests.exceptions.Timeout:
+                    app.logger.warning('[%s] : [WARN] Agent on node  %s timedout',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeID)
+                except requests.exceptions.ConnectionError:
+                    app.logger.error('[%s] : [ERROR] Agent on node %s connection error',
+                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeID)
+                if r.status_code == 200:
+                    resourceList = agentr.shutdownAgent()
+                    try:
+                        requests.post(resourceList[0])
+                    except requests.exceptions.Timeout:
+                        app.logger.warning('[%s] : [WARN] Agent on node  %s timedout',
+                                           datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeID)
+                        status = 1
+                    except requests.exceptions.ConnectionError:
+                        app.logger.error('[%s] : [ERROR] Agent on node %s connection error',
+                                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeID)
+                        status = 2
+
+            db.session.delete(qNode)
+            db.session.commit()
+            response = jsonify({'Status': status,
+                                'Node': nodeID,
+                                'Message': 'Node succesfully removed'})
+            response.status_code = 200
             return response
 
-        try:
-            serviceCtrl(dlist, dNode.nUser, dNode.nPass, 'logstash-forwarder', 'stop')
-        except Exception as inst:
-            # print >> sys.stderr, type(inst)
-            # print >> sys.stderr, inst.args
-            response = jsonify({'Error': 'LSF stopping error!'})
-            response.status_code = 500
-            app.logger.error('[%s] : [ERROR] Error while stopping lsf with %s and %s',
-                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
-            return response
-        dNode.nMonitored = 0
-        dNode.nCollectdState = 'Stopped'
-        dNode.nLogstashForwState = 'Stopped'
-        response = jsonify({'Status': 'Node ' + nodeFQDN + ' monitoring stopped!'})
-        response.status_code = 200
-        app.logger.info('[%s] : [INFO] Monitoring stopped on node %s',
-                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
+
+@dmon.route('/v1/overlord/nodes/list')
+class ClusterNodeListDelete(Resource):
+    @api.expect(nodeDelList)
+    def delete(self):
+        if not request.json:
+            abort(400)
+
+        listNodes = request.json['Nodes']
+        invalidNodes = []
+        validNodes = []
+        for n in listNodes:
+            qNode = dbNodes.query.filter_by(nodeFQDN=n).first()
+            if qNode is None:
+                invalidNodes.append(n)
+            else:
+                validNodes.append(n)
+
+        response = jsonify({'Valid': validNodes, 'Invalid': invalidNodes})
         return response
 
 
@@ -2108,6 +2134,7 @@ class PurgeNode(Resource):
         app.logger.info('[%s] : [INFO] Node %s deleted',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeFQDN)
         return response
+
 
 
 @dmon.route('/v1/overlord/core/es/config')  # TODO use args for unsafe cfg file upload
@@ -3697,7 +3724,7 @@ class LSCoreController(Resource):
                 uniqueRolesList.remove('storm')
                 app.logger.warning('[%s] : [WARN] Storm topology spouts and botls not found, ignoring Storm',
                                    datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
-                stormStatus = 'Storm ignored'
+                stormStatus = 'Storm Ignored'
         else:
             stormStatus = 'Not registered'
             spouts = 0
@@ -5007,7 +5034,7 @@ class AuxStopAll(Resource):
     def post(self, auxComp):
         auxList = ['collectd', 'lsf']
         if auxComp not in auxList:
-            response = jsonify({'Status': 'No such such aux component ' + auxComp})
+            response = jsonify({'Status': 'No such aux component ' + auxComp})
             response.status_code = 400
             return response
 
@@ -5015,7 +5042,7 @@ class AuxStopAll(Resource):
             qNCollectd = dbNodes.query.filter_by(nCollectdState='Running').all()
 
             if not qNCollectd:
-                response = jsonify({'Status': 'No nodes in state Running!'})
+                response = jsonify({'Status': 'No nodes in Running state!'})
                 response.status_code = 404
                 return response
 

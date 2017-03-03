@@ -141,6 +141,7 @@ class AgentResourceConstructor():
     startr = '/start'
     stopr = '/stop'
     slogs = '/bdp/storm/logs'
+    shutDown = '/shutdown'
 
     def __init__(self, IPList, Port):
         self.IPList = IPList
@@ -248,6 +249,13 @@ class AgentResourceConstructor():
             resource = 'http://%s:%s%s%s' %(ip, self.Port, AgentResourceConstructor.uriRoot2, AgentResourceConstructor.slogs)
             logList.append(resource)
         return logList
+
+    def shutdownAgent(self):
+        shutdownList = []
+        for ip in self.IPList:
+            resource = 'http://%s:%s%s%s' %(ip, self.Port, AgentResourceConstructor.uriRoot, AgentResourceConstructor.shutDown)
+            shutdownList.append(resource)
+        return shutdownList
 
 
 def dbBackup(db, source, destination, version=1):
