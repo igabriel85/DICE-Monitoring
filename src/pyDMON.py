@@ -1981,7 +1981,6 @@ class MonitoredNodeInfo(Resource):
             response.status_code = 201
             return response
 
-
     def delete(self, nodeFQDN):
         qNode = dbNodes.query.filter_by(nodeFQDN=nodeFQDN).first()
         if qNode is None:
@@ -2033,19 +2032,45 @@ class ClusterNodeListDelete(Resource):
     @api.expect(nodeDelList)
     def delete(self):
         if not request.json:
+            app.logger.warning('[%s] : [WARN] Malformed request, not json',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             abort(400)
-
         listNodes = request.json['Nodes']
         invalidNodes = []
-        validNodes = []
+        validNodes = {}
+        validNodesList = []
         for n in listNodes:
             qNode = dbNodes.query.filter_by(nodeFQDN=n).first()
             if qNode is None:
                 invalidNodes.append(n)
             else:
-                validNodes.append(n)
+                validNodes[n] = qNode.nodeIP
+                validNodesList.append(qNode.nodeIP)
+        agentr = AgentResourceConstructor(validNodesList, '5222')
 
-        response = jsonify({'Valid': validNodes, 'Invalid': invalidNodes})
+        resourceShutDown = agentr.shutdownAgent()
+        dmon = GreenletRequests(resourceShutDown)
+        nodeRes = dmon.parallelPost(None)
+
+        failedNodes = {}
+        successNodes = {}
+        for res in nodeRes:
+            nodeIP = urlparse(res['Node'])
+            if res['StatusCode'] == 200:
+                for k, v in validNodes.iteritems():
+                    if v == nodeIP.hostname:
+                        successNodes[k] = v
+            else:
+                for k, v in validNodes.iteritems():
+                    if v == nodeIP.hostname:
+                        failedNodes[k] = v
+        for nod in validNodesList:
+            qNodeDel = dbNodes.query.filter_by(nodeIP=nod).first()
+            db.session.delete(qNodeDel)
+            db.session.commit()
+        response = jsonify({'Valid': validNodes, 'Invalid': invalidNodes, 'Stopped': successNodes, 'Unavailable': failedNodes})
+        response.status_code = 200
+        dmon.reset()
         return response
 
 
