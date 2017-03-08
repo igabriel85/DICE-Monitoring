@@ -3479,6 +3479,81 @@ class KBVisualizations(Resource):
         return response
 
 
+@dmon.route('/v1/overlord/core/kb/visualizations/storm')
+class KBVisualizationsStorm(Resource):
+    def post(self):
+        templateLoader = jinja2.FileSystemLoader(searchpath="/")
+        templateEnv = jinja2.Environment(loader=templateLoader)
+        kbVisTemp = os.path.join(tmpDir, 'visualizations')
+        qNode = dbNodes.query.all()
+        qESCore = dbESCore.query.filter_by(MasterNode=1).first()
+        if qESCore is None:
+            response = jsonify({'Status': 'ES Core not registered'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] ES Core not registered',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+
+        if qNode is None:
+            response = jsonify({'Status': 'No registered nodes'})
+            response.status_code = 404
+            app.logger.warning('[%s] : [WARN] No nodes found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        qSCore = dbSCore.query.first()
+        if qSCore is None:
+            response = jsonify({"Status": "No LS instances registered", "spouts": 0, "bolts": 0})
+            response.status_code = 500
+            app.logger.warning('[%s] : [WARN] No LS instance registred',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        if qSCore.LSCoreStormTopology == 'None':
+            response = jsonify({"Status": "No Storm topology registered"})
+            response.status_code = 404
+            app.logger.info('[%s] : [INFO] No Storm topology registered, cannot fetch number of spouts and bolts',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        else:
+            bolts, spouts = checkStormSpoutsBolts(qSCore.LSCoreStormEndpoint, qSCore.LSCoreStormPort,
+                                                  qSCore.LSCoreStormTopology)
+            response = jsonify({'Topology': qSCore.LSCoreStormTopology, "spouts": spouts, "bolts": bolts})
+            response.status_code = 200
+            app.logger.info('[%s] : [INFO] Storm topology %s with %s spounts and %s bolts found',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(qSCore.LSCoreStormTopology), str(spouts), str(bolts))
+
+            ecc = ESCoreConnector(esEndpoint=qESCore.hostIP, index='.kibana')
+            listStorm = []
+            try:
+                template = templateEnv.get_template(os.path.join(kbVisTemp, 'storm.tmp'))
+            except Exception as inst:
+                app.logger.error('[%s] : [ERROR] Template file unavailable with %s and %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+                response = jsonify({'Status': 'Error', 'Message': 'Load template file unavailable'})
+                response.status_code = 500
+                return response
+            lsindex = 'logstash-*'  # TODO create separate viz for more than one index
+            infoKBCoreStorm = {"nBolt": bolts, "nSpout": spouts, "lsindex": lsindex}
+            kbStorm = template.render(infoKBCoreStorm)
+            kbStormJ = json.loads(kbStorm)
+
+            for visualisation in kbStormJ:
+                res = ecc.pushToIndex('.kibana', visualisation['_type'], visualisation['_source'], id=visualisation['_id'])
+                try:
+                    listStorm.append(res["_id"])
+                except Exception as inst:
+                    app.logger.warning('[%s] : [ERROR] Failed to create visualization with  %s and %s',
+                                       datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst),
+                                       inst.args)
+                    listStorm.append({'Failed': visualisation})
+
+            app.logger.info('[%s] : [INFO] Generated storm visualizations: %s ',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
+                            str(qSCore.LSCoreStormTopology), str(listStorm))
+            response = jsonify({'Visualizations': listStorm})
+            response.status_code = 201
+            return response
+
 @dmon.route('/v1/overlord/core/ls/config')
 class LSCoreConfiguration(Resource):
     def get(self):

@@ -424,8 +424,8 @@ class ESCoreConnector:
             else:
                 res = self.esInstance.index(index=index, doc_type=typeD, body=body, id=id)
         except Exception as inst:
-            app.logger.error('[%s] : [ERROR] Exception has occured while pushing anomaly with type %s at arguments %s',
-                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
+            app.logger.error('[%s] : [ERROR] Exception has occured while pushing document %s with type %s at arguments %s',
+                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), typeD, type(inst), inst.args)
             return 0
         return res
 
