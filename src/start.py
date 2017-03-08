@@ -114,24 +114,19 @@ def main(argv):
                     if isinstance(arg, str) is not True:
                         print >> sys.stderr, "Argument must be string!"
                     chkESCoreDB = db.session.query(dbESCore.hostFQDN).all()
-                    # print >> sys.stderr, chkESCoreDB
                     if chkESCoreDB is not None: #TODO read heap from env variable and set in db
                         corePopES = dbESCore(hostFQDN=socket.getfqdn(), hostIP='127.0.0.1', hostOS='ubuntu', nodeName='esCoreMaster',
                             clusterName='diceMonit', conf='None', nodePort=9200, MasterNode=1, DataNode=1,
-                                             ESCoreHeap=os.getenv('ES_HEAP_SIZE', '4g'))
+                                             ESCoreHeap=os.getenv('ES_HEAP_SIZE', '1g'))
                         db.session.add(corePopES)
                         try:
                             db.session.commit()
                         except Exception as inst:
-                            # print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
-                            # print >> sys.stderr, type(inst)
-                            # print >> sys.stderr, inst.args
                             app.logger.warning('[%s] : [WARNING] Duplicate ES entry exception! Local deployment can be run only once. With %s and %s',
                                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                             pass
 
                     chkLSCoreDB = db.session.query(dbSCore.hostFQDN).all()
-                    # print >> sys.stderr, chkLSCoreDB
                     if chkLSCoreDB is not None:
                         corePopLS = dbSCore(hostFQDN=socket.getfqdn(), hostIP=socket.gethostbyname(socket.gethostname()),
                                           hostOS='ubuntu', outESclusterName='diceMonit', udpPort=25680,
@@ -140,9 +135,6 @@ def main(argv):
                         try:
                             db.session.commit()
                         except Exception as inst:
-                            # print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
-                            # print >> sys.stderr, type(inst)
-                            # print >> sys.stderr, inst.args
                             app.logger.warning('[%s] : [WARNING] Duplicate LS entry exception! Local deployment can be run only once. With %s and %s',
                                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                             pass
@@ -157,9 +149,6 @@ def main(argv):
                         try:
                             db.session.commit()
                         except Exception as inst:
-                            # print >> sys.stderr, 'Duplicate entry exception! Local deployment can be run only once!'
-                            # print >> sys.stderr, type(inst)
-                            # print >> sys.stderr, inst.args
                             app.logger.warning('[%s] : [WARNING] Duplicate KB entry exception! Local deployment can be run only once. With %s and %s',
                                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
                             pass
