@@ -3600,7 +3600,7 @@ class LSCoreConfiguration(Resource):
             os = request.json["OS"]
 
         if 'LSCoreHeap' not in request.json:
-            lsHeap = '4g'
+            lsHeap = '1g'
         else:
             lsHeap = request.json["LSCoreHeap"]
 
