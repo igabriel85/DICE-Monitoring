@@ -58,7 +58,7 @@ apt-get install ant -y
 
 #VM level Setings
 echo "Configuring VM level setings"
-export ES_HEAP_SIZE=4g
+export ES_HEAP_SIZE=2g
 sysctl -w vm.max_map_count=262144
 swapoff -a
 
