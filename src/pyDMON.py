@@ -4614,8 +4614,6 @@ class AuxAgentDeploy(Resource):
         try:
             deployAgent(noAgent, user, password)
         except Exception as inst:
-            # print >> sys.stderr, type(inst)
-            # print >> sys.stderr, inst.args
             response = jsonify({'Status': 'Agent Error',
                                 'Message': 'Error while deploying agent!'})
             app.logger.error('[%s] : [ERROR] Failed to deploy agent %s with %s',
@@ -4638,7 +4636,6 @@ class AuxAgentDeploy(Resource):
 class AuxAgentStart(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nStatus=1).all()
-        # print >> sys.stderr, qNodeStatus
         app.logger.info('[%s] : [INFO] Node Status %s',
                          datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(qNodeStatus))
         if not qNodeStatus:
@@ -4660,8 +4657,6 @@ class AuxAgentStart(Resource):
             try:
                 startAgent(node, ns.nUser, ns.nPass)
             except Exception as inst:
-                # print >> sys.stderr, type(inst)
-                # print >> sys.stderr, inst.args
                 response = jsonify({'Status': 'Error Starting agent on  ' + ns.nodeFQDN + '!'})
                 response.status_code = 500
                 app.logger.error('[%s] : [INFO] Error starting agent on %s with exception %s and %s',
