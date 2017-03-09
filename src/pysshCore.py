@@ -593,13 +593,12 @@ def deployAgent(hostlist, userName, uPassword):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(hostlist))
 
 	agentUrl = 'wget %s' %(os.getenv('DMON_AGENT',
-                                     'https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz'))
+                                     'https://github.com/dice-project/DICE-Monitoring/releases/download/latest-agent/dmon-agent.tar.gz'))
 	app.logger.info('[%s] : [INFO] dmon-agent url %s',
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), agentUrl)
 	try:
 		client.run_command(agentUrl)
 	except (AuthenticationException, UnknownHostException, ConnectionErrorException):
-		# print "Error while downloading dmon-agent"
 		app.logger.error('[%s] : [ERROR] Failed to copy dmon-agent',
 						 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
 		raise
