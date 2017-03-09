@@ -4631,7 +4631,7 @@ class AuxAgentDeploy(Resource):
         return response
 
 
-@dmon.route('/v2/overlord/agent/start') #todo verify
+@dmon.route('/v2/overlord/agent/start')
 class AuxAgentStart(Resource):
     def post(self):
         qNodeStatus = dbNodes.query.filter_by(nStatus=1).all()
@@ -4645,6 +4645,7 @@ class AuxAgentStart(Resource):
 					datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
             return response
         dnode = []
+        nnodes = []
         for ns in qNodeStatus:
             node = []
             if ns.nMonitored is True:
@@ -4652,25 +4653,26 @@ class AuxAgentStart(Resource):
             else:
                 node.append(ns.nodeIP)
             app.logger.info('[%s] : [INFO] Unmonitored nodes %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(node))
-
+            AgentNodes = {}
             try:
                 startAgent(node, ns.nUser, ns.nPass)
+                ns.nMonitored = 1
+                app.logger.info('[%s] : [INFO] Started agent at %s',
+                                datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(node))
+                AgentNodes['Node'] = ns.nodeFQDN
+                AgentNodes['IP'] = ns.nodeIP
+                dnode.append(AgentNodes)
             except Exception as inst:
-                response = jsonify({'Status': 'Error Starting agent on  ' + ns.nodeFQDN + '!'})
-                response.status_code = 500
                 app.logger.error('[%s] : [INFO] Error starting agent on %s with exception %s and %s',
                                  datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                                  str(ns.nodeFQDN), type(inst), inst.args)
-                return response
-            app.logger.info('[%s] : [INFO] Started agent at %s',
-                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(node))
-            AgentNodes = {}
-            AgentNodes['Node'] = ns.nodeFQDN
-            AgentNodes['IP'] = ns.nodeIP
-            dnode.append(AgentNodes)
-            ns.nMonitored = 1
+                AgentNodes['Node'] = ns.nodeFQDN
+                AgentNodes['IP'] = ns.nodeIP
+                nnodes.append(AgentNodes)
+                break
         response = jsonify({'Status': 'Agents Started',
-                            'Nodes': dnode})
+                            'Sucessfull': dnode,
+                            'Failed': nnodes})
         response.status_code = 200
         app.logger.info('[%s] : [INFO] Agents started on nodes %s',
                         datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(dnode))
