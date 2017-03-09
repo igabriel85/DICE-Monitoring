@@ -3294,8 +3294,8 @@ class KKCoreController(Resource):
         return response
 
 
-@dmon.route('/v1/overlord/core/kb/visualizations')
-class KBVisualizations(Resource):
+@dmon.route('/v1/overlord/core/kb/visualisations')
+class KBVisualisations(Resource):
     def get(self):
         qESCore = dbESCore.query.filter_by(MasterNode=1).first()
         if qESCore is None:
@@ -3315,9 +3315,9 @@ class KBVisualizations(Resource):
             return response
         foundv = []
         for hits in rsp['hits']['hits']:
-            if hits['_type'] == 'visualization':
+            if hits['_type'] == 'visualisation':
                 foundv.append(hits['_source']['title'])
-        response = jsonify({'Visualizations': foundv})
+        response = jsonify({'Visualisations': foundv})
         response.status_code = 200
         return response
 
