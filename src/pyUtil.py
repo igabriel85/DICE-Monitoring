@@ -281,7 +281,7 @@ def detectStormTopology(ip, port=8080):
     '''
     url = 'http://%s:%s/api/v1/topology/summary' %(ip, port)
     try:
-        r = requests.get(url, timeout=2)
+        r = requests.get(url, timeout=5)
     except requests.exceptions.Timeout:
         app.logger.error('[%s] : [ERROR] Cannot connect to %s timedout',
                          datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
