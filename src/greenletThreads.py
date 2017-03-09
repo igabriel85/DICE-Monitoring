@@ -32,7 +32,8 @@ import tarfile
 
 
 headers = {'content-type': 'application/json'}
-
+# Global variable to denote the timeout of requests, default to 5 set by env variable DMON-TIMEOUT
+DMON_TIMEOUT = os.getenv('DMON_TIMEOUT', 5)
 
 class GreenletRequests():
     NodeResponsesGet = []
@@ -173,9 +174,9 @@ def randomT(queue, name):
 def getRequest(queue):
     response = {}
     while not queue.empty():
-        resURI = queue.get(timeout=1)
+        resURI = queue.get(timeout=DMON_TIMEOUT)
         try:
-            r = requests.get(resURI, timeout=2)
+            r = requests.get(resURI, timeout=DMON_TIMEOUT)
             data = r.json()
             response['Node'] = resURI
             response['StatusCode'] = r.status_code
@@ -209,7 +210,7 @@ def getrequestFile(queue, output):
         logName = 'worker-%s.tar' % hostID
         logDump = os.path.join(output, logName)
         try:
-            r = requests.get(resURI, timeout=2, stream=True)
+            r = requests.get(resURI, timeout=DMON_TIMEOUT, stream=True)
             if r.status_code == 200:
                 with open(logDump, 'wb') as out_file:  # TODO investaigate chunck writter
                     shutil.copyfileobj(r.raw, out_file)
@@ -279,7 +280,7 @@ def putRequest(queue, payload=None):
     statusCode = {}
     data = {}
     while not queue.empty():
-        resourceURI= queue.get(timeout=1)
+        resourceURI= queue.get(timeout=DMON_TIMEOUT)
         response['Node'] = resourceURI
         try:
             if payload is None:
@@ -311,9 +312,9 @@ def putRequest(queue, payload=None):
 def deleteRequest(queue):
     response = {}
     while not queue.empty():
-        resURI = queue.get(timeout=1)
+        resURI = queue.get(timeout=DMON_TIMEOUT)
         try:
-            r = requests.delete(resURI, timeout=2)
+            r = requests.delete(resURI, timeout=DMON_TIMEOUT)
             data = r.json()
             response['Node'] = resURI
             response['StatusCode'] = r.status_code

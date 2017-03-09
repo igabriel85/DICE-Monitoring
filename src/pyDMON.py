@@ -69,13 +69,12 @@ pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
-# TODO: only provisory for testing
+
 esDir = '/opt/elasticsearch'
 lsCDir = '/etc/logstash/conf.d/'
 
 # D-Mon Supported frameworks
 lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra', 'mongodb']
-
 # app = Flask("D-MON")
 # api = Api(app, version='0.2.0', title='DICE MONitoring API',
 #     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
@@ -1000,7 +999,7 @@ class OverlordCoreStatus(Resource):
             return response
         try:
             esCoreUrl = 'http://' + qESCore.hostIP + ':' + str(qESCore.nodePort)
-            r = requests.get(esCoreUrl, timeout=2)  # timeout in seconds
+            r = requests.get(esCoreUrl, timeout=DMON_TIMEOUT)  # timeout in seconds
         except:
             response = jsonify({"Error": "Master ES instances not reachable!"})
             response.status_code = 500
@@ -1998,7 +1997,7 @@ class MonitoredNodeInfo(Resource):
             if qNode.nStatus:
                 resourceCheck = agentr.check()
                 try:
-                    r = requests.get(resourceCheck[0])
+                    r = requests.get(resourceCheck[0], timeout=DMON_TIMEOUT)
                 except requests.exceptions.Timeout:
                     app.logger.warning('[%s] : [WARN] Agent on node  %s timedout',
                                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeID)
@@ -2008,7 +2007,7 @@ class MonitoredNodeInfo(Resource):
                 if r.status_code == 200:
                     resourceList = agentr.shutdownAgent()
                     try:
-                        requests.post(resourceList[0])
+                        requests.post(resourceList[0], timeout=DMON_TIMEOUT)
                     except requests.exceptions.Timeout:
                         app.logger.warning('[%s] : [WARN] Agent on node  %s timedout',
                                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nodeID)
@@ -2884,7 +2883,7 @@ class ESControllerStatus(Resource):
                 app.logger.info('[%s] : [INFO] ES Core Url set to %s',
                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), esCoreUrl)
                 # print >> sys.stderr, esCoreUrl
-                r = requests.get(esCoreUrl, timeout=2)  # timeout in seconds
+                r = requests.get(esCoreUrl, timeout=DMON_TIMEOUT)  # timeout in seconds
                 data = r.json()
             except:
                 app.logger.error('[%s] : [ERROR] Master ES instance unreachable at %s',
@@ -2898,7 +2897,7 @@ class ESControllerStatus(Resource):
                 app.logger.info("[%s] : [INFO] Shard URL set to %s",
                                  datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), shardUrl)
                 # print >> sys.stderr, shardUrl
-                r = requests.get(shardUrl, timeout=2)
+                r = requests.get(shardUrl, timeout=DMON_TIMEOUT)
                 data = r.text
             except:
                 response = jsonify({"Error": "Master ES instances not reachable!"})
@@ -5351,7 +5350,7 @@ class AuxStartSelectiveThreaded(Resource):
             resourceList = agentr.startSelective(auxComp)
 
         try:
-            r = requests.post(resourceList[0])
+            r = requests.post(resourceList[0], timeout=DMON_TIMEOUT)
         # data = r.text
         except requests.exceptions.Timeout:
             response = jsonify({'Status': 'Timeout',
@@ -5405,7 +5404,7 @@ class AuxStopSelectiveThreaded(Resource):
             resourceList = agentr.stopSelective(auxComp)
 
         try:
-            r = requests.post(resourceList[0])
+            r = requests.post(resourceList[0], timeout=DMON_TIMEOUT)
         # data = r.text
         except requests.exceptions.Timeout:
             response = jsonify({'Status': 'Timeout',
@@ -5779,6 +5778,20 @@ class WTF(Resource):
         qESCore = dbESCore.query.filter_by(MasterNode=1).first()
 
         return qESCore.nodePort
+
+@dmon.route('/vx/timeout')
+class CheckTimeout(Resource):
+    def get(self):
+        try:
+            timeOut = os.environ.get('DMON_TIMEOUT')
+        except Exception as inst:
+            response = jsonify({'Status': 'Error fetching env variable'})
+            response.status_code = 500
+            return response
+        response = jsonify({'Timeout': timeOut,
+                            'Default': os.getenv('DMON_TIMEOUT', 5)})
+        response.status_code = 200
+        return response
 
 
 """

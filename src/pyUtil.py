@@ -34,6 +34,7 @@ import pandas as pd
 import psutil
 
 
+
 def portScan(addrs, ports):
     '''
         Check if a range of ports are open or not
@@ -281,7 +282,7 @@ def detectStormTopology(ip, port=8080):
     '''
     url = 'http://%s:%s/api/v1/topology/summary' %(ip, port)
     try:
-        r = requests.get(url, timeout=5)
+        r = requests.get(url, timeout=DMON_TIMEOUT)
     except requests.exceptions.Timeout:
         app.logger.error('[%s] : [ERROR] Cannot connect to %s timedout',
                          datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
@@ -323,7 +324,7 @@ def checkStormSpoutsBolts(ip, port, topology):
         return 0, 0
     url = 'http://%s:%s/api/v1/topology/%s' %(ip, port, topology)
     try:
-        r = requests.get(url, timeout=2)
+        r = requests.get(url, timeout=DMON_TIMEOUT)
     except requests.exceptions.Timeout:
         app.logger.error('[%s] : [ERROR] Cannot connect to %s timedout',
                          datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(url))
@@ -391,7 +392,7 @@ class DetectBDService():
         if qDBS is not None:
             yhUrl = 'http://%s:%s/ws/v1/history/mapreduce/jobs'%(qDBS.yarnHEnd, qDBS.yarnHPort)
             try:
-                yarnResp = requests.get(yhUrl)
+                yarnResp = requests.get(yhUrl, timeout=DMON_TIMEOUT)
                 yarnData = yarnResp.json()
             except Exception as inst:
                 app.logger.error('[%s] : [ERROR] Cannot connect to yarn history service with %s and %s',
@@ -496,7 +497,7 @@ class DetectBDService():
         if qDBS is not None:
             yhUrl = 'http://%s:%s/api/v1/applications'%(qDBS.sparkHEnd, qDBS.sparkHPort)
             try:
-                sparkResp = requests.get(yhUrl)
+                sparkResp = requests.get(yhUrl, timeout=DMON_TIMEOUT)
                 ysparkData = sparkResp.json()
             except Exception as inst:
                 app.logger.error('[%s] : [ERROR] Cannot connect to spark history service with %s and %s',
