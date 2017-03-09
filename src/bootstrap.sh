@@ -28,7 +28,6 @@ $HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
 
 echo "Installing kibana...."
 cd ~/
-#wget https://download.elasticsearch.org/kibana/kibana/kibana-4.1.2-linux-x64.tar.gz
 wget https://download.elastic.co/kibana/kibana/kibana-4.4.1-linux-x64.tar.gz
 tar xvf kibana-4.4.1-linux-x64.tar.gz
 mkdir -p /opt/kibana
@@ -63,14 +62,14 @@ sysctl -w vm.max_map_count=262144
 swapoff -a
 
 # TODO fix this so that it must be set before running bootstrap script
-#DMONHOME=/opt/IeAT-DICE-Repository
-#
-#if grep -q "DMONHOME" ~/.bashrc; then
-#    echo "DMON home dir is already set"
-#else
-#    echo "DMONHOME=/opt/IeAT-DICE-Repository" >> ~/.bashrc
-#    echo "DMON home dir set"
-#fi
+DMONHOME=/opt/IeAT-DICE-Repository
+
+if grep -q "DMONHOME" ~/.bashrc; then
+    echo "DMON home dir is already set"
+else
+    echo "DMONHOME=/opt/IeAT-DICE-Repository" >> ~/.bashrc
+    echo "DMON home dir set"
+fi
 
 
 # Install Elasticsearch 2.2.0
@@ -82,17 +81,22 @@ ln -sf elasticsearch-2.2.0 elasticsearch
 
 #delete config file
 rm -f /opt/elasticsearch/config/elastcisearch.yml
-#ln -sf /vagrant/elasticsearch.yml /opt/elasticsearch/config/elasticsearch.yml
 
 # Install Marvel (posibly obsolete afther further testing)
 echo "Installing Elasticsearch plugin marvel ....."
 
-#For version of <ES2.2.0 and <kibana 4.1.2
+#For version of <ES 2.2.0 and < kibana 4.1.2
 #/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+#/opt/elasticsearch/bin/plugin install license
+#/opt/elasticsearch/bin/plugin install marvel-agent
+#/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
 
 /opt/elasticsearch/bin/plugin install license
 /opt/elasticsearch/bin/plugin install marvel-agent
-/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
+#/opt/elasticsearch/bin/ install watcher
+/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/2.2.0
+/opt/kibana/bin/kibana plugin --install elastic/sense
 
 
 echo "Setting up init script for dmon-es ..."
