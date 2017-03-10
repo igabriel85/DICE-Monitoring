@@ -59,6 +59,7 @@ from datetime import datetime
 import glob
 import multiprocessing
 #from threadRequest import getStormLogs
+from artifactRepository import *
 
 # directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
