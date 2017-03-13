@@ -35,7 +35,7 @@ if [ ! -d "$DIR/lock" ]; then
 fi
 
 if [ ! -f "$DIR/lock/agent.lock" ]; then
-  apt-get install -y python-dev python-pip && pip install -r $DIR/requirements.txt
+  apt-get install -y python-dev python-pip collectd && pip install -r $DIR/requirements.txt
   echo "Installed on: $currentDate" >> $DIR/lock/agent.lock
 fi
 

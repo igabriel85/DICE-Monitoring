@@ -32,8 +32,8 @@ fi
 
 cd /opt
 
-git clone https://github.com/igabriel85/IeAT-DICE-Repository.git
+git clone https://github.com/igabriel85/DICE-Monitoring.git
 
 chown -R ubuntu.ubuntu /opt
 
-pip install -r /opt/IeAT-DICE-Repository/src/requirements.txt
+pip install -r /opt/DICE-Monitoring/src/requirements.txt

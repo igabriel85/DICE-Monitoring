@@ -63,12 +63,12 @@ sysctl -w vm.max_map_count=262144
 swapoff -a
 
 # TODO fix this so that it must be set before running bootstrap script
-DMONHOME=/opt/IeAT-DICE-Repository
+DMONHOME=/opt/DICE-Monitoring
 
 if grep -q "DMONHOME" ~/.bashrc; then
     echo "DMON home dir is already set"
 else
-    echo "DMONHOME=/opt/IeAT-DICE-Repository" >> ~/.bashrc
+    echo "DMONHOME=/opt/DICE-Monitoring" >> ~/.bashrc
     echo "DMON home dir set"
 fi
 
@@ -118,7 +118,7 @@ cd /opt
 #Setup Logrotate
 echo "Setting up logrotate ..."
 
-echo "/opt/IeAT-DICE-Repository/src/logs/logstash.log{
+echo "/opt/DICE-Monitoring/src/logs/logstash.log{
 size 20M
 create 777 ubuntu ubuntu
 rotate 4
@@ -136,7 +136,7 @@ sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/
 
 #generate certificates
 
-openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.key -out /opt/IeAT-DICE-Repository/src/keys/logstash-forwarder.crt
+openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/DICE-Monitoring/src/keys/logstash-forwarder.key -out /opt/DICE-Monitoring/src/keys/logstash-forwarder.crt
 
 
 #Create Backup Dir
@@ -157,7 +157,7 @@ mkdir -p /etc/logstash/conf.d
 rm -rf /opt/logstash-2.2.1.tar.gz
 rm -rf /opt/elasticsearch-2.2.0.tar.gz
 rm -rf /home/ubuntu/kibana-4.4.1-linux-x64*
-wget https://github.com/igabriel85/IeAT-DICE-Repository/releases/download/logov01/kibana.svg
+wget https://github.com/igabriel85/DICE-Monitoring/releases/download/logov01/kibana.svg
 mv kibana.svg /opt/kibana/optimize/bundles/src/ui/public/images
 
 echo "Bootstrapping done!"
