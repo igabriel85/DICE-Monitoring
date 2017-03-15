@@ -34,7 +34,6 @@ import pandas as pd
 import psutil
 
 
-
 def portScan(addrs, ports):
     '''
         Check if a range of ports are open or not

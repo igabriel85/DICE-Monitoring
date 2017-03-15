@@ -156,7 +156,7 @@ mkdir -p /etc/logstash/conf.d
 rm -rf /opt/logstash-2.2.1.tar.gz
 rm -rf /opt/elasticsearch-2.2.0.tar.gz
 rm -rf /home/ubuntu/kibana-4.4.1-linux-x64*
-wget https://github.com/igabriel85/DICE-Monitoring/releases/download/logov01/kibana.svg
+wget https://github.com/dice-project/DICE-Monitoring/releases/download/logov2/kibana.svg
 mv kibana.svg /opt/kibana/optimize/bundles/src/ui/public/images
 
 echo "Bootstrapping done!"

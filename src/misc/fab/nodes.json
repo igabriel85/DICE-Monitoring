@@ -1,0 +1,36 @@
+{
+  "Nodes": [
+  	{
+      "NodeIP": "10.211.56.100",
+      "NodeName": "vm-cluster-node1",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "vagrant",
+      "username": "vagrant"
+    },
+    {
+      "NodeIP": "10.211.56.101",
+      "NodeName": "vm-cluster-node2",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "vagrant",
+      "username": "vagrant"
+    },
+    {
+      "NodeIP": "10.211.56.102",
+      "NodeName": "vm-cluster-node3",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "vagrant",
+      "username": "vagrant"
+    },
+    {
+      "NodeIP": "10.211.56.103",
+      "NodeName": "vm-cluster-node4",
+      "NodeOS": "ubuntu",
+      "key": "na",
+      "password": "vagrant",
+      "username": "vagrant"
+    }
+  ]
+}

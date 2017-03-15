@@ -1,28 +1,35 @@
-import fabric
-from fabric.api import *
-from fabric.contrib.console import confirm
+"""
+
+Copyright 2017, Institute e-Austria, Timisoara, Romania
+    http://www.ieat.ro/
+Developers:
+ * Gabriel Iuhasz, iuhasz.gabriel@info.uvt.ro
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at:
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+"""
+
+from readConf import *
 
 #fab -f pyFabDmon.py -t 60  uploadBoostrapt
 #fab -f pyFabDmon.py -t 60 -P  editHostFile
 #fab -f pyFabDmon.py -t 60 -P cleanup
 
-#env.hosts = ['109.231.122.187' ,'109.231.122.173' ,'109.231.122.164' ,'109.231.122.233' ,'109.231.122.201' ,'109.231.122.130' ,'109.231.122.231' ,'109.231.122.194' ,'109.231.122.182' ,'109.231.122.207' ,'109.231.122.156','109.231.122.240' ,'109.231.122.127']
-
-#hostFQDN=['dice.cdh5.mng.internal', 'dice.cdh5.w1.internal','dice.cdh5.w2.internal','dice.cdh5.w3.internal','dice.cdh5.w4.internal','dice.cdh5.w5.internal','dice.cdh5.w6.internal','dice.cdh5.w7.internal','dice.cdh5.w8.internal','dice.cdh5.w9.internal','dice.cdh5.w10.internal','dice.cdh5.w11.internal','dice.cdh5.w12.internal','dice.cdh5.w13.internal']
-
-#env.hosts=['109.231.121.135', '109.231.121.194', '109.231.121.134', '109.231.121.156', '109.231.121.210']
-#full = ['109.231.122.54' ,'109.231.122.187' ,'109.231.122.173' ,'109.231.122.164' ,'109.231.122.233' ,'109.231.122.201' ,'109.231.122.130' ,'109.231.122.231' ,'109.231.122.194' ,'109.231.122.182' ,'109.231.122.207' ,'109.231.122.156','109.231.122.240' ,'109.231.122.127']
-#env.hosts = ['109.231.122.240', '109.231.122.127']
-
-#env.hosts = ['109.231.122.187', '109.231.122.173', '109.231.122.164', '109.231.122.233', '109.231.122.201', '109.231.122.130', '109.231.122.231', '109.231.122.194', '109.231.122.182', '109.231.122.207', '109.231.122.156', '109.231.122.240', '109.231.122.127']
-
-env.hosts = ['109.231.122.207', '109.231.122.156', '109.231.122.240', '109.231.122.127']
-
-# Set the username
-env.user = " "
-
-# Set the password [NOT RECOMMENDED]
-env.password = " "
+loc = 'nodes.json'
+key = 'node.pem'
+if not os.path.isfile(key):
+    key = None
+crt = 'logstash-forwarder.crt'
+nodesDict = readCfg(loc)
+set_hosts(nodesDict, key)
 
 
 def uploadSparkConf():
@@ -78,6 +85,44 @@ def addPubKey():
     sudo('echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDc/9c1v6ZlpX6JF9W91NwJU1IFpxDaRN/T26rVXvutv2tiHBILyBRapv7jOd1eM6pkuS5h+0HwWbz/QJyxfqD8nBnYdlg8jQrUtJoI6ICyf5E2nP4KqYkUINuRcSwBRSIPmpH/iJ66HoR3ydP8K+MXW9HXo0IN7DdI9GLn2YSZtqSlWJValtpEa9rZPk7/MO6vrolOQdLA1iyOZdV/IcG7RPwUvyq/Kbc0q5yJ4Q2AKiH38CTaBQ0PI70YB4EfM0slbcM+ddpFezDNuXVxuhLGxAZGhi/ha8caS5CKOJ0j9GTQONfTnF5/IeZk671nByw0ZNFmFWf4jZ0EcX82nShX eugenio@Eugenios-MacBook-Air.local" >> .ssh/authorized_keys')
 
 
+def listOPT():
+    run('ls -laht /opt')
 
 
+def moveAgent():
+    sudo('mv -v /opt/dmon-agent /opt/backup')
 
+
+def downloadAgent():
+    command = "cd /opt && wget %s" %agent_loc
+    sudo(command)
+
+
+def unpackAgent():
+    command = "cd /opt && tar -xvf dmon-agent.tar.gz"
+    sudo(command)
+    sudo('rm -rf /opt/dmon-agent.tar.gz')
+
+
+def startAgent():
+    command = "cd /opt/dmon-agent && ./dmon-agent.sh"
+    sudo(command, pty=False)
+
+
+def statusAgent():
+    command = "ps axjf |grep -i dmon-agent"
+    run(command)
+
+
+def openstackFix():
+    sudo('echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null')
+
+
+def checkLSF():
+    sudo('service logstash-forwarder status')
+
+
+def replaceCRT():
+    sudo('cd /opt/certs && mv logstash-forwarder.crt logstash-forwarder.crt.old')
+    put(crt, 'logstash-forwarder.crt')
+    sudo('mv logstash-forwarder.crt /opt/certs/logstash-forwarder.crt')
