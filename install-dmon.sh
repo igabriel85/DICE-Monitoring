@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Install script for DICE Monitoring (D-Mon)
+# Bootstrap script for DICE Monitoring Core Componets
 #
 #Copyright 2015, Institute e-Austria, Timisoara, Romania
 #    http://www.ieat.ro/
