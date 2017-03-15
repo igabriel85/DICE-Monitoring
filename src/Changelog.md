@@ -66,3 +66,12 @@
      * added support for Cassandra
      * added support for MongoDB
      * various bug and performance issues fixed
+* v0.2.4 - Minor alpha release
+    * updated vagrant scripts
+    * added Chef based bootstrap resources
+    * added support for advanced MongoDB query aggregations
+    * added support for advanced Cassandra query aggregations 	
+    * implemented graceful shutdown of supporting services
+    * finalized default Storm visualisations
+    * added new timeout definition mechanism (env variable _DMON\_TIMEOUT_)
+    * added D-Mon artifact repository for ADT model saving and retrieval	 	
