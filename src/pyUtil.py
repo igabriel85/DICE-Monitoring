@@ -293,6 +293,7 @@ def detectStormTopology(ip, port=8080):
         raise
 
     topologySummary = r.json()
+    app.logger.info('[%s] : [INFO] Topologies detected at %s are: %s', datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(ip), str(topologySummary))
     return topologySummary.get('topologies')[0]['id']
 
 
