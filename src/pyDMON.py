@@ -4118,7 +4118,7 @@ class LSCoreControllerInit(Resource):
             if not lsPID:
                 app.logger.error("[%s] : [ERROR] Can't read pidfile for ls core",
                                  datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
-                response = jsonify({'Status': 'Error', 'Message': 'Cannot read escore pid file'})
+                response = jsonify({'Status': 'Error', 'Message': 'Cannot read lscore pid file'})
                 response.status_code = 500
                 return response
             qSCore.LSCorePID = lsPID
