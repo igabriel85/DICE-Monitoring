@@ -33,7 +33,9 @@ import tarfile
 
 headers = {'content-type': 'application/json'}
 # Global variable to denote the timeout of requests, default to 5 set by env variable DMON-TIMEOUT
-DMON_TIMEOUT = os.getenv('DMON_TIMEOUT', 5)
+iDMON_TIMEOUT = os.getenv('DMON_TIMEOUT', 5)
+DMON_TIMEOUT = float(iDMON_TIMEOUT)
+
 
 class GreenletRequests():
     NodeResponsesGet = []
