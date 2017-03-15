@@ -33,8 +33,164 @@ fi
 
 cd /opt
 
-git clone https://github.com/igabriel85/DICE-Monitoring.git
+git clone https://github.com/dice-project/DICE-Monitoring.git
 
 chown -R ubuntu.ubuntu /opt
 
 pip install -r /opt/DICE-Monitoring/src/requirements.txt
+
+
+#get kibana4 and  install
+#set FQDN for HOST
+HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://')  #need to change to eth0 for non vagrant
+echo "#Auto generated DICE Monitoring FQDN
+$HostIP dice.dmon.internal dmoncontroller" >> /etc/hosts
+
+echo "Installing kibana...."
+cd ~/
+wget https://download.elastic.co/kibana/kibana/kibana-4.4.1-linux-x64.tar.gz
+tar xvf kibana-4.4.1-linux-x64.tar.gz
+mkdir -p /opt/kibana
+cp -R ~/kibana-4.4.1-linux-x64/* /opt/kibana/
+echo "Registering Kibana as a service ...."
+cd /etc/init.d && sudo wget https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4
+chmod +x /etc/init.d/kibana4
+update-rc.d kibana4 defaults 96 9
+
+#Start kibana after install
+#service kibana4 start # Deprecated, now starts from REST API
+
+# Install Java 8
+echo "Installing Oracle Java 1.8 ...."
+apt-get install python-software-properties -y
+echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+add-apt-repository ppa:webupd8team/java -y
+apt-get update -y
+apt-get install oracle-java8-installer -y
+apt-get install ant -y
+
+
+# TODO Replace wget command
+
+#cd /tmp
+#wget -q --no-check-certificate https://github.com/aglover/ubuntu-equip/raw/master/equip_java8.sh && bash equip_java8.sh
+
+#VM level Setings
+echo "Configuring VM level setings"
+export ES_HEAP_SIZE=2g
+sysctl -w vm.max_map_count=262144
+swapoff -a
+
+# TODO fix this so that it must be set before running bootstrap script
+DMONHOME=/opt/DICE-Monitoring
+
+if grep -q "DMONHOME" ~/.bashrc; then
+    echo "DMON home dir is already set"
+else
+    echo "DMONHOME=/opt/DICE-Monitoring" >> ~/.bashrc
+    echo "DMON home dir set"
+fi
+
+
+# Install Elasticsearch 2.2.0
+echo "Installing Elasticsearch ...."
+cd /opt
+wget https://download.elasticsearch.org/elasticsearch/release/org/elasticsearch/distribution/tar/elasticsearch/2.2.0/elasticsearch-2.2.0.tar.gz
+tar zxf elasticsearch-2.2.0.tar.gz
+ln -sf elasticsearch-2.2.0 elasticsearch
+
+#delete config file
+rm -f /opt/elasticsearch/config/elastcisearch.yml
+
+# Install Marvel (posibly obsolete afther further testing)
+echo "Installing Elasticsearch plugin marvel ....."
+
+#For version of <ES 2.2.0 and < kibana 4.1.2
+#/opt/elasticsearch/bin/plugin -i elasticsearch/marvel/latest
+
+#/opt/elasticsearch/bin/plugin install license
+#/opt/elasticsearch/bin/plugin install marvel-agent
+#/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/latest
+
+/opt/elasticsearch/bin/plugin install license
+/opt/elasticsearch/bin/plugin install marvel-agent
+#/opt/elasticsearch/bin/ install watcher
+/opt/kibana/bin/kibana plugin --install elasticsearch/marvel/2.2.0
+/opt/kibana/bin/kibana plugin --install elastic/sense
+
+
+echo "Setting up init script for dmon-es ..."
+cp $DMONHOME/src/init/dmon-es /etc/init.d/dmon-es
+chmod +x /etc/init.d/dmon-es
+update-rc.d dmon-es defaults 96 9
+
+# Install Logstash
+echo "Installing Logstash..."
+cd /opt
+wget https://download.elastic.co/logstash/logstash/logstash-2.2.1.tar.gz
+tar zxf logstash-2.2.1.tar.gz
+ln -sf logstash-2.2.1 logstash
+
+
+echo "Setting up init script for dmon-ls ..."
+cp $DMONHOME/src/init/dmon-ls /etc/init.d/dmon-ls
+chmod +x /etc/init.d/dmon-ls
+update-rc.d dmon-ls defaults 96 9
+
+#Setup Logrotate
+echo "Setting up logrotate ..."
+
+echo "/opt/DICE-Monitoring/src/logs/logstash.log{
+size 20M
+create 777 ubuntu ubuntu
+rotate 4
+}" >> /etc/logrotate.conf
+
+cd /etc
+logrotate -s /var/log/logstatus logrotate.conf
+
+
+echo "Generating certificates for Logstash ..."
+#HostIP=$(ifconfig eth0 2>/dev/null|awk '/inet addr:/ {print $2}'|sed 's/addr://') #need to change to eth0 for non vagrant
+#backup open ssl
+cp /etc/ssl/openssl.cnf /etc/ssl/openssl.backup
+sed -i "/# Extensions for a typical CA/ a\subjectAltName = IP:$HostIP" /etc/ssl/openssl.cnf
+
+#generate certificates
+
+openssl req -config /etc/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout /opt/DICE-Monitoring/src/keys/logstash-forwarder.key -out /opt/DICE-Monitoring/src/keys/logstash-forwarder.crt
+
+
+#Create Backup Dir
+echo "Creating backup Dir"
+if [ ! -d "/opt/DmonBackup" ]; then
+  mkdir -p /opt/DmonBackup
+fi
+
+# fix permissions
+echo "Setting permissions ...."
+cd /opt
+chown -R ubuntu.ubuntu logstash* elasticsearch*
+chown -R ubuntu.ubuntu /opt
+
+echo "Finishing touches ....."
+mkdir -p /etc/logstash/conf.d
+rm -rf /opt/logstash-2.2.1.tar.gz
+rm -rf /opt/elasticsearch-2.2.0.tar.gz
+rm -rf /home/ubuntu/kibana-4.4.1-linux-x64*
+wget https://github.com/igabriel85/DICE-Monitoring/releases/download/logov01/kibana.svg
+mv kibana.svg /opt/kibana/optimize/bundles/src/ui/public/images
+
+
+timestamp() {
+  date +"%Y-%m-%d_%H-%M-%S"
+}
+
+echo "Writing Lock file....."
+timestamp >> $DMONHOME/dmon.lock
+
+
+
+
+echo "Bootstrapping done!"
+
