@@ -237,6 +237,89 @@ if [type] == "storm-topology"{
         convert => ["topologyStats_1d_completeLatency", "float"]
         convert => ["topologyStats_all_completeLatency", "float"]
     }
+    {% for i in range(nBolt) %}
+        if [bolts_{{i}}_errorLapsedSecs] == "%{[bolts][{{i}}][errorLapsedSecs]}"
+        {
+            mutate {
+                replace => { "bolts_{{i}}_errorLapsedSecs" => 0 }
+                convert => { "bolts_{{i}}_errorLapsedSecs" => "float" }
+            }
+        }
+    {% endfor %}
+
+    {% for n in range(nSpout) %}
+        if [spouts_{{n}}_errorLapsedSecs] == "%{[spouts][{{n}}][errorLapsedSecs]}"
+        {
+            mutate {
+                replace => { "spouts_{{n}}_errorLapsedSecs" => 0 }
+                convert => { "spouts_{{n}}_errorLapsedSecs" => "float" }
+            }
+        }
+    {% endfor %}
+
+        if [topologyStats_10m_acked] == "%{[topologyStats][0][acked]}"
+        {
+          mutate {
+            replace => { "topologyStats_10m_acked" => 0 }
+            convert => { "topologyStats_10m_acked" => "float" }
+          }
+        }
+
+        if [topologyStats_10m_failed] == "%{[topologyStats][0][failed]}"
+        {
+          mutate {
+            replace => { "topologyStats_10m_failed" => 0 }
+            convert => { "topologyStats_10m_failed" => "float" }
+          }
+        }
+
+        if [topologyStats_3h_acked] == "%{[topologyStats][1][acked]}"
+        {
+          mutate {
+            replace => { "topologyStats_3h_acked" => 0 }
+            convert => { "topologyStats_3h_acked" => "float" }
+          }
+        }
+
+        if [topologyStats_3h_failed] == "%{[topologyStats][1][failed]}"
+        {
+          mutate {
+            replace => { "topologyStats_3h_failed" => 0 }
+            convert => { "topologyStats_3h_failed" => "float" }
+          }
+        }
+
+        if [topologyStats_1d_acked] == "%{[topologyStats][2][acked]}"
+        {
+          mutate {
+            replace => { "topologyStats_1d_acked" => 0 }
+            convert => { "topologyStats_1d_acked" => "float" }
+          }
+        }
+
+        if [topologyStats_1d_failed] == "%{[topologyStats][2][failed]}"
+        {
+          mutate {
+            replace => { "topologyStats_1d_failed" => 0 }
+            convert => { "topologyStats_1d_failed" => "float" }
+          }
+        }
+
+        if [topologyStats_all_acked] == "%{[topologyStats][3][acked]}"
+        {
+          mutate {
+            replace => { "topologyStats_all_acked" => 0 }
+            convert => { "topologyStats_all_acked" => "float" }
+          }
+        }
+
+        if [topologyStats_all_failed] == "%{[topologyStats][3][failed]}"
+        {
+          mutate {
+            replace => { "topologyStats_all_failed" => 0 }
+            convert => { "topologyStats_all_failed" => "float" }
+          }
+        }
 }
 if [type] == "storm-topSum"{
   mutate {
