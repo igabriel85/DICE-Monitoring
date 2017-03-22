@@ -1205,12 +1205,18 @@ class ClusterRoles(Resource):
             upRoles = dbNodes.query.filter_by(nodeFQDN=n["NodeName"]).first()
             if upRoles is None:
                 response = jsonify({'Status': 'Node Name Error',
-                                    'Message': 'Node' + n["NodeName"] + ' not found!'})
+                                    'Message': 'Node ' + str(n["NodeName"]) + ' not found!'})
                 response.status_code = 404
                 app.logger.warning('[%s] : [WARN] Node %s not found',
                                     datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'),
                                     str(n["NodeName"]))
                 return response
+            for r in n["Roles"]:
+                if r not in lFrameworks:
+                    response = jsonify({'Status': 'Error',
+                                        'Message': 'Unknown role in ' + str(r)})
+                    response.status_code = 400
+                    return response
             upRoles.nRoles = ', '.join(map(str, n["Roles"]))
 
         response = jsonify({'Status': 'Done',
