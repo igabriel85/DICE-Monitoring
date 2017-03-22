@@ -26,7 +26,7 @@ fi
 
 
 name=logstash
-DMONHOME=/opt/IeAT-DICE-Repository
+DMONHOME=/opt/DICE-Monitoring
 pidfile="$DMONHOME/src/pid/$name.pid"
 
 LS_USER=vagrant

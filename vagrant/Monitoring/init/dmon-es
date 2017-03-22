@@ -22,7 +22,7 @@
 
 PATH=/bin:/usr/bin:/sbin:/usr/sbin:
 NAME=elasticsearch
-DMONHOME=/opt/IeAT-DICE-Repository # todo make this definable
+DMONHOME=/opt/DICE-Monitoring # todo make this definable
 DESC="DMON Elasticsearch Server"
 DEFAULT=/opt/$NAME
 
