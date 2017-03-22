@@ -732,7 +732,7 @@ def check_proc(pidfile, wait=15):
     return pid
 
 
-def check_proc2(pidfile, wait=15):
+def check_proc_recursive(pidfile, wait=15):
     '''
     :param pidfile: -> location of pid
     :return: -> return pid
