@@ -598,6 +598,8 @@ def checkCoreState(esPidf, lsPidf, kbPidf):  #TODO: works only for local deploym
     else:
         with open(esPidf) as esPid:
             vpid = esPid.read()
+            app.logger.info('[%s] : [INFO] ES PID read type is %s',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(vpid))
             esStatus = checkPID(int(vpid))
             if esStatus:
                 if qESCore is None:
