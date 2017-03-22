@@ -129,7 +129,7 @@ class AuxComponent():
        GPGLocation  -> ElasticSearch GPG key Location
     """
 
-    supported = ['collectd', 'lsf', 'jmx']
+    supported = ['collectd', 'lsf', 'jmx', 'cep']
 
     def __init__(self, listLocation, GPGLocation):
         self.listLocation = listLocation
@@ -143,7 +143,7 @@ class AuxComponent():
 
     def install(self, component):
         compInstalled = []
-        if 'yarn' in component or 'hdfs' in component:
+        if 'yarn' or 'cep' in component or 'hdfs' in component:
             if 'lsf' in compInstalled:
                 pass
             else:
