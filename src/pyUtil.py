@@ -732,6 +732,33 @@ def check_proc(pidfile, wait=15):
     return pid
 
 
+def check_proc2(pidfile, wait=15):
+    '''
+    :param pidfile: -> location of pid
+    :return: -> return pid
+    '''
+    tick = 0
+    time.sleep(wait)
+    while not os.path.exists(pidfile):
+        time.sleep(1)
+        tick += 1
+        if tick > wait:
+            return 0
+    return recursivePidRead(pidfile, 1)
+
+
+def recursivePidRead(pidfile, iteration):
+    stats_pid = open(pidfile)
+    try:
+        pid = int(stats_pid.read())
+    except ValueError:
+        time.sleep(1)
+        if iteration > 5:
+            return 0
+        else:
+            recursivePidRead(pidfile, iteration+1)
+    return pid
+
 def sysMemoryCheck(needStr):
     '''
     :param needStr: heap size string setting of the format "512m"

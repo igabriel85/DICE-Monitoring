@@ -2674,7 +2674,7 @@ class ESCoreControllerInit(Resource):
                 response = jsonify({'Status': 'Error', 'Message': 'Cannot restart ES Core'})
                 response.status_code = 500
                 return response
-            esPID = check_proc(pidESLoc)
+            esPID = check_proc2(pidESLoc)
             if not esPID:
                 app.logger.error("[%s] : [ERROR] Can't read pidfile for es core",
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
