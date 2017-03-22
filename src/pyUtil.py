@@ -712,7 +712,7 @@ def csvheaders2colNames(csvfile, adname):
     return colNames
 
 
-def check_proc(pidfile, wait=5):
+def check_proc(pidfile, wait=15):
     '''
     :param pidfile: -> location of pid
     :return: -> return pid
