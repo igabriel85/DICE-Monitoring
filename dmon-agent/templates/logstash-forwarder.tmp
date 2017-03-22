@@ -37,6 +37,10 @@
     {
       "paths":["/tmp/mrappmaster-metrics.out"],
       "fields":{"type":"mrappmaster-metrics"}
+    },
+    {
+     "paths": ["/var/log/ipoms/cep_terminal/cep_terminal-noatum-vlc.log"],
+     "fields": { "type": "cep-posidonia" }
     }
     ]
 }
