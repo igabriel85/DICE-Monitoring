@@ -75,7 +75,7 @@ esDir = '/opt/elasticsearch'
 lsCDir = '/etc/logstash/conf.d/'
 
 # D-Mon Supported frameworks
-lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra', 'mongodb']
+lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra', 'mongodb', 'cep']
 # app = Flask("D-MON")
 # api = Api(app, version='0.2.0', title='DICE MONitoring API',
 #     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
@@ -790,7 +790,7 @@ class QueryEsEnhancedCore(Resource):
 @dmon.route('/v1/overlord')
 class OverlordInfo(Resource):
     def get(self):
-        response = jsonify({'Status': 'Current version is 0.2.1'})
+        response = jsonify({'Status': 'Current version is 0.2.4'})
         response.status_code = 200
         return response
 

@@ -200,7 +200,7 @@ if __name__ == '__main__':
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.DEBUG)
     elif logLevel == 'ERROR':
-        handler.serLevel(logging.ERROR)
+        handler.setLevel(logging.ERROR)
         app.logger.addHandler(handler)
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)
