@@ -572,6 +572,18 @@ if [type]=="mrappmaster-metrics"{
     match=>["message","\A%{TIME} %{NOTSPACE} %{SYSLOG5424SD} %{SYSLOGPROG} %{NOTSPACE} %{WORD:cType};%{WORD:DComp};MMSI=%{NUMBER:mmsi:int};LON=%{NUMBER:longitude:float};LAT=%{NUMBER:latitude:float}"]
     }
 }
+if [latitude]{
+
+mutate {
+add_field => ["[geoip][location]","%{longitude}"]
+add_field => ["[geoip][location]","%{latitude}"]
+}
+
+    mutate {
+            convert => [ "[geoip][location]", "float" ]
+    }
+
+}
 {% else %}
 # No CEP defined
 {% endif %}
