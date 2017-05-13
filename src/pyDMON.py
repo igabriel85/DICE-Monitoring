@@ -60,6 +60,8 @@ import glob
 import multiprocessing
 #from threadRequest import getStormLogs
 from artifactRepository import *
+import uuid
+from dmonasyncquery import asyncQuery
 
 # directory Location
 outDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'output')
@@ -73,6 +75,8 @@ credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
 
 esDir = '/opt/elasticsearch'
 lsCDir = '/etc/logstash/conf.d/'
+gbgProcessList=[]
+global gbgProcessList
 
 # D-Mon Supported frameworks
 lFrameworks = ['hdfs', 'yarn', 'spark', 'storm', 'cassandra', 'mongodb', 'cep']
@@ -785,6 +789,198 @@ class QueryEsEnhancedCore(Resource):
                                      datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
                     return response
                 return send_file(csvfile, mimetype='text/csv', as_attachment=True)
+
+
+@dmon.route('/v3/observer/query/<ftype>')
+@api.doc(params={'ftype': 'Output type'})
+class QueryEsAsyncEnhancedCore(Resource):
+    @api.expect(dMONQuery)  # this is for payload
+    def post(self, ftype):
+        # args = pQueryES.parse_args()#parsing query arguments in URI
+        supportType = ["csv", "json", "plain", "oslc"]
+        if ftype not in supportType:
+            response = jsonify({'Supported types': supportType, "Submitted Type": ftype})
+            response.status_code = 415
+            app.logger.warn('[%s] : [WARN] Unsuported output type %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ftype)
+            return response
+        if ftype == 'oslc' and 'collectd' not in request.json['DMON']['queryString']:
+            response = jsonify({'Status': 'Unsuported query',
+                                'Message': 'Only system metrics supported for oslc'})
+            response.status_code = 409
+            return response
+        if request.json is None:
+            response = jsonify({'Status': 'Empty payload',
+                                'Message': 'Request has empty payload'})
+            response.status_code = 417
+            app.logger.error('[%s] : [ERROR] Empty payload received for query, returned error 417',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        if 'queryString' not in request.json['DMON']:
+            response = jsonify({'Status': 'No queryString',
+                                'Message': 'Query string not found in payload'})
+            response.status_code = 404
+            app.logger.error('[%s] : [ERROR] Empty queryString received for query, returned error 404',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'))
+            return response
+        if 'tstop' not in request.json['DMON']:
+            query = queryConstructor(tstart=request.json['DMON']['tstart'],
+                                     queryString=request.json['DMON']['queryString'],
+                                     size=request.json['DMON']['size'], ordering=request.json['DMON']['ordering'])
+        else:
+            query = queryConstructor(tstart=request.json['DMON']['tstart'], tstop=request.json['DMON']['tstop'],
+                                     queryString=request.json['DMON']['queryString'], size=request.json['DMON']['size'],
+                                     ordering=request.json['DMON']['ordering'])
+
+        if 'index' not in request.json['DMON']:
+            myIndex = 'logstash-*'
+        else:
+            myIndex = request.json['DMON']['index']
+
+        app.logger.info('[%s] : [INFO] Index set to %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), myIndex)
+        if 'fname' not in request.json['DMON']:
+            fname = "%s.%s" %(str(uuid.uuid4())[:8], ftype)
+        else:
+            fname = "%s.%s" %(request.json['DMON']['fname'], ftype)
+
+        if os.path.isfile(os.path.join(outDir, fname)):
+            app.logger.warning('[%s] : [WARN] Duplicate query id detected, query with the id %s already exists!',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fname)
+            message = 'Query with id %s already exists' %fname
+            response = jsonify({'Status': 'Query conflict', 'Message': message})
+            response.status_code = 409
+            return response
+
+        for proc in gbgProcessList:
+            if not proc['process'].is_alive():
+                gbgProcessList.remove(proc)
+                app.logger.info('[%s] : [INFO] Process %s with PID %s inactive, removed from process list!',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), proc['uuid'], proc['pid'])
+        AsyncQueryWorkers = os.getenv('QueryWorkers', 5)
+        if len(gbgProcessList) > AsyncQueryWorkers:
+            app.logger.warning('[%s] : [WARN] Maximum number (%s) of query workers exeeded!',
+                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(AsyncQueryWorkers))
+            message = 'Maximum number of query workers %s' %str(AsyncQueryWorkers)
+            response = jsonify({'Status': 'To many query workers', 'Message': message})
+            response.status_code = 429
+            return response
+        backProc = multiprocessing.Process(target=asyncQuery, args=(request, query, myIndex, ftype, fname,))
+        backProc.daemon = True
+        backProc.start()
+        start_time = time.time()
+        fuuid = fname.split('.')[0]
+        tuuid = fname.split('.')[1]
+        procdist = {'process': backProc, 'uuid': fuuid, 'pid': backProc.pid, 'start': start_time, 'OutputType': tuuid}
+        if not checkPID(backProc.pid):
+            response = jsonify({'Status': 'Worker Fail', 'Message': 'Failed to start query worker'})
+            response.status_code = 500
+            return response
+        gbgProcessList.append(procdist)
+        response = jsonify({'QueryID': fuuid, 'WorkerID': backProc.pid, 'Start': start_time, 'OutputType': tuuid})
+        response.status_code = 201
+        return response
+
+
+@dmon.route('/v3/observer/query/<ftype>/async/list')
+class QueryEsAsyncEnhancedCoreList(Resource):
+    def get(self, ftype):
+        supportType = ["csv", "json", "plain", "oslc", "all"]
+        if ftype not in supportType:
+            response = jsonify({'Supported types': supportType, "Submitted Type": ftype})
+            response.status_code = 415
+            app.logger.warn('[%s] : [WARN] Unsuported output type %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ftype)
+            return response
+        if ftype == 'all':
+            outputFile = '*.*'
+        else:
+            outputFile = '*.%s' %ftype
+        lFile = []
+        for name in glob.glob(os.path.join(outDir, outputFile)):
+            path, filename = os.path.split(name)
+            if "tar" in filename:
+                pass
+            else:
+                lFile.append(filename)
+
+        response = jsonify({'Output': lFile})
+        response.status_code = 200
+        app.logger.info('[%s] : [INFO] Available output files %s',
+                        datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(lFile))
+        return response
+
+
+@dmon.route('/v3/observer/query/<ftype>/async/<nfile>')
+class QueryEsAsyncEnhancedCoreSpecific(Resource):
+    def get(self, ftype, nfile):
+        supportType = ["csv", "json", "plain", "oslc", "all"]
+        if ftype not in supportType:
+            response = jsonify({'Supported types': supportType, "Submitted Type": ftype})
+            response.status_code = 415
+            app.logger.warn('[%s] : [WARN] Unsuported output type %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), ftype)
+            return response
+        fileName = "%s.%s" %(nfile, ftype)
+        filepath = os.path.join(outDir, fileName)
+        app.logger.info('[%s] : [INFO] File name %s, file path %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nfile, filepath)
+        if not os.path.isfile(filepath):
+            app.logger.warn('[%s] : [WARN] No output %s found of type %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nfile, ftype)
+            response = jsonify({'Status': 'Env Warning', 'Message': 'No output found', 'OutputName': fileName})
+            response.status_code = 404
+            return response
+        fileName = "%s.%s" %(nfile, ftype)
+        filePath = os.path.join(outDir, fileName)
+        if not os.path.isfile(filePath):
+            app.logger.warning('[%s] : [WARN] Query %s not found',
+                               datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), fileName)
+            response = jsonify({'Status': 'Not Available', 'QueryOut': fileName})
+            response.status_code = 404
+            return response
+        if ftype == 'csv':
+            app.logger.info('[%s] : [INFO] Exported query %s to csv',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nfile)
+            return send_file(filepath, mimetype='text/csv', as_attachment=True)
+        if ftype == 'json':
+            with open(filePath) as data_file:
+                data = json.load(data_file)
+            app.logger.info('[%s] : [INFO] Exported query %s to JSON',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nfile)
+            response = jsonify({'DMON': data})
+            response.status_code = 200
+            return response
+        if ftype == 'plain':
+            with open(filePath, 'r') as data_file:
+                data = data_file.read()
+            app.logger.info('[%s] : [INFO] Exported query %s to Plain type %s',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nfile)
+            return Response(data, status=200, mimetype='text/plain')
+
+        if ftype == 'oslc':
+            with open(filePath, 'r') as data_file:
+                data = data_file.read()
+            app.logger.info('[%s] : [INFO] Exported query %s to OSLC',
+                            datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), nfile)
+            return Response(data, mimetype='application/rdf+xml')
+
+
+@dmon.route('/v3/observer/query/active')
+class QueryEsAsyncEnhancedCoreActive(Resource):
+    def get(self):
+        alive = []
+        for proc in gbgProcessList:
+            procDetail = {}
+            if proc['process'].is_alive():
+                procDetail['QueryID'] = proc['uuid']
+                procDetail['OutputType'] = proc['OutputType']
+                procDetail['Start'] = proc['start']
+                procDetail['WorkerID'] = proc['pid']
+                alive.append(procDetail)
+        response = jsonify(alive)
+        response.status_code = 200
+        return response
 
 
 @dmon.route('/v1/overlord')
