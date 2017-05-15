@@ -9,6 +9,7 @@ export ES_USE_GC_LOGGING=yes
 export LS_VERSION="2.2.0"
 export KB_VERSION="4.3.1"
 export DMON_TIMEOUT=5
+export DMON_WORKERS=5
 export DMON_REPO="/opt/DICE-Monitoring/src/repository"
 #DMON Agent archive location
 export DMON_AGENT="https://github.com/igabriel85/DICE-Monitoring/releases/download/v0.0.4-dmon-agent/dmon-agent.tar.gz"

@@ -857,7 +857,7 @@ class QueryEsAsyncEnhancedCore(Resource):
                 gbgProcessList.remove(proc)
                 app.logger.info('[%s] : [INFO] Process %s with PID %s inactive, removed from process list!',
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), proc['uuid'], proc['pid'])
-        AsyncQueryWorkers = os.getenv('QueryWorkers', 5)
+        AsyncQueryWorkers = os.getenv('DMON_WORKERS', 5)
         if len(gbgProcessList) > AsyncQueryWorkers:
             app.logger.warning('[%s] : [WARN] Maximum number (%s) of query workers exeeded!',
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(AsyncQueryWorkers))
