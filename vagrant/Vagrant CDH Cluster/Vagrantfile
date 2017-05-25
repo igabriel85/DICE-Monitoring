@@ -51,15 +51,16 @@ apt-get install wget -y
 apt-get install unzip -y
 
 mkdir /opt/oryx && cd /opt/oryx
-wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/compute-classpath.sh
-wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/oryx-run.sh
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/compute-classpath.sh
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-run.sh
+
 chmod +x compute-classpath.sh 
 chmod +x oryx-run.sh
 #Currently set to alpha build 2
 
-wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/oryx-batch-2.0.0-beta-1.jar
-wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/oryx-serving-2.0.0-beta-1.jar
-wget https://github.com/OryxProject/oryx/releases/download/oryx-2.0.0-beta-1/oryx-speed-2.0.0-beta-1.jar
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-batch-2.4.0.jar
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-batch-2.4.0.jar
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-speed-2.4.0.jar
 
 #install logstash-forwarder
 echo 'deb http://packages.elasticsearch.org/logstashforwarder/debian stable main' | sudo tee /etc/apt/sources.list.d/logstashforwarder.list
@@ -73,8 +74,9 @@ mkdir /opt/certs
 mkdir /opt/private
 
 #Copy example conf
-wget https://github.com/OryxProject/oryx/blob/master/app/conf/als-example.conf
-mv als-example.conf oryx.conf
+#wget https://github.com/OryxProject/oryx/blob/master/app/conf/als-example.conf
+cp /vagrant/configuration/oryx.conf /opt/oryx/oryx.conf
+#mv als-example.conf oryx.conf
 
 #download example dataset
 cd /opt/oryx
@@ -111,8 +113,8 @@ SCRIPT
 Vagrant.configure("2") do |config|
 
   # Define base image
-  config.vm.box = "precise64"
-  config.vm.box_url = "http://files.vagrantup.com/precise64.box"
+  config.vm.box = "ubuntu/trusty64"
+  #config.vm.box_url = "http://files.vagrantup.com/precise64.box"
 
   # Manage /etc/hosts on host and VMs
   config.hostmanager.enabled = false
@@ -135,7 +137,7 @@ Vagrant.configure("2") do |config|
   config.vm.define :master do |master|
     master.vm.provider :virtualbox do |v|
       v.name = "vmclusteroryx1"
-      v.customize ["modifyvm", :id, "--memory", "4096"]
+      v.customize ["modifyvm", :id, "--memory", "8000"]
     end
     master.vm.network :private_network, ip: "10.211.55.100"
     master.vm.hostname = "vmclusteroryx1"
@@ -147,7 +149,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :slave1 do |slave1|
-    slave1.vm.box = "precise64"
+    slave1.vm.box = "ubuntu/trusty64"
     slave1.vm.provider :virtualbox do |v|
       v.name = "vmclusteroryx2"
       v.customize ["modifyvm", :id, "--memory", "4096"]
@@ -160,7 +162,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :slave2 do |slave2|
-    slave2.vm.box = "precise64"
+    slave1.vm.box = "ubuntu/trusty64"
     slave2.vm.provider :virtualbox do |v|
       v.name = "vmclusteroryx3"
       v.customize ["modifyvm", :id, "--memory", "4096"]
@@ -173,7 +175,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :slave3 do |slave3|
-    slave3.vm.box = "precise64"
+    slave1.vm.box = "ubuntu/trusty64"
     slave3.vm.provider :virtualbox do |v|
       v.name = "vmclusteroryx4"
       v.customize ["modifyvm", :id, "--memory", "4096"]
