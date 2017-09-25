@@ -34,7 +34,7 @@ from flask import copy_current_request_context
 import os
 import sys
 import signal
-from flask.ext.sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import jinja2
 import requests
@@ -853,11 +853,15 @@ class QueryEsAsyncEnhancedCore(Resource):
             return response
 
         for proc in gbgProcessList:
-            if not proc['process'].is_alive():
-                gbgProcessList.remove(proc)
-                app.logger.info('[%s] : [INFO] Process %s with PID %s inactive, removed from process list!',
-                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), proc['uuid'], proc['pid'])
-        AsyncQueryWorkers = os.getenv('DMON_WORKERS', 5)
+            try:
+                if not proc['process'].is_alive():
+                    gbgProcessList.remove(proc)
+                    app.logger.info('[%s] : [INFO] Process %s with PID %s inactive, removed from process list!',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), proc['uuid'], proc['pid'])
+            except Exception as inst:
+                app.logger.warning('[%s] : [INFO] Checking process failed with %s and %s',
+                                 datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), str(inst.args))
+        AsyncQueryWorkers = os.getenv('DMON_WORKERS', 50)
         if len(gbgProcessList) > AsyncQueryWorkers:
             app.logger.warning('[%s] : [WARN] Maximum number (%s) of query workers exeeded!',
                              datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), str(AsyncQueryWorkers))
