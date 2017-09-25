@@ -23,6 +23,7 @@ $master_script = <<SCRIPT
 apt-get install curl -y
 apt-get install screen -y
 apt-get install wget -y
+apt -get install unzip -y
 REPOCM=${REPOCM:-cm5}
 CM_REPO_HOST=${CM_REPO_HOST:-archive.cloudera.com}
 CM_MAJOR_VERSION=$(echo $REPOCM | sed -e 's/cm\\([0-9]\\).*/\\1/')
@@ -49,6 +50,7 @@ SCRIPT
 $hosts_script = <<SCRIPT
 apt-get install wget -y
 apt-get install unzip -y
+apt-get install collectd
 
 mkdir /opt/oryx && cd /opt/oryx
 wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/compute-classpath.sh
@@ -59,7 +61,7 @@ chmod +x oryx-run.sh
 #Currently set to alpha build 2
 
 wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-batch-2.4.0.jar
-wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-batch-2.4.0.jar
+wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-serving-2.4.0.jar
 wget https://github.com/OryxProject/oryx/releases/download/oryx-2.4.0/oryx-speed-2.4.0.jar
 
 #install logstash-forwarder
@@ -89,7 +91,7 @@ tr '\t' ',' < u.data > data.csv
 
 #Install dmon-agent 
 cd /opt
-wget https://github.com/dice-project/DICE-Monitoring/releases/download/latest-agent/dmon-agent.tar.gz
+wget https://github.com/dice-project/DICE-Monitoring/releases/download/latest-agent/dmon-agent.tar
 tar xvf dmon-agent.tar.gz
 cd /opt/dmon-agent/
 pip install -r requirements.txt
@@ -162,7 +164,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :slave2 do |slave2|
-    slave1.vm.box = "ubuntu/trusty64"
+    slave2.vm.box = "ubuntu/trusty64"
     slave2.vm.provider :virtualbox do |v|
       v.name = "vmclusteroryx3"
       v.customize ["modifyvm", :id, "--memory", "4096"]
@@ -175,7 +177,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.define :slave3 do |slave3|
-    slave1.vm.box = "ubuntu/trusty64"
+    slave3.vm.box = "ubuntu/trusty64"
     slave3.vm.provider :virtualbox do |v|
       v.name = "vmclusteroryx4"
       v.customize ["modifyvm", :id, "--memory", "4096"]
