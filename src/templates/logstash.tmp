@@ -127,6 +127,25 @@ http_poller{
 filter{
 {% if 'spark' in roles%}
 if [type] == "graphite"{
+  grok{
+    break_on_match => true
+
+     match=>["message","\A%{WORD:spark_app}\.%{INT:spark_n}\.%{JAVACLASS:spark_type} %{NUMBER:value:float} %{NUMBER:spark_n2}"]
+
+
+     match=>["message","\A%{WORD:spark_app}\.%{JAVAFILE:spark_type} %{NUMBER:value:float} %{NUMBER:spark_n2}"]
+    }
+  mutate {add_field => {"%{spark_type}" =>"%{[value]}"}}
+  mutate{convert =>{"%spark_type" => "float"}}
+  ruby {
+    code => "
+      event.to_hash.keys.each { |k|
+        if k.start_with?('app')
+          event.remove(k)
+        end
+      }
+    "
+  }
   ruby {
         code => "
         event.to_hash.keys.each { |k| event[ k.gsub('.','_') ] = event.remove(k) if k.include?'.' }
@@ -136,7 +155,7 @@ if [type] == "graphite"{
     }
 }
 {% else %}
-#No spark node defined
+#No Spark node defined
 {% endif %}
 
 
