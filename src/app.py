@@ -5,7 +5,7 @@ import shutil
 
 
 app = Flask("D-MON")
-api = Api(app, version='0.2.4', title='DICE MONitoring API',
+api = Api(app, version='0.2.5', title='DICE MONitoring API',
     description='RESTful API for the DICE Monitoring Platform  (D-MON)',
 )
 
