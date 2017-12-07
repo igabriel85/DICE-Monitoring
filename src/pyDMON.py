@@ -51,6 +51,7 @@ from pyUtil import *
 from greenletThreads import *
 # import Queue
 # from threading import Thread
+import tempfile
 import requests
 import psutil
 from logging.handlers import RotatingFileHandler
@@ -71,7 +72,7 @@ baseDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'db')
 pidDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pid')
 logDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 credDir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'keys')
-
+tempDir = tempfile.gettempdir()
 
 esDir = '/opt/elasticsearch'
 lsCDir = '/etc/logstash/conf.d/'
@@ -1814,7 +1815,8 @@ class StormLogs(Resource):
         nodesAll = db.session.query(dbNodes.nodeFQDN, dbNodes.nRoles, dbNodes.nodeIP).all()
         try:
             global backProc
-            alive = backProc.is_alive()
+            # alive = backProc.is_alive()
+            alive = checkPID(int(open(os.path.join(tempDir, 'dsbp.pid')).read()))
             if alive:
                 response = jsonify({'Status': 'Only one background process is permited', 'PID': str(backProc.pid),
                                     'BProcess': 'Active'})
@@ -1848,6 +1850,8 @@ class StormLogs(Resource):
         backProc = multiprocessing.Process(target=getStormLogsGreen, args=(resourceList, ))
         backProc.daemon = True
         backProc.start()
+        pidFile = os.path.join(tempDir, 'dsbp.pid')
+        file(pidFile, 'w').write(str(backProc.pid))
         response = jsonify({'Status': 'Started background process', 'PID': str(backProc.pid)})
         response.status_code = 201
         return response
@@ -1857,8 +1861,10 @@ class StormLogs(Resource):
 class StormLogFetchActive(Resource):
     def get(self):
         try:
-            pid = str(backProc.pid)
-            alive = str(backProc.is_alive())
+            pid = int(open(os.path.join(tempDir, 'dsbp.pid')).read())
+            alive = checkPID(int(open(os.path.join(tempDir, 'dsbp.pid')).read()))
+            # pid = str(backProc.pid)
+            # alive = str(backProc.is_alive())
         except Exception as inst:
             app.logger.warning('[%s] : [WARN] No Background proc detected with %s and %s ',
                             datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S'), type(inst), inst.args)
